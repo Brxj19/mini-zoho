@@ -4,13 +4,18 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1 is implemented:
+The repository currently includes:
 
-- React frontend scaffold with routing, auth shell, and starter dashboard
-- FastAPI backend scaffold with config, DB session management, centralized error handling, and health routes
-- MySQL service wired through Docker Compose
-- Alembic migration setup ready for upcoming models
-- Environment variable examples for frontend and backend
+- React + Vite frontend scaffold
+- FastAPI backend scaffold with health routes
+- MySQL and Docker Compose setup
+- Alembic migration wiring for backend evolution
+- A Zoho-inspired frontend redesign branch with:
+  - token-based design system
+  - compact dark sidebar and top utility bar
+  - responsive app shell and onboarding flow
+  - dashboard, tables, forms, reports, and settings UI patterns
+  - clearly marked placeholder modules where backend APIs are not available yet
 
 ## Project Structure
 
@@ -97,6 +102,10 @@ npm run dev
 
 - Backend syntax check: `python3 -m compileall backend/app`
 - Frontend build: `npm run build` from `frontend/` after installing dependencies
+
+## UI Redesign Note
+
+The frontend redesign keeps Northstar Inventory branding original while following dense inventory SaaS workflow patterns such as grouped sidebar navigation, quick-create actions, compact data tables, sectioned forms, and card-based dashboards. The implementation plan for this redesign is tracked in `docs/UI_REDESIGN_PLAN.md`.
 
 ## Milestone Roadmap
 
