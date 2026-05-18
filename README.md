@@ -4,15 +4,16 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1, Phase 2, and Phase 3 are implemented:
+Phase 1 through Phase 4 are implemented:
 
 - React frontend scaffold with routing, auth shell, and starter dashboard
 - Real frontend login and tenant registration wired to the backend auth APIs
 - FastAPI backend scaffold with config, DB session management, centralized error handling, and health routes
 - JWT auth, password hashing, tenant-aware users, role checks, and super admin seeding
 - Tenant-scoped master data modules for categories, brands, vendors, customers, and warehouses
+- Product catalog, warehouse stock, inventory transactions, stock in/out/adjustment APIs, and low-stock reporting
 - MySQL service wired through Docker Compose
-- Alembic migrations for tenants, users, and Phase 3 master data tables
+- Alembic migrations for tenants, users, master data tables, and Phase 4 inventory core tables
 - Environment variable examples for frontend and backend
 
 ## Project Structure
@@ -104,6 +105,21 @@ Phase 3 adds tenant-aware CRUD APIs for:
 
 List endpoints support pagination, search, and status filtering. Warehouse lists also support `is_default` filtering. Delete actions archive records instead of hard deleting them.
 
+## Product and Inventory APIs
+
+Phase 4 adds:
+
+- `GET/POST/PATCH/DELETE /api/products`
+- `GET /api/products/{id}/stock`
+- `GET /api/products/{id}/transactions`
+- `GET /api/inventory/transactions`
+- `POST /api/inventory/stock-in`
+- `POST /api/inventory/stock-out`
+- `POST /api/inventory/adjust`
+- `GET /api/inventory/low-stock`
+
+Stock is stored per warehouse in `warehouse_stock`, not on the product row itself. Every stock-changing action creates an immutable inventory transaction and an audit log entry.
+
 ## Seeded Super Admin
 
 When the backend starts after migrations, it ensures a default Super Admin exists using:
@@ -145,4 +161,7 @@ npm run dev
 
 ## Milestone Roadmap
 
-- Phase 4+: product inventory, transfers, orders, reports, audit logs, and AI features
+- Phase 5: stock transfers between warehouses
+- Phase 6: purchase orders and receiving workflows
+- Phase 7: sales orders, reservation, deduction, and cancellation flows
+- Phase 8+: dashboards, reports, notifications, audit log APIs, and AI features
