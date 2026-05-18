@@ -80,6 +80,13 @@ Backend values live in `backend/.env` and currently support:
 - `SUPER_ADMIN_EMAIL`
 - `SUPER_ADMIN_PASSWORD`
 
+The backend also adds request-level middleware for:
+
+- CORS handling
+- request ID propagation via `X-Request-ID`
+- response timing via `X-Process-Time-MS`
+- basic security headers on API responses
+
 Frontend values live in `frontend/.env`:
 
 - `VITE_API_BASE_URL`
