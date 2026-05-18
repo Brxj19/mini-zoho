@@ -54,3 +54,12 @@ class PurchaseOrderStatusEnum(str, Enum):
     PARTIALLY_RECEIVED = "PARTIALLY_RECEIVED"
     RECEIVED = "RECEIVED"
     CANCELLED = "CANCELLED"
+
+
+class SalesOrderStatusEnum(str, Enum):
+    DRAFT = "DRAFT"
+    CONFIRMED = "CONFIRMED"
+    PACKED = "PACKED"
+    SHIPPED = "SHIPPED"
+    DELIVERED = "DELIVERED"
+    CANCELLED = "CANCELLED"

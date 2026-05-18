@@ -7,6 +7,8 @@ from app.models.audit_log import AuditLog
 from app.models.product import Product
 from app.models.purchase_order import PurchaseOrder
 from app.models.purchase_order_item import PurchaseOrderItem
+from app.models.sales_order import SalesOrder
+from app.models.sales_order_item import SalesOrderItem
 from app.models.stock_transfer import StockTransfer
 from app.models.stock_transfer_item import StockTransferItem
 from app.models.tenant import Tenant
@@ -29,6 +31,8 @@ __all__ = [
     "Product",
     "PurchaseOrder",
     "PurchaseOrderItem",
+    "SalesOrder",
+    "SalesOrderItem",
     "WarehouseStock",
     "InventoryTransaction",
     "AuditLog",
