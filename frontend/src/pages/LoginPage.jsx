@@ -1,54 +1,92 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import { useAuth } from "../contexts/AuthContext";
+import { Icon } from "../components/Icon";
+import { useAuthStore } from "../stores/authStore";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [email, setEmail] = useState("superadmin@example.com");
-  const [password, setPassword] = useState("ChangeMe123!");
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    login(`demo-token:${email}`);
-    navigate("/", { replace: true });
-  };
+  const login = useAuthStore((state) => state.login);
+  const [formState, setFormState] = useState({
+    email: "superadmin@example.com",
+    password: "ChangeMe123!",
+  });
 
   return (
     <div className="auth-screen">
-      <section className="auth-panel">
-        <div className="auth-copy">
-          <p className="eyebrow">Inventory SaaS Starter</p>
-          <h1>Launch a clean multi-tenant operations workspace.</h1>
+      <section className="auth-layout">
+        <div className="auth-showcase">
+          <p className="eyebrow">Northstar Inventory</p>
+          <h1>Run inventory, purchasing, and sales from one compact workspace.</h1>
           <p>
-            Phase 1 includes the React shell, FastAPI foundation, MySQL connectivity, Alembic wiring,
-            and Docker-based local setup.
+            A modern inventory SaaS shell inspired by dense business workflows, purpose-built for
+            retail operators and warehouse teams.
           </p>
+
+          <ul className="feature-bullets">
+            <li>Multi-tenant operational dashboard</li>
+            <li>Stock transfers, purchase orders, and sales workflows</li>
+            <li>Reports, audit trails, and structured settings</li>
+          </ul>
+
+          <div className="auth-note-card">
+            <span className="auth-note-icon">
+              <Icon name="sparkles" size={18} />
+            </span>
+            <div>
+              <strong>Current branch note</strong>
+              <p>Frontend modules with missing backend support are clearly marked as UI placeholders.</p>
+            </div>
+          </div>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-          </label>
+        <div className="auth-form-card">
+          <div className="auth-form-header">
+            <h2>Sign in</h2>
+            <p>Use the starter credentials or continue with any email to preview the UI.</p>
+          </div>
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
+          <form
+            className="stack-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              login(formState.email);
+              navigate("/", { replace: true });
+            }}
+          >
+            <label>
+              Work email
+              <input
+                type="email"
+                value={formState.email}
+                onChange={(event) => setFormState((state) => ({ ...state, email: event.target.value }))}
+                required
+              />
+            </label>
 
-          <button className="primary-button" type="submit">
-            Continue
-          </button>
-        </form>
+            <label>
+              Password
+              <input
+                type="password"
+                value={formState.password}
+                onChange={(event) => setFormState((state) => ({ ...state, password: event.target.value }))}
+                required
+              />
+            </label>
+
+            <button className="button button-primary button-block" type="submit">
+              Sign in
+            </button>
+          </form>
+
+          <div className="auth-footer-links">
+            <button className="text-button" type="button">
+              Forgot password
+            </button>
+            <Link to="/register">Create account</Link>
+          </div>
+        </div>
       </section>
     </div>
   );
 }
-

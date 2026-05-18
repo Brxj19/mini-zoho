@@ -1,61 +1,53 @@
-import { Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { Outlet, useLocation, useMatches } from "react-router-dom";
 
-import { useAuth } from "../contexts/AuthContext";
-
-const primaryNavigation = [
-  "Dashboard",
-  "Items",
-  "Inventory",
-  "Warehouses",
-  "Sales",
-  "Purchases",
-  "Customers",
-  "Vendors",
-  "Reports",
-  "Users",
-  "Settings",
-];
+import { Breadcrumbs } from "../components/Breadcrumbs";
+import { Drawer } from "../components/Drawer";
+import { Sidebar } from "../components/Sidebar";
+import { Topbar } from "../components/Topbar";
+import { useUiStore } from "../stores/uiStore";
 
 export function AppShell() {
-  const { logout } = useAuth();
+  const location = useLocation();
+  const matches = useMatches();
+  const addRecentHistory = useUiStore((state) => state.addRecentHistory);
+  const isMobileSidebarOpen = useUiStore((state) => state.isMobileSidebarOpen);
+  const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
+
+  useEffect(() => {
+    const currentMatch = [...matches].reverse().find((match) => match.handle?.title);
+
+    if (!currentMatch?.handle?.title) {
+      return;
+    }
+
+    addRecentHistory({
+      path: location.pathname,
+      label:
+        typeof currentMatch.handle.title === "function"
+          ? currentMatch.handle.title(currentMatch.params)
+          : currentMatch.handle.title,
+      meta: typeof currentMatch.handle.section === "string" ? currentMatch.handle.section : "Page",
+    });
+  }, [addRecentHistory, location.pathname, matches]);
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div>
-          <div className="brand-mark">Northstar</div>
-          <p className="brand-copy">Inventory operations for modern retail teams.</p>
+      <Sidebar />
+      <Drawer open={isMobileSidebarOpen} onClose={closeMobileSidebar}>
+        <Sidebar mobile />
+      </Drawer>
+
+      <div className="shell-main">
+        <Topbar />
+        <div className="shell-content">
+          <div className="content-backdrop" />
+          <div className="content-inner">
+            <Breadcrumbs />
+            <Outlet />
+          </div>
         </div>
-
-        <nav className="sidebar-nav" aria-label="Primary">
-          {primaryNavigation.map((item) => (
-            <button className="nav-link" key={item} type="button">
-              {item}
-            </button>
-          ))}
-        </nav>
-      </aside>
-
-      <div className="main-panel">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Workspace</p>
-            <h1 className="page-title">Northstar Inventory</h1>
-          </div>
-
-          <div className="topbar-actions">
-            <input className="search-input" placeholder="Search products, orders, vendors..." />
-            <button className="ghost-button" type="button" onClick={logout}>
-              Sign out
-            </button>
-          </div>
-        </header>
-
-        <main className="content-area">
-          <Outlet />
-        </main>
       </div>
     </div>
   );
 }
-

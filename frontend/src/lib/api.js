@@ -5,5 +5,20 @@ const api = axios.create({
   timeout: 10000,
 });
 
-export default api;
+api.interceptors.request.use((config) => {
+  const persistedState = window.localStorage.getItem("northstar-auth-store");
 
+  if (!persistedState) {
+    return config;
+  }
+
+  const { state } = JSON.parse(persistedState);
+
+  if (state?.token) {
+    config.headers.Authorization = `Bearer ${state.token}`;
+  }
+
+  return config;
+});
+
+export default api;
