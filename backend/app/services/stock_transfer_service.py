@@ -21,6 +21,7 @@ from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.stock_transfer_repository import StockTransferItemRepository, StockTransferRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.services.notification_service import NotificationService
 
 
 class StockTransferService:
@@ -34,6 +35,7 @@ class StockTransferService:
         self.audit_repository = AuditLogRepository(db)
         self.tenant_repository = TenantRepository(db)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
+        self.notification_service = NotificationService(db)
 
     def list_transfers(
         self,
@@ -311,6 +313,16 @@ class StockTransferService:
                     user_agent=request_meta.get("user_agent"),
                 )
             )
+            reorder_level = source_stock.reorder_level if source_stock.reorder_level is not None else product.reorder_level
+            if source_stock.available_quantity <= reorder_level:
+                self.notification_service.notify_low_stock(
+                    tenant_id=transfer.tenant_id,
+                    product_name=product.name,
+                    sku=product.sku,
+                    warehouse_name=source_wh.name,
+                    available_quantity=source_stock.available_quantity,
+                    reorder_level=reorder_level,
+                )
 
         transfer = self.transfer_repository.update(
             transfer,

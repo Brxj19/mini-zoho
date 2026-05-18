@@ -4,7 +4,7 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1 through Phase 7 are implemented:
+Phase 1 through Phase 8 are implemented:
 
 - React frontend scaffold with routing, auth shell, and starter dashboard
 - Real frontend login and tenant registration wired to the backend auth APIs
@@ -15,8 +15,11 @@ Phase 1 through Phase 7 are implemented:
 - Stock transfer workflow with DRAFT, IN_TRANSIT, COMPLETED, and CANCELLED statuses
 - Purchase order workflow with DRAFT, ISSUED, PARTIALLY_RECEIVED, RECEIVED, and CANCELLED statuses
 - Sales order workflow with DRAFT, CONFIRMED, PACKED, SHIPPED, DELIVERED, and CANCELLED statuses
+- Tenant and Super Admin dashboard APIs
+- Report APIs with CSV export for major inventory and order reports
+- Audit log listing APIs and in-app notifications
 - MySQL service wired through Docker Compose
-- Alembic migrations for tenants, users, master data tables, inventory core tables, stock transfers, purchase orders, and sales orders
+- Alembic migrations for tenants, users, master data tables, inventory core tables, stock transfers, purchase orders, sales orders, and notifications
 - Environment variable examples for frontend and backend
 
 ## Project Structure
@@ -167,6 +170,47 @@ Phase 7 adds:
 
 Confirming a sales order reserves stock by warehouse, cancelling a confirmed workflow order releases that reservation, and delivering a shipped order converts reserved stock into a final `SALES_ORDER_DEDUCT` inventory transaction.
 
+## Dashboard APIs
+
+Phase 8 adds:
+
+- `GET /api/dashboard/tenant`
+- `GET /api/dashboard/super-admin`
+
+The tenant dashboard returns core inventory, order, and notification metrics for the current tenant. The super admin dashboard returns cross-tenant SaaS-wide metrics and recent tenant activity.
+
+## Report APIs
+
+Phase 8 adds tenant-isolated reporting endpoints with filters and optional `?export=csv` support:
+
+- `GET /api/reports/inventory-summary`
+- `GET /api/reports/stock-movement`
+- `GET /api/reports/low-stock`
+- `GET /api/reports/warehouse-stock`
+- `GET /api/reports/product-valuation`
+- `GET /api/reports/purchase-orders`
+- `GET /api/reports/sales-orders`
+
+Each report supports relevant filters such as date range, warehouse, product, category, vendor, customer, and status where applicable.
+
+## Audit Log APIs
+
+Phase 8 adds:
+
+- `GET /api/audit-logs`
+
+Audit logs are immutable and tenant-scoped for tenant users. Super Admin users can query logs across tenants.
+
+## Notification APIs
+
+Phase 8 adds:
+
+- `GET /api/notifications`
+- `POST /api/notifications/{id}/read`
+- `POST /api/notifications/read-all`
+
+Low-stock events, purchase receiving, sales order status changes, suspicious large stock adjustments, and login activity now feed the dashboard and notification surfaces.
+
 ## Seeded Super Admin
 
 When the backend starts after migrations, it ensures a default Super Admin exists using:
@@ -208,4 +252,5 @@ npm run dev
 
 ## Milestone Roadmap
 
-- Phase 8+: dashboards, reports, notifications, audit log APIs, and AI features
+- Phase 9: frontend inventory SaaS UI
+- Phase 10: AI inventory assistant and reorder suggestions

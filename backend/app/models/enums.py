@@ -63,3 +63,11 @@ class SalesOrderStatusEnum(str, Enum):
     SHIPPED = "SHIPPED"
     DELIVERED = "DELIVERED"
     CANCELLED = "CANCELLED"
+
+
+class NotificationTypeEnum(str, Enum):
+    LOW_STOCK = "LOW_STOCK"
+    ORDER_STATUS = "ORDER_STATUS"
+    PURCHASE_RECEIVE = "PURCHASE_RECEIVE"
+    STOCK_ALERT = "STOCK_ALERT"
+    SYSTEM = "SYSTEM"

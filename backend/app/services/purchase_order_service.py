@@ -23,6 +23,7 @@ from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.purchase_order_repository import PurchaseOrderItemRepository, PurchaseOrderRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.services.notification_service import NotificationService
 
 
 class PurchaseOrderService:
@@ -37,6 +38,7 @@ class PurchaseOrderService:
         self.tenant_repository = TenantRepository(db)
         self.vendor_repository = MasterDataRepository(db, Vendor)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
+        self.notification_service = NotificationService(db)
 
     def list_purchase_orders(
         self,
@@ -344,6 +346,11 @@ class PurchaseOrderService:
             old_value=old_snapshot,
             new_value=self._purchase_order_snapshot(purchase_order, latest_items),
             request_meta=request_meta,
+        )
+        self.notification_service.notify_purchase_receive(
+            tenant_id=purchase_order.tenant_id,
+            po_number=purchase_order.po_number,
+            actor_name=current_user.name,
         )
         self.db.commit()
         return purchase_order, latest_items

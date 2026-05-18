@@ -73,6 +73,15 @@ class UserRepository:
         )
         return self.db.scalar(statement) or 0
 
+    def list_active_by_tenant(self, tenant_id: int) -> list[User]:
+        statement = (
+            select(User)
+            .options(joinedload(User.tenant))
+            .where(User.tenant_id == tenant_id, User.status == UserStatusEnum.ACTIVE)
+            .order_by(User.id.asc())
+        )
+        return list(self.db.scalars(statement).unique().all())
+
     def update(self, user: User, updates: dict[str, object]) -> User:
         for field, value in updates.items():
             setattr(user, field, value)

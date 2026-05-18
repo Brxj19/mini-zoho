@@ -23,6 +23,7 @@ from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.sales_order_repository import SalesOrderItemRepository, SalesOrderRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.services.notification_service import NotificationService
 
 
 class SalesOrderService:
@@ -37,6 +38,7 @@ class SalesOrderService:
         self.tenant_repository = TenantRepository(db)
         self.customer_repository = MasterDataRepository(db, Customer)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
+        self.notification_service = NotificationService(db)
 
     def list_sales_orders(
         self,
@@ -212,6 +214,12 @@ class SalesOrderService:
             new_value=self._sales_order_snapshot(sales_order, items),
             request_meta=request_meta,
         )
+        self.notification_service.notify_order_status(
+            tenant_id=sales_order.tenant_id,
+            order_kind="Sales order",
+            order_number=sales_order.so_number,
+            status_label=sales_order.status.value,
+        )
         self.db.commit()
         return sales_order, items
 
@@ -271,6 +279,12 @@ class SalesOrderService:
             new_value=self._sales_order_snapshot(sales_order, items),
             request_meta=request_meta,
         )
+        self.notification_service.notify_order_status(
+            tenant_id=sales_order.tenant_id,
+            order_kind="Sales order",
+            order_number=sales_order.so_number,
+            status_label=sales_order.status.value,
+        )
         self.db.commit()
         return sales_order, items
 
@@ -314,6 +328,12 @@ class SalesOrderService:
             new_value=self._sales_order_snapshot(sales_order, items),
             request_meta=request_meta,
         )
+        self.notification_service.notify_order_status(
+            tenant_id=sales_order.tenant_id,
+            order_kind="Sales order",
+            order_number=sales_order.so_number,
+            status_label=sales_order.status.value,
+        )
         self.db.commit()
         return sales_order, items
 
@@ -345,6 +365,12 @@ class SalesOrderService:
             action=action,
             old_value=old_snapshot,
             new_value=self._sales_order_snapshot(sales_order, items),
+        )
+        self.notification_service.notify_order_status(
+            tenant_id=sales_order.tenant_id,
+            order_kind="Sales order",
+            order_number=sales_order.so_number,
+            status_label=sales_order.status.value,
         )
         self.db.commit()
         return sales_order, items
@@ -487,6 +513,16 @@ class SalesOrderService:
                     user_agent=request_meta.get("user_agent"),
                 )
             )
+            reorder_level = stock.reorder_level if stock.reorder_level is not None else product.reorder_level
+            if stock.available_quantity <= reorder_level:
+                self.notification_service.notify_low_stock(
+                    tenant_id=tenant_id,
+                    product_name=product.name,
+                    sku=product.sku,
+                    warehouse_name=warehouse.name,
+                    available_quantity=stock.available_quantity,
+                    reorder_level=reorder_level,
+                )
 
     def _release_reserved_stock(
         self,

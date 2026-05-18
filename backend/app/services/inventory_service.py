@@ -17,6 +17,7 @@ from app.models.warehouse_stock import WarehouseStock
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.inventory_repository import InventoryTransactionRepository, WarehouseStockRepository
 from app.repositories.product_repository import ProductRepository
+from app.services.notification_service import NotificationService
 
 
 class InventoryService:
@@ -26,6 +27,7 @@ class InventoryService:
         self.stock_repository = WarehouseStockRepository(db)
         self.transaction_repository = InventoryTransactionRepository(db)
         self.audit_repository = AuditLogRepository(db)
+        self.notification_service = NotificationService(db)
 
     def stock_in(self, *, current_user: User, payload, request_meta: dict[str, str | None]) -> InventoryTransaction:
         return self._apply_stock_change(
@@ -218,6 +220,24 @@ class InventoryService:
                 user_agent=request_meta.get("user_agent"),
             )
         )
+        reorder_level = stock.reorder_level if stock.reorder_level is not None else product.reorder_level
+        if quantity_delta < 0 and stock.available_quantity <= reorder_level:
+            self.notification_service.notify_low_stock(
+                tenant_id=product.tenant_id,
+                product_name=product.name,
+                sku=product.sku,
+                warehouse_name=warehouse.name,
+                available_quantity=stock.available_quantity,
+                reorder_level=reorder_level,
+            )
+        if transaction_type == InventoryTransactionTypeEnum.ADJUSTMENT and abs(quantity_delta) >= max(10, reorder_level or 0, 1):
+            self.notification_service.notify_suspicious_adjustment(
+                tenant_id=product.tenant_id,
+                product_name=product.name,
+                warehouse_name=warehouse.name,
+                quantity_delta=quantity_delta,
+                actor_name=current_user.name,
+            )
         transaction.quantity = transaction_quantity
         self.db.add(transaction)
         self.db.commit()

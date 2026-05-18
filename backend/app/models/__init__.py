@@ -4,6 +4,7 @@ from app.models.category import Category
 from app.models.customer import Customer
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.audit_log import AuditLog
+from app.models.notification import Notification
 from app.models.product import Product
 from app.models.purchase_order import PurchaseOrder
 from app.models.purchase_order_item import PurchaseOrderItem
@@ -36,6 +37,7 @@ __all__ = [
     "WarehouseStock",
     "InventoryTransaction",
     "AuditLog",
+    "Notification",
     "StockTransfer",
     "StockTransferItem",
 ]

@@ -20,6 +20,7 @@ from app.models.user import User
 from app.repositories.tenant_repository import TenantRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import RegisterRequest
+from app.services.audit_log_service import AuditLogService
 
 settings = get_settings()
 
@@ -29,6 +30,7 @@ class AuthService:
         self.db = db
         self.user_repository = UserRepository(db)
         self.tenant_repository = TenantRepository(db)
+        self.audit_log_service = AuditLogService(db)
 
     def register_tenant_admin(self, payload: RegisterRequest) -> tuple[User, Tenant]:
         existing_user = self.user_repository.get_by_email(payload.email)
@@ -82,6 +84,13 @@ class AuthService:
 
         user.last_login_at = datetime.now(UTC)
         self.db.add(user)
+        self.audit_log_service.log(
+            actor=user,
+            action="auth.login",
+            entity_type="user",
+            entity_id=user.id,
+            new_value={"last_login_at": user.last_login_at.isoformat()},
+        )
         self.db.commit()
         self.db.refresh(user)
         return user
