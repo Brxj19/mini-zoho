@@ -1,0 +1,282 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(11, 120, 97, 0.12), transparent 25%),
+    linear-gradient(180deg, #f6f8f5 0%, #eef3ef 100%);
+  color: #17312d;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.auth-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+}
+
+.auth-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  width: min(960px, 100%);
+  padding: 32px;
+  border: 1px solid rgba(23, 49, 45, 0.08);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 24px 80px rgba(17, 50, 43, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.auth-copy h1,
+.hero-card h2,
+.panel-card h2,
+.panel-card h3 {
+  margin-top: 0;
+}
+
+.auth-copy p:last-child,
+.hero-card p:last-child,
+.stat-card p,
+.panel-card p {
+  margin-bottom: 0;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.auth-form input,
+.search-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(23, 49, 45, 0.15);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.primary-button,
+.ghost-button,
+.nav-link {
+  border: 0;
+  border-radius: 14px;
+  transition: transform 160ms ease, opacity 160ms ease, background-color 160ms ease;
+}
+
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #0f7f69 0%, #0d9d63 100%);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ghost-button {
+  padding: 12px 16px;
+  background: rgba(15, 127, 105, 0.08);
+  color: #0f5e4f;
+  font-weight: 600;
+}
+
+.inline-button {
+  width: fit-content;
+  margin-top: 12px;
+}
+
+.nav-link {
+  width: 100%;
+  padding: 12px 14px;
+  background: transparent;
+  color: #30524c;
+  text-align: left;
+}
+
+.nav-link:hover,
+.ghost-button:hover,
+.primary-button:hover {
+  transform: translateY(-1px);
+  opacity: 0.96;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 18px;
+  background: rgba(17, 50, 43, 0.96);
+  color: #f4f8f4;
+}
+
+.brand-mark {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.brand-copy {
+  color: rgba(244, 248, 244, 0.72);
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar .nav-link {
+  color: rgba(244, 248, 244, 0.88);
+}
+
+.sidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.main-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px 0;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-title {
+  margin: 0;
+}
+
+.content-area {
+  padding: 28px;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.hero-card,
+.stat-card,
+.panel-card {
+  border: 1px solid rgba(23, 49, 45, 0.08);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 48px rgba(17, 50, 43, 0.06);
+}
+
+.hero-card,
+.panel-card {
+  padding: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  padding: 22px;
+}
+
+.stat-card span {
+  display: block;
+  color: #5f756f;
+}
+
+.stat-card strong {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 2rem;
+}
+
+.milestone-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #30524c;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f7f69;
+}
+
+@media (max-width: 960px) {
+  .auth-panel,
+  .app-shell,
+  .stats-grid,
+  .topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .sidebar {
+    padding-bottom: 18px;
+  }
+
+  .topbar {
+    padding-top: 18px;
+  }
+
+  .topbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
