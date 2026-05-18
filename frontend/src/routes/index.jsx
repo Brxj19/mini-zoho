@@ -5,11 +5,16 @@ import { AppShell } from "../layouts/AppShell";
 import { DashboardPage } from "../pages/DashboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { RegisterPage } from "../pages/RegisterPage";
 
 export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
   },
   {
     path: "/",
@@ -30,4 +35,3 @@ export const router = createBrowserRouter([
     element: <NotFoundPage />,
   },
 ]);
-

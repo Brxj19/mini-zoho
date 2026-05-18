@@ -1,20 +1,24 @@
+import { useAuth } from "../contexts/AuthContext";
+
 const stats = [
-  { label: "Products", value: "0", note: "Catalog foundation ready" },
-  { label: "Warehouses", value: "0", note: "Module scheduled in Phase 3" },
-  { label: "Purchase Orders", value: "0", note: "Workflow starts in Phase 6" },
-  { label: "Low Stock Alerts", value: "0", note: "Rules start in Phase 4" },
+  { label: "Products", value: "Phase 4", note: "Catalog and stock core are next after master data." },
+  { label: "Warehouses", value: "Phase 3", note: "Tenant-owned locations arrive in the next milestone." },
+  { label: "Purchase Orders", value: "Phase 6", note: "Inbound stock workflow is already mapped in the PRD." },
+  { label: "Low Stock Alerts", value: "Phase 4", note: "Rules will key off warehouse stock and reorder levels." },
 ];
 
 export function DashboardPage() {
+  const { user, tenant } = useAuth();
+
   return (
     <div className="dashboard-grid">
       <section className="hero-card">
         <div>
-          <p className="eyebrow">Phase 1 Ready</p>
-          <h2>Project foundation is in place for a tenant-isolated inventory platform.</h2>
+          <p className="eyebrow">Phase 2 Active</p>
+          <h2>Auth, tenants, roles, and strict backend tenant isolation are now wired into the platform.</h2>
           <p>
-            The next milestone will add tenants, users, JWT auth, role guards, and backend isolation
-            dependencies.
+            Signed in as <strong>{user?.name ?? "Unknown user"}</strong>
+            {tenant ? ` for ${tenant.company_name}` : " in the platform workspace"}.
           </p>
         </div>
       </section>
@@ -32,19 +36,18 @@ export function DashboardPage() {
       <section className="panel-card">
         <div className="panel-header">
           <div>
-            <p className="eyebrow">Roadmap</p>
-            <h3>Implementation milestones</h3>
+            <p className="eyebrow">Current Session</p>
+            <h3>Access summary</h3>
           </div>
         </div>
 
         <ul className="milestone-list">
-          <li>Phase 1: Project setup, Docker, env files, FastAPI, React, MySQL, Alembic</li>
-          <li>Phase 2: Auth, roles, tenants, seed users, tenant isolation</li>
-          <li>Phase 3: Categories, brands, vendors, customers, warehouses</li>
-          <li>Phase 4+: Product, stock, transfers, orders, reports, audit logs, AI assistant</li>
+          <li>Role: {user?.role?.replaceAll("_", " ") ?? "Unknown"}</li>
+          <li>Tenant status: {tenant?.status ?? "Platform-level access"}</li>
+          <li>Contact email: {tenant?.contact_email ?? user?.email ?? "Unavailable"}</li>
+          <li>Next milestone: master data modules for categories, brands, vendors, customers, and warehouses</li>
         </ul>
       </section>
     </div>
   );
 }
-

@@ -54,6 +54,10 @@ button {
   backdrop-filter: blur(18px);
 }
 
+.auth-panel-wide {
+  width: min(1080px, 100%);
+}
+
 .auth-copy h1,
 .hero-card h2,
 .panel-card h2,
@@ -70,6 +74,12 @@ button {
 
 .auth-form {
   display: grid;
+  gap: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -119,6 +129,29 @@ button {
   margin-top: 12px;
 }
 
+.auth-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 18px;
+  color: #4f6b65;
+}
+
+.auth-links a {
+  color: #0f7f69;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.form-error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(184, 53, 71, 0.1);
+  color: #8e2237;
+  font-weight: 600;
+}
+
 .nav-link {
   width: 100%;
   padding: 12px 14px;
@@ -157,6 +190,19 @@ button {
 
 .brand-copy {
   color: rgba(244, 248, 244, 0.72);
+}
+
+.sidebar-footer {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-subtle {
+  color: rgba(244, 248, 244, 0.72);
+  font-size: 0.9rem;
 }
 
 .sidebar-nav {
@@ -233,6 +279,21 @@ button {
   color: #5f756f;
 }
 
+.status-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(214, 247, 224, 0.92);
+  color: #14643f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .stat-card strong {
   display: block;
   margin: 12px 0 6px;
@@ -254,11 +315,31 @@ button {
   color: #0f7f69;
 }
 
+.loading-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+}
+
+.loading-card {
+  width: min(520px, 100%);
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(23, 49, 45, 0.08);
+  box-shadow: 0 24px 80px rgba(17, 50, 43, 0.08);
+}
+
 @media (max-width: 960px) {
   .auth-panel,
   .app-shell,
   .stats-grid,
   .topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -279,4 +360,3 @@ button {
     align-items: stretch;
   }
 }
-

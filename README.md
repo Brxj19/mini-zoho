@@ -4,12 +4,14 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1 is implemented:
+Phase 1 and Phase 2 are implemented:
 
 - React frontend scaffold with routing, auth shell, and starter dashboard
+- Real frontend login and tenant registration wired to the backend auth APIs
 - FastAPI backend scaffold with config, DB session management, centralized error handling, and health routes
+- JWT auth, password hashing, tenant-aware users, role checks, and super admin seeding
 - MySQL service wired through Docker Compose
-- Alembic migration setup ready for upcoming models
+- Alembic migration for tenants and users
 - Environment variable examples for frontend and backend
 
 ## Project Structure
@@ -64,13 +66,38 @@ Backend values live in `backend/.env` and currently support:
 - `JWT_ALGORITHM`
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
 - `REFRESH_TOKEN_EXPIRE_DAYS`
+- `INITIAL_TENANT_STATUS`
 - `CORS_ORIGINS`
+- `SUPER_ADMIN_NAME`
 - `SUPER_ADMIN_EMAIL`
 - `SUPER_ADMIN_PASSWORD`
 
 Frontend values live in `frontend/.env`:
 
 - `VITE_API_BASE_URL`
+
+## Auth and Roles
+
+- `POST /api/auth/register` creates a tenant and the first `TENANT_ADMIN`
+- `POST /api/auth/login` issues JWT access and refresh tokens
+- `GET /api/auth/me` returns the current authenticated user
+- Roles included in Milestone 2:
+  - `SUPER_ADMIN`
+  - `TENANT_ADMIN`
+  - `INVENTORY_MANAGER`
+  - `SALES_STAFF`
+  - `PURCHASE_STAFF`
+  - `VIEWER`
+
+The backend enforces tenant isolation by resolving tenant access from the authenticated user rather than trusting tenant IDs from the frontend.
+
+## Seeded Super Admin
+
+When the backend starts after migrations, it ensures a default Super Admin exists using:
+
+- Email: `SUPER_ADMIN_EMAIL`
+- Password: `SUPER_ADMIN_PASSWORD`
+- Name: `SUPER_ADMIN_NAME`
 
 ## Useful Commands
 
@@ -100,6 +127,5 @@ npm run dev
 
 ## Milestone Roadmap
 
-- Phase 2: authentication, tenant model, user model, roles, and tenant isolation
 - Phase 3: categories, brands, vendors, customers, and warehouses
 - Phase 4+: product inventory, transfers, orders, reports, audit logs, and AI features
