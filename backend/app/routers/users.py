@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import CurrentUser, DbSession, get_pagination_params, require_roles
 from app.models.enums import RoleEnum, UserStatusEnum
+from app.models.user import User
 from app.schemas.common import PaginationMeta
 from app.schemas.user import (
     UserCreate,
@@ -22,7 +23,7 @@ router = APIRouter()
 @router.get("/", response_model=UserListResponse)
 def list_users(
     db: DbSession,
-    current_user: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
+    current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
     pagination: tuple[int, int] = Depends(get_pagination_params),
     search: str | None = Query(default=None),
     role: RoleEnum | None = Query(default=None),
@@ -49,7 +50,7 @@ def list_users(
 def create_user(
     payload: UserCreate,
     db: DbSession,
-    current_user: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
+    current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
 ) -> UserDetailResponse:
     user = UserService(db).create_user(current_user, payload)
     return UserDetailResponse.model_validate(user)
@@ -73,7 +74,7 @@ def update_user(
     user_id: int,
     payload: UserUpdate,
     db: DbSession,
-    current_user: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
+    current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
 ) -> UserDetailResponse:
     service = UserService(db)
     user = service.get_user_or_404(user_id)
@@ -86,7 +87,7 @@ def update_user_status(
     user_id: int,
     payload: UserStatusUpdate,
     db: DbSession,
-    current_user: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
+    current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
 ) -> UserResponse:
     service = UserService(db)
     user = service.get_user_or_404(user_id)
@@ -99,7 +100,7 @@ def update_user_role(
     user_id: int,
     payload: UserRoleUpdate,
     db: DbSession,
-    current_user: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
+    current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN)),
 ) -> UserResponse:
     service = UserService(db)
     user = service.get_user_or_404(user_id)

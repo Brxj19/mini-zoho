@@ -112,6 +112,9 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+If you run the backend directly from your host machine instead of Docker, make sure `DATABASE_URL` uses a host your machine can reach, such as `127.0.0.1` or `localhost`. The default Compose-oriented value uses `mysql` as the hostname because that name resolves inside the Docker network.
+If you already created the virtualenv before dependency updates, rerun `pip install -r requirements.txt` so the pinned backend hashing dependencies are refreshed.
+
 Run the frontend locally without Docker:
 
 ```bash

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.core.dependencies import CurrentUser, DbSession, assert_tenant_access, get_pagination_params, require_roles
 from app.models.enums import RoleEnum, TenantStatusEnum
+from app.models.user import User
 from app.schemas.common import PaginationMeta
 from app.schemas.tenant import (
     TenantCreate,
@@ -47,7 +48,7 @@ def list_tenants(
 def create_tenant(
     payload: TenantCreate,
     db: DbSession,
-    _: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN)),
+    _: User = Depends(require_roles(RoleEnum.SUPER_ADMIN)),
 ) -> TenantResponse:
     tenant = TenantService(db).create_tenant(payload)
     return TenantResponse.model_validate(tenant)
@@ -74,7 +75,7 @@ def update_tenant_status(
     tenant_id: int,
     payload: TenantStatusUpdate,
     db: DbSession,
-    _: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN)),
+    _: User = Depends(require_roles(RoleEnum.SUPER_ADMIN)),
 ) -> TenantResponse:
     service = TenantService(db)
     tenant = service.get_tenant_or_404(tenant_id)
