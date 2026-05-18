@@ -6,6 +6,7 @@ from app.routers.categories import router as categories_router
 from app.routers.customers import router as customers_router
 from app.routers.health import router as health_router
 from app.routers.inventory import router as inventory_router
+from app.routers.purchase_orders import router as purchase_orders_router
 from app.routers.products import router as products_router
 from app.routers.stock_transfers import router as stock_transfers_router
 from app.routers.tenants import router as tenants_router
@@ -21,6 +22,7 @@ api_router.include_router(vendors_router, prefix="/vendors", tags=["vendors"])
 api_router.include_router(customers_router, prefix="/customers", tags=["customers"])
 api_router.include_router(products_router, prefix="/products", tags=["products"])
 api_router.include_router(inventory_router, prefix="/inventory", tags=["inventory"])
+api_router.include_router(purchase_orders_router, prefix="/purchase-orders", tags=["purchase-orders"])
 api_router.include_router(stock_transfers_router, prefix="/inventory", tags=["stock-transfers"])
 api_router.include_router(health_router, prefix="/health", tags=["health"])
 api_router.include_router(tenants_router, prefix="/tenants", tags=["tenants"])

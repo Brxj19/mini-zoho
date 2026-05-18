@@ -4,7 +4,7 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1 through Phase 5 are implemented:
+Phase 1 through Phase 6 are implemented:
 
 - React frontend scaffold with routing, auth shell, and starter dashboard
 - Real frontend login and tenant registration wired to the backend auth APIs
@@ -13,8 +13,9 @@ Phase 1 through Phase 5 are implemented:
 - Tenant-scoped master data modules for categories, brands, vendors, customers, and warehouses
 - Product catalog, warehouse stock, inventory transactions, stock in/out/adjustment APIs, and low-stock reporting
 - Stock transfer workflow with DRAFT, IN_TRANSIT, COMPLETED, and CANCELLED statuses
+- Purchase order workflow with DRAFT, ISSUED, PARTIALLY_RECEIVED, RECEIVED, and CANCELLED statuses
 - MySQL service wired through Docker Compose
-- Alembic migrations for tenants, users, master data tables, inventory core tables, and stock transfers
+- Alembic migrations for tenants, users, master data tables, inventory core tables, stock transfers, and purchase orders
 - Environment variable examples for frontend and backend
 
 ## Project Structure
@@ -135,6 +136,20 @@ Phase 5 adds:
 
 Completing a transfer reduces source warehouse stock, increases destination warehouse stock, and creates matching `TRANSFER_OUT` and `TRANSFER_IN` inventory transactions for each transfer item.
 
+## Purchase Order APIs
+
+Phase 6 adds:
+
+- `GET /api/purchase-orders`
+- `POST /api/purchase-orders`
+- `GET /api/purchase-orders/{id}`
+- `PATCH /api/purchase-orders/{id}`
+- `POST /api/purchase-orders/{id}/issue`
+- `POST /api/purchase-orders/{id}/receive`
+- `POST /api/purchase-orders/{id}/cancel`
+
+Receiving stock updates `warehouse_stock`, creates `PURCHASE_RECEIVE` inventory transactions, supports partial receipts per line item, and blocks receipts on cancelled purchase orders.
+
 ## Seeded Super Admin
 
 When the backend starts after migrations, it ensures a default Super Admin exists using:
@@ -176,6 +191,5 @@ npm run dev
 
 ## Milestone Roadmap
 
-- Phase 6: purchase orders and receiving workflows
 - Phase 7: sales orders, reservation, deduction, and cancellation flows
 - Phase 8+: dashboards, reports, notifications, audit log APIs, and AI features
