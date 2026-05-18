@@ -39,3 +39,10 @@ class InventoryTransactionTypeEnum(str, Enum):
     PURCHASE_RECEIVE = "PURCHASE_RECEIVE"
     RETURN_IN = "RETURN_IN"
     DAMAGE_OUT = "DAMAGE_OUT"
+
+
+class StockTransferStatusEnum(str, Enum):
+    DRAFT = "DRAFT"
+    IN_TRANSIT = "IN_TRANSIT"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"

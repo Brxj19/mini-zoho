@@ -5,6 +5,8 @@ from app.models.customer import Customer
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.audit_log import AuditLog
 from app.models.product import Product
+from app.models.stock_transfer import StockTransfer
+from app.models.stock_transfer_item import StockTransferItem
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.models.vendor import Vendor
@@ -26,4 +28,6 @@ __all__ = [
     "WarehouseStock",
     "InventoryTransaction",
     "AuditLog",
+    "StockTransfer",
+    "StockTransferItem",
 ]

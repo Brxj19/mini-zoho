@@ -4,7 +4,7 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1 through Phase 4 are implemented:
+Phase 1 through Phase 5 are implemented:
 
 - React frontend scaffold with routing, auth shell, and starter dashboard
 - Real frontend login and tenant registration wired to the backend auth APIs
@@ -12,8 +12,9 @@ Phase 1 through Phase 4 are implemented:
 - JWT auth, password hashing, tenant-aware users, role checks, and super admin seeding
 - Tenant-scoped master data modules for categories, brands, vendors, customers, and warehouses
 - Product catalog, warehouse stock, inventory transactions, stock in/out/adjustment APIs, and low-stock reporting
+- Stock transfer workflow with DRAFT, IN_TRANSIT, COMPLETED, and CANCELLED statuses
 - MySQL service wired through Docker Compose
-- Alembic migrations for tenants, users, master data tables, and Phase 4 inventory core tables
+- Alembic migrations for tenants, users, master data tables, inventory core tables, and stock transfers
 - Environment variable examples for frontend and backend
 
 ## Project Structure
@@ -120,6 +121,20 @@ Phase 4 adds:
 
 Stock is stored per warehouse in `warehouse_stock`, not on the product row itself. Every stock-changing action creates an immutable inventory transaction and an audit log entry.
 
+## Stock Transfer APIs
+
+Phase 5 adds:
+
+- `GET /api/inventory/transfers`
+- `POST /api/inventory/transfers`
+- `GET /api/inventory/transfers/{id}`
+- `PATCH /api/inventory/transfers/{id}`
+- `POST /api/inventory/transfers/{id}/in-transit`
+- `POST /api/inventory/transfers/{id}/complete`
+- `POST /api/inventory/transfers/{id}/cancel`
+
+Completing a transfer reduces source warehouse stock, increases destination warehouse stock, and creates matching `TRANSFER_OUT` and `TRANSFER_IN` inventory transactions for each transfer item.
+
 ## Seeded Super Admin
 
 When the backend starts after migrations, it ensures a default Super Admin exists using:
@@ -161,7 +176,6 @@ npm run dev
 
 ## Milestone Roadmap
 
-- Phase 5: stock transfers between warehouses
 - Phase 6: purchase orders and receiving workflows
 - Phase 7: sales orders, reservation, deduction, and cancellation flows
 - Phase 8+: dashboards, reports, notifications, audit log APIs, and AI features
