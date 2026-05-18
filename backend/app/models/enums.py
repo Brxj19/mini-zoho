@@ -20,3 +20,8 @@ class TenantStatusEnum(str, Enum):
 class UserStatusEnum(str, Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
+
+
+class RecordStatusEnum(str, Enum):
+    ACTIVE = "ACTIVE"
+    ARCHIVED = "ARCHIVED"

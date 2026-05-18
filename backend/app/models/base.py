@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, ForeignKey, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -19,3 +19,6 @@ class TimestampMixin:
         nullable=False,
     )
 
+
+class TenantOwnedMixin:
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), nullable=False, index=True)

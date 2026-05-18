@@ -4,14 +4,15 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1 and Phase 2 are implemented:
+Phase 1, Phase 2, and Phase 3 are implemented:
 
 - React frontend scaffold with routing, auth shell, and starter dashboard
 - Real frontend login and tenant registration wired to the backend auth APIs
 - FastAPI backend scaffold with config, DB session management, centralized error handling, and health routes
 - JWT auth, password hashing, tenant-aware users, role checks, and super admin seeding
+- Tenant-scoped master data modules for categories, brands, vendors, customers, and warehouses
 - MySQL service wired through Docker Compose
-- Alembic migration for tenants and users
+- Alembic migrations for tenants, users, and Phase 3 master data tables
 - Environment variable examples for frontend and backend
 
 ## Project Structure
@@ -91,6 +92,18 @@ Frontend values live in `frontend/.env`:
 
 The backend enforces tenant isolation by resolving tenant access from the authenticated user rather than trusting tenant IDs from the frontend.
 
+## Master Data APIs
+
+Phase 3 adds tenant-aware CRUD APIs for:
+
+- `GET/POST/PATCH/DELETE /api/categories`
+- `GET/POST/PATCH/DELETE /api/brands`
+- `GET/POST/PATCH/DELETE /api/vendors`
+- `GET/POST/PATCH/DELETE /api/customers`
+- `GET/POST/PATCH/DELETE /api/warehouses`
+
+List endpoints support pagination, search, and status filtering. Warehouse lists also support `is_default` filtering. Delete actions archive records instead of hard deleting them.
+
 ## Seeded Super Admin
 
 When the backend starts after migrations, it ensures a default Super Admin exists using:
@@ -126,9 +139,10 @@ npm run dev
 ## Verification
 
 - Backend syntax check: `python3 -m compileall backend/app`
+- Backend app import: `.venv/bin/python -c "import app.main; print('app-import-ok')"`
+- Backend migrations: `.venv/bin/alembic upgrade head`
 - Frontend build: `npm run build` from `frontend/` after installing dependencies
 
 ## Milestone Roadmap
 
-- Phase 3: categories, brands, vendors, customers, and warehouses
 - Phase 4+: product inventory, transfers, orders, reports, audit logs, and AI features
