@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
+import api from "../lib/api";
 import { FormRow } from "../components/FormRow";
 import { FormSection } from "../components/FormSection";
 import { PageHeader } from "../components/PageHeader";
 
 export function ItemFormPage() {
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formState, setFormState] = useState({
     type: "Goods",
-    name: "Northstar Mesh Chair",
-    sku: "NS-CHAIR-01",
+    name: "Mysuru Cane Accent Chair",
+    sku: "NST-OFC-106",
     unit: "pcs",
-    category: "Seating",
+    category: "Office Furniture",
     brand: "Northstar",
     returnable: true,
     sellingPrice: "199",
@@ -31,6 +35,49 @@ export function ItemFormPage() {
     height: "",
     weight: "",
   });
+
+  async function saveItem(shouldReset = false) {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await api.post("/app/items", {
+        name: formState.name,
+        sku: formState.sku,
+        category_name: formState.category,
+        brand_name: formState.brand,
+        unit: formState.unit,
+        barcode: formState.barcode || null,
+        selling_price: Number(formState.sellingPrice),
+        cost_price: Number(formState.costPrice),
+        stock_on_hand: Number(formState.openingStock),
+        reorder_level: Number(formState.reorderPoint),
+        sales_description: formState.salesDescription,
+        purchase_description: formState.purchaseDescription,
+      });
+
+      if (shouldReset) {
+        setFormState((state) => ({
+          ...state,
+          name: "",
+          sku: "",
+          barcode: "",
+          sellingPrice: "",
+          costPrice: "",
+          openingStock: "",
+          reorderPoint: "",
+          salesDescription: "",
+          purchaseDescription: "",
+        }));
+        return;
+      }
+
+      navigate("/items");
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail ?? "Unable to save the item right now.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="page-stack">
@@ -193,10 +240,11 @@ export function ItemFormPage() {
 
         <div className="sticky-form-bar">
           <div className="sticky-form-actions">
-            <button className="button button-primary" type="button">
+            {error ? <div className="form-error">{error}</div> : null}
+            <button className="button button-primary" type="button" disabled={isSubmitting} onClick={() => saveItem(false)}>
               Save
             </button>
-            <button className="button button-secondary" type="button">
+            <button className="button button-secondary" type="button" disabled={isSubmitting} onClick={() => saveItem(true)}>
               Save and New
             </button>
             <Link className="button button-ghost" to="/items">

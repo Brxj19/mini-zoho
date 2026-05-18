@@ -6,40 +6,49 @@ import { useAuthStore } from "../stores/authStore";
 export function RegisterPage() {
   const navigate = useNavigate();
   const register = useAuthStore((state) => state.register);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formState, setFormState] = useState({
-    companyName: "Northstar Retail",
-    email: "owner@northstar.io",
+    companyName: "Varsha Retail Studio",
+    email: "owner@varsharetail.in",
     password: "ChangeMe123!",
     country: "India",
     phone: "+91 98765 43210",
   });
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const payload = await register(formState);
+      navigate(payload.setup_required ? "/setup" : "/", { replace: true });
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail ?? "Unable to register right now.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="auth-screen">
       <section className="auth-layout auth-layout-register">
         <div className="auth-showcase">
           <p className="eyebrow">Business onboarding</p>
-          <h1>Set up a clean operations workspace for your inventory team.</h1>
+          <h1>Launch an inventory workspace for your team with a short setup flow.</h1>
           <p>
-            Start with your organization, then move into items, warehouses, purchasing, sales, and
-            reporting.
+            Registering a tenant admin now creates a real tenant and user in the backend database
+            before sending you into organization setup.
           </p>
         </div>
 
         <div className="auth-form-card">
           <div className="auth-form-header">
             <h2>Create your workspace</h2>
-            <p>We’ll take you to a short setup flow after registration.</p>
+            <p>Tenant admins complete setup once. Super admin skips it entirely.</p>
           </div>
 
-          <form
-            className="stack-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              register(formState);
-              navigate("/setup", { replace: true });
-            }}
-          >
+          <form className="stack-form" onSubmit={handleSubmit}>
             <label>
               Company name
               <input
@@ -89,8 +98,10 @@ export function RegisterPage() {
               </label>
             </div>
 
-            <button className="button button-primary button-block" type="submit">
-              Create organization
+            {error ? <div className="form-error">{error}</div> : null}
+
+            <button className="button button-primary button-block" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create organization"}
             </button>
           </form>
 

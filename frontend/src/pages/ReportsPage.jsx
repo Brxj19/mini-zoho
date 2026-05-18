@@ -1,19 +1,26 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import api from "../lib/api";
 import { PageHeader } from "../components/PageHeader";
-import { reportGroups } from "../lib/demoData";
 
 export function ReportsPage() {
+  const [groups, setGroups] = useState([]);
+
+  useEffect(() => {
+    api.get("/app/reports/catalog").then(({ data }) => setGroups(data.groups ?? []));
+  }, []);
+
   return (
     <div className="page-stack">
       <PageHeader
         eyebrow="Analytics"
         title="Reports"
-        description="Grouped report catalog for inventory, sales, purchases, and activity reporting workflows."
+        description="Grouped report catalog connected to backend report definitions."
       />
 
       <div className="report-groups">
-        {reportGroups.map((group) => (
+        {groups.map((group) => (
           <section className="report-group-card" key={group.title}>
             <h2>{group.title}</h2>
             <div className="report-card-grid">

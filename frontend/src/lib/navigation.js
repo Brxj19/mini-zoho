@@ -1,8 +1,6 @@
+export const homeNavigation = { label: "Home", path: "/", icon: "home" };
+
 export const navigationGroups = [
-  {
-    title: "Main",
-    items: [{ label: "Dashboard", path: "/", icon: "dashboard" }],
-  },
   {
     title: "Inventory",
     items: [

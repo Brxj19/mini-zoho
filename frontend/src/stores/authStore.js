@@ -1,79 +1,58 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-const DEFAULT_ORGANIZATIONS = [
-  { id: "org-northstar", name: "Northstar Retail", plan: "Growth" },
-  { id: "org-riverline", name: "Riverline Home", plan: "Starter" },
-];
+import api from "../lib/api";
 
-const DEFAULT_USER = {
-  id: "user-super-admin",
-  name: "Brajesh Kumar",
-  email: "superadmin@example.com",
-  role: "SUPER_ADMIN",
-};
+function applyAuthPayload(set, payload) {
+  const organization = payload.organization;
+  set({
+    token: payload.access_token,
+    user: payload.user,
+    organizations: organization ? [organization] : [],
+    activeOrganizationId: organization?.id ?? null,
+    isSetupComplete: !payload.setup_required,
+  });
+}
 
 export const useAuthStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       token: null,
       user: null,
-      organizations: DEFAULT_ORGANIZATIONS,
-      activeOrganizationId: DEFAULT_ORGANIZATIONS[0].id,
+      organizations: [],
+      activeOrganizationId: null,
       isSetupComplete: false,
-      login(email) {
-        const user =
-          email === "superadmin@example.com"
-            ? DEFAULT_USER
-            : {
-                id: "user-tenant-admin",
-                name: email.split("@")[0].replace(/[._-]/g, " "),
-                email,
-                role: "TENANT_ADMIN",
-              };
-
-        set({
-          token: `northstar-token:${email}`,
-          user,
-          activeOrganizationId: DEFAULT_ORGANIZATIONS[0].id,
-        });
+      async login(credentials) {
+        const { data } = await api.post("/auth/login", credentials);
+        applyAuthPayload(set, data);
+        return data;
       },
-      register(payload) {
-        const organization = {
-          id: `org-${payload.companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-          name: payload.companyName,
-          plan: "Starter",
-        };
-
-        set({
-          token: `northstar-token:${payload.email}`,
-          user: {
-            id: "user-tenant-admin",
-            name: payload.companyName,
-            email: payload.email,
-            role: "TENANT_ADMIN",
-          },
-          organizations: [organization, ...DEFAULT_ORGANIZATIONS],
-          activeOrganizationId: organization.id,
-          isSetupComplete: false,
+      async register(payload) {
+        const { data } = await api.post("/auth/register", {
+          company_name: payload.companyName,
+          email: payload.email,
+          password: payload.password,
+          country: payload.country,
+          phone: payload.phone,
         });
+        applyAuthPayload(set, data);
+        return data;
       },
-      completeSetup(payload) {
-        const { organizations, activeOrganizationId } = get();
-        set({
-          organizations: organizations.map((organization) =>
-            organization.id === activeOrganizationId
-              ? {
-                  ...organization,
-                  name: payload.organizationName,
-                  industry: payload.industry,
-                  currency: payload.currency,
-                  timezone: payload.timezone,
-                }
-              : organization,
-          ),
-          isSetupComplete: true,
+      async completeSetup(payload) {
+        const { data } = await api.post("/auth/setup", {
+          organization_name: payload.organizationName,
+          industry: payload.industry,
+          address: payload.address,
+          currency: payload.currency,
+          timezone: payload.timezone,
         });
+        applyAuthPayload(set, data);
+        return data;
+      },
+      async loadProfile() {
+        const { data } = await api.get("/auth/me");
+        applyAuthPayload(set, data);
+        return data;
       },
       switchOrganization(organizationId) {
         set({ activeOrganizationId: organizationId });
@@ -82,7 +61,8 @@ export const useAuthStore = create(
         set({
           token: null,
           user: null,
-          activeOrganizationId: DEFAULT_ORGANIZATIONS[0].id,
+          organizations: [],
+          activeOrganizationId: null,
           isSetupComplete: false,
         });
       },
@@ -102,6 +82,6 @@ export const useAuthStore = create(
 
 export function useActiveOrganization() {
   return useAuthStore((state) =>
-    state.organizations.find((organization) => organization.id === state.activeOrganizationId),
+    state.organizations.find((organization) => organization.id === state.activeOrganizationId) ?? null,
   );
 }

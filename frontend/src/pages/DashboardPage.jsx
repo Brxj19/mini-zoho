@@ -1,32 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import api from "../lib/api";
-import { dashboardData } from "../lib/demoData";
 import { DashboardWidget } from "../components/DashboardWidget";
+import { EmptyState } from "../components/EmptyState";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { Tabs } from "../components/Tabs";
-import { useAuthStore } from "../stores/authStore";
+
+const periodOptions = ["This Month", "This Quarter", "This Year", "Previous Month"];
 
 export function DashboardPage() {
-  const role = useAuthStore((state) => state.user?.role);
-  const [health, setHealth] = useState({ status: "checking" });
+  const [dashboard, setDashboard] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [homeTab, setHomeTab] = useState("dashboard");
   const [activityTab, setActivityTab] = useState("pending");
-  const metrics = role === "SUPER_ADMIN" ? dashboardData.superAdminMetrics : dashboardData.tenantMetrics;
+  const [period, setPeriod] = useState("This Month");
 
   useEffect(() => {
     let active = true;
-
+    setIsLoading(true);
     api
-      .get("/health/")
+      .get("/app/dashboard")
       .then(({ data }) => {
         if (active) {
-          setHealth({ status: data.status });
+          setDashboard(data);
         }
       })
-      .catch(() => {
+      .finally(() => {
         if (active) {
-          setHealth({ status: "offline" });
+          setIsLoading(false);
         }
       });
 
@@ -35,152 +37,237 @@ export function DashboardPage() {
     };
   }, []);
 
+  const homeTabs = useMemo(
+    () => [
+      { key: "dashboard", label: "Dashboard" },
+      { key: "getting-started", label: "Getting Started" },
+      { key: "recent-activities", label: "Recent Activities" },
+    ],
+    [],
+  );
+
+  if (isLoading) {
+    return <div className="panel-card">Loading dashboard...</div>;
+  }
+
+  if (!dashboard) {
+    return <EmptyState icon="dashboard" title="Dashboard unavailable" description="The dashboard data could not be loaded." />;
+  }
+
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="Operations Dashboard"
-        title={role === "SUPER_ADMIN" ? "Platform Overview" : "Inventory Dashboard"}
-        description="A compact, card-based control room for the most important inventory, sales, purchasing, and platform signals."
+        eyebrow="Home"
+        title={dashboard.role === "SUPER_ADMIN" ? "Platform Overview" : "Inventory Dashboard"}
+        description="Live overview from the backend data set with seeded Indian tenants, operators, products, and orders."
         actions={
-          <div className="header-inline-chips">
-            <span className={`status-pill ${health.status === "ok" ? "is-success" : "is-warning"}`}>
-              API health: {health.status}
-            </span>
-            <select defaultValue="this-month">
-              <option value="this-month">This Month</option>
-              <option value="this-year">This Year</option>
-              <option value="previous-month">Previous Month</option>
-            </select>
-          </div>
+          <select value={period} onChange={(event) => setPeriod(event.target.value)}>
+            {periodOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         }
       />
 
-      <section className="metrics-grid">
-        {metrics.map((metric) => (
-          <MetricCard key={metric.label} {...metric} />
+      <div className="home-tabs">
+        {homeTabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={`home-tab ${homeTab === tab.key ? "is-active" : ""}`}
+            type="button"
+            onClick={() => setHomeTab(tab.key)}
+          >
+            {tab.label}
+          </button>
         ))}
-      </section>
+      </div>
 
-      <section className="dashboard-main-grid">
-        <DashboardWidget
-          title="Top Selling Items"
-          actions={<span className="widget-helper">This Month</span>}
-          className="widget-span-2"
-        >
-          <ul className="ranked-list">
-            {dashboardData.topSellingItems.map((item) => (
-              <li key={item.sku}>
-                <div>
-                  <strong>{item.name}</strong>
-                  <span>{item.sku}</span>
-                </div>
-                <div className="ranked-list-meta">
-                  <span>{item.units} units</span>
-                  <strong>{item.revenue}</strong>
-                </div>
+      {homeTab === "getting-started" ? (
+        <section className="panel-card">
+          <h2>Getting Started</h2>
+          <ul className="checklist">
+            <li>Review organization settings and preferences</li>
+            <li>Import additional items or create new products</li>
+            <li>Create purchase orders for low-stock items</li>
+            <li>Track sales order fulfillment from the Home dashboard</li>
+          </ul>
+        </section>
+      ) : null}
+
+      {homeTab === "recent-activities" ? (
+        <DashboardWidget title="Recent Activities">
+          <ul className="activity-list">
+            {dashboard.recent_activities.map((activity) => (
+              <li key={activity.id}>
+                <strong>{activity.action}</strong>
+                <p>{activity.module}</p>
+                <span>{activity.createdAt}</span>
               </li>
             ))}
           </ul>
         </DashboardWidget>
+      ) : null}
 
-        <DashboardWidget title="Pending Actions">
-          <Tabs
-            items={[
-              { key: "pending", label: "Pending Actions" },
-              { key: "recent", label: "Recent Activities" },
-            ]}
-            activeKey={activityTab}
-            onChange={setActivityTab}
-          />
+      {homeTab === "dashboard" ? (
+        <>
+          <section className="metrics-grid">
+            {dashboard.metrics.map((metric) => (
+              <MetricCard key={metric.label} {...metric} />
+            ))}
+          </section>
 
-          {activityTab === "pending" ? (
-            <div className="queue-sections">
-              {Object.entries(dashboardData.pendingActions).map(([section, items]) => (
-                <div className="queue-group" key={section}>
-                  <h3>{section}</h3>
-                  {items.map((item) => (
-                    <div className="queue-row" key={item.label}>
-                      <span>{item.label}</span>
-                      <strong>{item.value}</strong>
+          <section className="dashboard-main-grid">
+            <DashboardWidget
+              title="Top Selling Items"
+              actions={
+                <select value={period} onChange={(event) => setPeriod(event.target.value)}>
+                  {periodOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              }
+              className="widget-span-2"
+            >
+              <ul className="ranked-list">
+                {dashboard.top_selling_items?.map((item) => (
+                  <li key={item.sku}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>{item.sku}</span>
+                    </div>
+                    <div className="ranked-list-meta">
+                      <span>{item.units} units</span>
+                      <strong>{item.revenue}</strong>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </DashboardWidget>
+
+            <DashboardWidget title="Pending Actions">
+              <Tabs
+                items={[
+                  { key: "pending", label: "Pending Actions" },
+                  { key: "recent", label: "Recent Activities" },
+                ]}
+                activeKey={activityTab}
+                onChange={setActivityTab}
+              />
+
+              {activityTab === "pending" ? (
+                <div className="queue-sections">
+                  {Object.entries(dashboard.pending_actions ?? {}).map(([section, items]) => (
+                    <div className="queue-group" key={section}>
+                      <h3>{section}</h3>
+                      {items.map((item) => (
+                        <div className="queue-row" key={item.label}>
+                          <span>{item.label}</span>
+                          <strong>{item.value}</strong>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <ul className="activity-list">
-              {dashboardData.recentActivities.map((activity) => (
-                <li key={activity.title}>
-                  <strong>{activity.title}</strong>
-                  <p>{activity.detail}</p>
-                  <span>{activity.time}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </DashboardWidget>
+              ) : (
+                <ul className="activity-list">
+                  {dashboard.recent_activities.map((activity) => (
+                    <li key={activity.id}>
+                      <strong>{activity.action}</strong>
+                      <p>{activity.module}</p>
+                      <span>{activity.createdAt}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </DashboardWidget>
 
-        <DashboardWidget title="Top Stocked Items">
-          <ul className="compact-stat-list">
-            {dashboardData.topStockedItems.map((item) => (
-              <li key={item.name}>
-                <div>
-                  <strong>{item.name}</strong>
-                  <span>{item.quantity} units</span>
-                </div>
-                <strong>{item.value}</strong>
-              </li>
-            ))}
-          </ul>
-        </DashboardWidget>
+            <DashboardWidget
+              title="Top Stocked Items"
+              actions={
+                <select value={period} onChange={(event) => setPeriod(event.target.value)}>
+                  {periodOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              }
+            >
+              <ul className="compact-stat-list">
+                {dashboard.top_stocked_items?.map((item) => (
+                  <li key={item.name}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>{item.quantity} units</span>
+                    </div>
+                    <strong>{item.value}</strong>
+                  </li>
+                ))}
+              </ul>
+            </DashboardWidget>
 
-        <DashboardWidget title="Sales by Channel">
-          <div className="empty-chart">
-            <div className="mini-bar-chart">
-              {dashboardData.salesSummary.map((item) => (
-                <div key={item.label} className="mini-bar-column">
-                  <span style={{ height: `${Math.max(item.value * 8, 16)}px` }} />
-                  <small>{item.label}</small>
-                </div>
-              ))}
-            </div>
-          </div>
-        </DashboardWidget>
-      </section>
+            <DashboardWidget
+              title="Sales Activity"
+              actions={
+                <select value={period} onChange={(event) => setPeriod(event.target.value)}>
+                  {periodOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              }
+            >
+              <div className="mini-bar-chart">
+                {(dashboard.sales_activity ?? []).map((item) => (
+                  <div key={item.label} className="mini-bar-column">
+                    <span style={{ height: `${Math.max(item.value * 10, 14)}px` }} />
+                    <small>{item.label}</small>
+                  </div>
+                ))}
+              </div>
+            </DashboardWidget>
+          </section>
 
-      <section className="dashboard-secondary-grid">
-        <DashboardWidget title="Sales Activity">
-          <div className="mini-metrics-grid">
-            {dashboardData.salesActivity.map((item) => (
-              <article key={item.label} className="mini-metric-card">
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-              </article>
-            ))}
-          </div>
-        </DashboardWidget>
+          <section className="dashboard-secondary-grid">
+            <DashboardWidget title="Sales Activity">
+              <div className="mini-metrics-grid">
+                {(dashboard.sales_activity ?? []).map((item) => (
+                  <article key={item.label} className="mini-metric-card">
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </article>
+                ))}
+              </div>
+            </DashboardWidget>
 
-        <DashboardWidget title="Product Details">
-          <div className="mini-metrics-grid">
-            {dashboardData.productDetails.map((item) => (
-              <article key={item.label} className="mini-metric-card">
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-              </article>
-            ))}
-          </div>
-        </DashboardWidget>
+            <DashboardWidget title="Product Details">
+              <div className="mini-metrics-grid">
+                {(dashboard.product_details ?? []).map((item) => (
+                  <article key={item.label} className="mini-metric-card">
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </article>
+                ))}
+              </div>
+            </DashboardWidget>
 
-        <DashboardWidget title="Notifications">
-          <ul className="notification-list">
-            {dashboardData.notifications.map((item) => (
-              <li key={item.title} className={`notification-row tone-${item.kind}`}>
-                <strong>{item.title}</strong>
-              </li>
-            ))}
-          </ul>
-        </DashboardWidget>
-      </section>
+            <DashboardWidget title="Notifications">
+              <ul className="notification-list">
+                {(dashboard.notifications ?? []).map((item) => (
+                  <li key={item.id ?? item.title} className="notification-row">
+                    <strong>{item.title}</strong>
+                  </li>
+                ))}
+              </ul>
+            </DashboardWidget>
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }

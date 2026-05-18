@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { useDropdown } from "../hooks/useDropdown";
 import { useActiveOrganization, useAuthStore } from "../stores/authStore";
 import { useUiStore } from "../stores/uiStore";
 import { Icon } from "./Icon";
@@ -11,9 +12,12 @@ import { SearchInput } from "./SearchInput";
 
 export function Topbar() {
   const [query, setQuery] = useState("");
-  const [helpOpen, setHelpOpen] = useState(false);
+  const helpDropdown = useDropdown();
+  const notificationDropdown = useDropdown();
+  const userDropdown = useDropdown();
   const activeOrganization = useActiveOrganization();
   const notifications = useUiStore((state) => state.notifications);
+  const fetchNotifications = useUiStore((state) => state.fetchNotifications);
   const markNotificationRead = useUiStore((state) => state.markNotificationRead);
   const markAllNotificationsRead = useUiStore((state) => state.markAllNotificationsRead);
   const openMobileSidebar = useUiStore((state) => state.openMobileSidebar);
@@ -21,6 +25,10 @@ export function Topbar() {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const unreadCount = notifications.filter((notification) => notification.unread).length;
+
+  useEffect(() => {
+    fetchNotifications().catch(() => undefined);
+  }, [fetchNotifications]);
 
   return (
     <header className="topbar">
@@ -46,70 +54,74 @@ export function Topbar() {
         <QuickCreateMenu />
         <RecentHistoryMenu />
 
-        <div className="menu-shell">
-          <button className="icon-button" type="button">
+        <div className="menu-shell" ref={notificationDropdown.ref}>
+          <button className="icon-button" type="button" onClick={notificationDropdown.toggle}>
             <Icon name="bell" size={16} />
             {unreadCount ? <span className="notification-count">{unreadCount}</span> : null}
           </button>
-          <div className="menu-popover notifications-menu">
-            <div className="menu-row">
-              <div className="menu-title">Notifications</div>
-              <button className="text-button" type="button" onClick={markAllNotificationsRead}>
-                Mark all read
-              </button>
+          {notificationDropdown.open ? (
+            <div className="menu-popover notifications-menu is-open">
+              <div className="menu-row">
+                <div className="menu-title">Notifications</div>
+                <button className="text-button" type="button" onClick={() => markAllNotificationsRead()}>
+                  Mark all read
+                </button>
+              </div>
+              {notifications.map((notification) => (
+                <button
+                  key={notification.id}
+                  className={`menu-item notification-item ${notification.unread ? "is-unread" : ""}`}
+                  type="button"
+                  onClick={() => markNotificationRead(notification.id)}
+                >
+                  <span>{notification.title}</span>
+                  <small>{notification.detail}</small>
+                </button>
+              ))}
             </div>
-            {notifications.map((notification) => (
-              <button
-                key={notification.id}
-                className={`menu-item notification-item ${notification.unread ? "is-unread" : ""}`}
-                type="button"
-                onClick={() => markNotificationRead(notification.id)}
-              >
-                <span>{notification.title}</span>
-                <small>{notification.detail}</small>
-              </button>
-            ))}
-          </div>
+          ) : null}
         </div>
 
         <Link className="icon-button" to="/settings">
           <Icon name="settings" size={16} />
         </Link>
 
-        <div className="menu-shell">
-          <button className="icon-button" type="button" onClick={() => setHelpOpen((value) => !value)}>
+        <div className="menu-shell" ref={helpDropdown.ref}>
+          <button className="icon-button" type="button" onClick={helpDropdown.toggle}>
             <Icon name="help" size={16} />
           </button>
-          {helpOpen ? (
-            <div className="menu-popover">
+          {helpDropdown.open ? (
+            <div className="menu-popover is-open">
               <div className="menu-title">Need help?</div>
-              <div className="menu-empty">
-                UI support placeholders live here until the help center module is connected.
-              </div>
+              <div className="menu-empty">Support center wiring can plug in here without another layout change.</div>
             </div>
           ) : null}
         </div>
 
         <OrganizationSwitcher />
 
-        <div className="menu-shell">
-          <button className="user-chip" type="button">
+        <div className="menu-shell" ref={userDropdown.ref}>
+          <button className="user-chip" type="button" onClick={userDropdown.toggle}>
             <span className="avatar-circle">
               <Icon name="avatar" size={16} />
             </span>
             <span>{user?.name ?? "User"}</span>
           </button>
-          <div className="menu-popover">
-            <button className="menu-item" type="button" onClick={() => navigate("/settings")}>
-              Settings
-            </button>
-            <button className="menu-item" type="button" onClick={() => navigate("/setup")}>
-              Organization setup
-            </button>
-            <button className="menu-item is-danger" type="button" onClick={logout}>
-              Sign out
-            </button>
-          </div>
+          {userDropdown.open ? (
+            <div className="menu-popover is-open">
+              <button className="menu-item" type="button" onClick={() => navigate("/settings")}>
+                Settings
+              </button>
+              {user?.role !== "SUPER_ADMIN" ? (
+                <button className="menu-item" type="button" onClick={() => navigate("/setup")}>
+                  Organization setup
+                </button>
+              ) : null}
+              <button className="menu-item is-danger" type="button" onClick={logout}>
+                Sign out
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </header>

@@ -5,6 +5,7 @@ import { Breadcrumbs } from "../components/Breadcrumbs";
 import { Drawer } from "../components/Drawer";
 import { Sidebar } from "../components/Sidebar";
 import { Topbar } from "../components/Topbar";
+import { useAuthStore } from "../stores/authStore";
 import { useUiStore } from "../stores/uiStore";
 
 export function AppShell() {
@@ -13,6 +14,7 @@ export function AppShell() {
   const addRecentHistory = useUiStore((state) => state.addRecentHistory);
   const isMobileSidebarOpen = useUiStore((state) => state.isMobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
+  const loadProfile = useAuthStore((state) => state.loadProfile);
 
   useEffect(() => {
     const currentMatch = [...matches].reverse().find((match) => match.handle?.title);
@@ -30,6 +32,10 @@ export function AppShell() {
       meta: typeof currentMatch.handle.section === "string" ? currentMatch.handle.section : "Page",
     });
   }, [addRecentHistory, location.pathname, matches]);
+
+  useEffect(() => {
+    loadProfile().catch(() => undefined);
+  }, [loadProfile]);
 
   return (
     <div className="app-shell">

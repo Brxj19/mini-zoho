@@ -1,27 +1,44 @@
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
+import api from "../lib/api";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { Timeline } from "../components/Timeline";
-import { getRecordById } from "../lib/demoData";
 
 export function OrderDetailPage({ type }) {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const moduleKey = type === "sales" ? "sales-orders" : "purchase-orders";
-  const order = getRecordById(moduleKey, orderId);
+  const [order, setOrder] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const steps =
     type === "sales"
       ? ["DRAFT", "CONFIRMED", "PACKED", "SHIPPED", "DELIVERED"]
       : ["DRAFT", "ISSUED", "PARTIALLY_RECEIVED", "RECEIVED"];
+
+  useEffect(() => {
+    api.get(`/app/${moduleKey}/${orderId}`).then(({ data }) => setOrder(data)).catch(() => setOrder(null));
+  }, [moduleKey, orderId]);
+
+  async function updateStatus(nextStatus) {
+    setIsUpdating(true);
+    try {
+      const { data } = await api.patch(`/app/${moduleKey}/${orderId}/status`, { status: nextStatus });
+      setOrder((current) => ({ ...current, ...data }));
+    } finally {
+      setIsUpdating(false);
+    }
+  }
 
   if (!order) {
     return (
       <EmptyState
         icon="clipboard"
         title="Order not found"
-        description="This order record is not present in the current UI demo data."
+        description="This order record is not available."
         actionLabel={`Back to ${type === "sales" ? "sales" : "purchase"} orders`}
         actionTo={type === "sales" ? "/sales-orders" : "/purchase-orders"}
       />
@@ -35,13 +52,17 @@ export function OrderDetailPage({ type }) {
     <div className="page-stack">
       <PageHeader
         eyebrow={type === "sales" ? "Sales Order Detail" : "Purchase Order Detail"}
-        title={order.id}
+        title={order.orderNumber}
         description={`${counterpartLabel}: ${counterpartValue} • Reference: ${order.reference}`}
         actions={
           <div className="header-inline-chips">
             <StatusBadge status={order.status} />
-            <button className="button button-secondary" type="button">Print</button>
-            <button className="button button-ghost" type="button">PDF</button>
+            <button className="button button-secondary" type="button" onClick={() => window.print()}>
+              Print
+            </button>
+            <button className="button button-ghost" type="button" onClick={() => window.print()}>
+              PDF
+            </button>
           </div>
         }
       />
@@ -55,20 +76,19 @@ export function OrderDetailPage({ type }) {
           <div className="stack-actions horizontal">
             {type === "sales" ? (
               <>
-                <button className="button button-primary" type="button">Confirm</button>
-                <button className="button button-secondary" type="button">Pack</button>
-                <button className="button button-secondary" type="button">Ship</button>
-                <button className="button button-secondary" type="button">Deliver</button>
+                <button className="button button-primary" type="button" disabled={isUpdating} onClick={() => updateStatus("CONFIRMED")}>Confirm</button>
+                <button className="button button-secondary" type="button" disabled={isUpdating} onClick={() => updateStatus("PACKED")}>Pack</button>
+                <button className="button button-secondary" type="button" disabled={isUpdating} onClick={() => updateStatus("SHIPPED")}>Ship</button>
+                <button className="button button-secondary" type="button" disabled={isUpdating} onClick={() => updateStatus("DELIVERED")}>Deliver</button>
               </>
             ) : (
               <>
-                <button className="button button-primary" type="button">Issue</button>
-                <button className="button button-secondary" type="button">Receive</button>
+                <button className="button button-primary" type="button" disabled={isUpdating} onClick={() => updateStatus("ISSUED")}>Issue</button>
+                <button className="button button-secondary" type="button" disabled={isUpdating} onClick={() => updateStatus("RECEIVED")}>Receive</button>
               </>
             )}
-            <button className="button button-ghost" type="button">Email</button>
-            <button className="button button-ghost" type="button">Clone</button>
-            <button className="button button-ghost" type="button">Cancel</button>
+            <button className="button button-ghost" type="button" onClick={() => navigate(type === "sales" ? "/sales-orders/new" : "/purchase-orders/new")}>Clone</button>
+            <button className="button button-ghost" type="button" disabled={isUpdating} onClick={() => updateStatus("CANCELLED")}>Cancel</button>
           </div>
         </DashboardWidget>
 
@@ -91,24 +111,17 @@ export function OrderDetailPage({ type }) {
                 <th>Warehouse</th>
                 <th>Qty</th>
                 <th>Rate</th>
-                <th>Amount</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Northstar Mesh Chair</td>
-                <td>Central Warehouse</td>
-                <td>12</td>
-                <td>$199</td>
-                <td>$2,388</td>
-              </tr>
-              <tr>
-                <td>Orbit Monitor Arm</td>
-                <td>Central Warehouse</td>
-                <td>8</td>
-                <td>$140</td>
-                <td>$1,120</td>
-              </tr>
+              {(order.items ?? []).map((item, index) => (
+                <tr key={`${item.name}-${index}`}>
+                  <td>{item.name}</td>
+                  <td>{item.warehouse ?? "Central Warehouse"}</td>
+                  <td>{item.quantity}</td>
+                  <td>{item.rate}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

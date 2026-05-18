@@ -1,23 +1,22 @@
-import { useState } from "react";
-
+import { useDropdown } from "../hooks/useDropdown";
 import { useActiveOrganization, useAuthStore } from "../stores/authStore";
 import { Icon } from "./Icon";
 
 export function OrganizationSwitcher() {
-  const [open, setOpen] = useState(false);
+  const { open, ref, toggle, close } = useDropdown();
   const organizations = useAuthStore((state) => state.organizations);
   const switchOrganization = useAuthStore((state) => state.switchOrganization);
   const activeOrganization = useActiveOrganization();
 
   return (
-    <div className="menu-shell">
-      <button className="utility-button with-text" type="button" onClick={() => setOpen((value) => !value)}>
+    <div className="menu-shell" ref={ref}>
+      <button className="utility-button with-text" type="button" onClick={toggle}>
         <span>{activeOrganization?.name ?? "Organization"}</span>
         <Icon name="chevronDown" size={14} />
       </button>
 
       {open ? (
-        <div className="menu-popover">
+        <div className="menu-popover is-open">
           {organizations.map((organization) => (
             <button
               key={organization.id}
@@ -25,7 +24,7 @@ export function OrganizationSwitcher() {
               type="button"
               onClick={() => {
                 switchOrganization(organization.id);
-                setOpen(false);
+                close();
               }}
             >
               <span>{organization.name}</span>

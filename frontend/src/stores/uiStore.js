@@ -1,35 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import api from "../lib/api";
+
 export const useUiStore = create(
   persist(
     (set, get) => ({
       isSidebarCollapsed: false,
       isMobileSidebarOpen: false,
       recentHistory: [],
-      notifications: [
-        {
-          id: "notif-1",
-          title: "Low-stock review pending",
-          detail: "Three items are below reorder level in Central Warehouse.",
-          time: "10m ago",
-          unread: true,
-        },
-        {
-          id: "notif-2",
-          title: "Purchase order requires receiving",
-          detail: "PO-204 has arrived and is ready for receive workflow.",
-          time: "1h ago",
-          unread: true,
-        },
-        {
-          id: "notif-3",
-          title: "Weekly report export is ready",
-          detail: "Inventory movement export completed successfully.",
-          time: "Today",
-          unread: false,
-        },
-      ],
+      notifications: [],
+      async fetchNotifications() {
+        const { data } = await api.get("/app/notifications/list");
+        set({ notifications: data.rows ?? [] });
+      },
       toggleSidebar() {
         set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed }));
       },
@@ -51,14 +35,16 @@ export const useUiStore = create(
 
         set({ recentHistory: nextHistory });
       },
-      markNotificationRead(notificationId) {
+      async markNotificationRead(notificationId) {
+        await api.post(`/app/notifications/${notificationId}/read`);
         set((state) => ({
           notifications: state.notifications.map((notification) =>
             notification.id === notificationId ? { ...notification, unread: false } : notification,
           ),
         }));
       },
-      markAllNotificationsRead() {
+      async markAllNotificationsRead() {
+        await api.post("/app/notifications/read-all");
         set((state) => ({
           notifications: state.notifications.map((notification) => ({ ...notification, unread: false })),
         }));
@@ -69,7 +55,6 @@ export const useUiStore = create(
       partialize: (state) => ({
         isSidebarCollapsed: state.isSidebarCollapsed,
         recentHistory: state.recentHistory,
-        notifications: state.notifications,
       }),
     },
   ),

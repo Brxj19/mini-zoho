@@ -1,23 +1,27 @@
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
+import api from "../lib/api";
 import { DashboardWidget } from "../components/DashboardWidget";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { getCollection, getRecordById } from "../lib/demoData";
 
 export function WarehouseDetailPage() {
   const { warehouseId } = useParams();
-  const warehouse = getRecordById("warehouses", warehouseId);
-  const itemRows = getCollection("items").slice(0, 4);
-  const transactions = getCollection("transactions").slice(0, 4);
+  const navigate = useNavigate();
+  const [warehouse, setWarehouse] = useState(null);
+
+  useEffect(() => {
+    api.get(`/app/warehouses/${warehouseId}`).then(({ data }) => setWarehouse(data)).catch(() => setWarehouse(null));
+  }, [warehouseId]);
 
   if (!warehouse) {
     return (
       <EmptyState
         icon="warehouse"
         title="Warehouse not found"
-        description="This warehouse record is not present in the current UI data set."
+        description="This warehouse record is not available."
         actionLabel="Back to warehouses"
         actionTo="/warehouses"
       />
@@ -41,9 +45,9 @@ export function WarehouseDetailPage() {
       <section className="detail-grid">
         <DashboardWidget title="Warehouse Actions">
           <div className="stack-actions">
-            <button className="button button-primary" type="button">Transfer Stock</button>
-            <button className="button button-secondary" type="button">Mark as Primary</button>
-            <button className="button button-ghost" type="button">Activate / Deactivate</button>
+            <button className="button button-primary" type="button" onClick={() => navigate("/stock-transfers")}>Transfer Stock</button>
+            <button className="button button-secondary" type="button" onClick={() => navigate("/settings?section=warehouses")}>Mark as Primary</button>
+            <button className="button button-ghost" type="button" onClick={() => navigate("/inventory-adjustments")}>Activate / Deactivate</button>
           </div>
         </DashboardWidget>
 
@@ -70,7 +74,7 @@ export function WarehouseDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {itemRows.map((item) => (
+              {(warehouse.items ?? []).map((item) => (
                 <tr key={item.id}>
                   <td>{item.name}</td>
                   <td>{item.sku}</td>
@@ -97,7 +101,7 @@ export function WarehouseDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((transaction) => (
+              {(warehouse.transactions ?? []).map((transaction) => (
                 <tr key={transaction.id}>
                   <td>{transaction.date}</td>
                   <td>{transaction.type}</td>

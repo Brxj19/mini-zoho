@@ -1,4 +1,40 @@
 from app.models.base import Base, TimestampMixin
+from app.models.domain import (
+    ActivityLog,
+    AuditLog,
+    Brand,
+    Category,
+    Customer,
+    InventoryAdjustment,
+    InventoryTransaction,
+    Notification,
+    Product,
+    PurchaseOrder,
+    SalesOrder,
+    StockTransfer,
+    Tenant,
+    User,
+    Vendor,
+    Warehouse,
+)
 
-__all__ = ["Base", "TimestampMixin"]
-
+__all__ = [
+    "ActivityLog",
+    "AuditLog",
+    "Base",
+    "Brand",
+    "Category",
+    "Customer",
+    "InventoryAdjustment",
+    "InventoryTransaction",
+    "Notification",
+    "Product",
+    "PurchaseOrder",
+    "SalesOrder",
+    "StockTransfer",
+    "Tenant",
+    "TimestampMixin",
+    "User",
+    "Vendor",
+    "Warehouse",
+]

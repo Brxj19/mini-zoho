@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
+
+import api from "../lib/api";
 import { DataTable } from "../components/DataTable";
 import { PageHeader } from "../components/PageHeader";
-import { getCollection } from "../lib/demoData";
 
 const listConfigs = {
   items: {
@@ -98,7 +100,7 @@ const listConfigs = {
     ],
     columns: [
       { key: "date", label: "Date" },
-      { key: "id", label: "Sales Order#" },
+      { key: "orderNumber", label: "Sales Order#" },
       { key: "reference", label: "Reference#" },
       { key: "customerName", label: "Customer" },
       { key: "status", label: "Status" },
@@ -121,7 +123,7 @@ const listConfigs = {
     ],
     columns: [
       { key: "date", label: "Date" },
-      { key: "id", label: "PO#" },
+      { key: "orderNumber", label: "PO#" },
       { key: "reference", label: "Reference#" },
       { key: "vendorName", label: "Vendor" },
       { key: "status", label: "Status" },
@@ -142,7 +144,7 @@ const listConfigs = {
       { label: "Completed", value: "completed" },
     ],
     columns: [
-      { key: "id", label: "Transfer#" },
+      { key: "transferNumber", label: "Transfer#" },
       { key: "source", label: "Source" },
       { key: "destination", label: "Destination" },
       { key: "items", label: "Items" },
@@ -162,7 +164,7 @@ const listConfigs = {
       { label: "Completed", value: "completed" },
     ],
     columns: [
-      { key: "id", label: "Adjustment#" },
+      { key: "adjustmentNumber", label: "Adjustment#" },
       { key: "date", label: "Date" },
       { key: "warehouse", label: "Warehouse" },
       { key: "reason", label: "Reason" },
@@ -261,7 +263,29 @@ const listConfigs = {
 
 export function ListPage({ moduleKey }) {
   const config = listConfigs[moduleKey];
-  const rows = getCollection(moduleKey);
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    api
+      .get(`/app/${moduleKey}`)
+      .then(({ data }) => {
+        if (active) {
+          setRows(data.rows ?? []);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [moduleKey]);
 
   return (
     <div className="page-stack">
@@ -269,7 +293,8 @@ export function ListPage({ moduleKey }) {
       <DataTable
         {...config}
         rows={rows}
-        sourceNote="Placeholder data is used here until this module is connected to backend APIs."
+        isLoading={isLoading}
+        sourceNote="Rows are loaded from the backend seed data and filtered client-side in the table."
         emptyState={{
           icon: "box",
           title: `No ${config.title.toLowerCase()} yet`,

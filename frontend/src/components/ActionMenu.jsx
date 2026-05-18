@@ -1,27 +1,22 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useDropdown } from "../hooks/useDropdown";
 import { Icon } from "./Icon";
 
 export function ActionMenu({ items = [] }) {
-  const [open, setOpen] = useState(false);
+  const { open, ref, toggle, close } = useDropdown();
 
   return (
-    <div className="menu-shell">
-      <button
-        className="icon-button"
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-      >
+    <div className="menu-shell" ref={ref}>
+      <button className="icon-button" type="button" onClick={toggle} aria-expanded={open}>
         <Icon name="more" size={16} />
       </button>
 
       {open ? (
-        <div className="menu-popover">
+        <div className="menu-popover is-open">
           {items.map((item) =>
             item.to ? (
-              <Link key={item.label} className="menu-item" to={item.to} onClick={() => setOpen(false)}>
+              <Link key={item.label} className="menu-item" to={item.to} onClick={close}>
                 {item.label}
               </Link>
             ) : (
@@ -31,7 +26,7 @@ export function ActionMenu({ items = [] }) {
                 type="button"
                 onClick={() => {
                   item.onClick?.();
-                  setOpen(false);
+                  close();
                 }}
               >
                 {item.label}

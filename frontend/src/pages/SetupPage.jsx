@@ -17,13 +17,29 @@ export function SetupPage() {
   const activeOrganization = useActiveOrganization();
   const completeSetup = useAuthStore((state) => state.completeSetup);
   const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formState, setFormState] = useState({
-    organizationName: activeOrganization?.name ?? "Northstar Retail",
+    organizationName: activeOrganization?.name ?? "Varsha Retail Studio",
     industry: "Retail",
-    address: "Bengaluru, Karnataka",
+    address: "Koramangala, Bengaluru",
     currency: "INR",
     timezone: "Asia/Kolkata",
   });
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await completeSetup(formState);
+      navigate("/", { replace: true });
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail ?? "Unable to complete setup right now.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="standalone-page">
@@ -31,19 +47,12 @@ export function SetupPage() {
         <PageHeader
           eyebrow="Organization Setup"
           title="Finish your workspace setup"
-          description="This onboarding step stays frontend-led until the backend organization setup workflow is connected."
+          description="Tenant admins complete this once so the organization profile is saved in the backend."
         />
 
         <div className="setup-grid">
           <section className="form-shell">
-            <form
-              className="stack-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                completeSetup(formState);
-                navigate("/", { replace: true });
-              }}
-            >
+            <form className="stack-form" onSubmit={handleSubmit}>
               <label>
                 Organization name
                 <input
@@ -88,8 +97,10 @@ export function SetupPage() {
                 </label>
               </div>
 
-              <button className="button button-primary" type="submit">
-                Finish setup
+              {error ? <div className="form-error">{error}</div> : null}
+
+              <button className="button button-primary" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Finish setup"}
               </button>
             </form>
           </section>
