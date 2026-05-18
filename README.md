@@ -4,7 +4,7 @@ Northstar Inventory is a multi-tenant inventory management SaaS platform inspire
 
 ## Current Status
 
-Phase 1 through Phase 8 are implemented:
+Phase 1 through Phase 9 are implemented:
 
 - React frontend scaffold with routing, auth shell, and starter dashboard
 - Real frontend login and tenant registration wired to the backend auth APIs
@@ -18,6 +18,7 @@ Phase 1 through Phase 8 are implemented:
 - Tenant and Super Admin dashboard APIs
 - Report APIs with CSV export for major inventory and order reports
 - Audit log listing APIs and in-app notifications
+- A full React SaaS shell with compact rail navigation, themed dashboard, operational lists, forms, detail views, reports, and notifications
 - MySQL service wired through Docker Compose
 - Alembic migrations for tenants, users, master data tables, inventory core tables, stock transfers, purchase orders, sales orders, and notifications
 - Environment variable examples for frontend and backend
@@ -259,5 +260,4 @@ npm run dev
 
 ## Milestone Roadmap
 
-- Phase 9: frontend inventory SaaS UI
 - Phase 10: AI inventory assistant and reorder suggestions
