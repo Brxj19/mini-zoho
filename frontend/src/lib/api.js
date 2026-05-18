@@ -5,5 +5,13 @@ const api = axios.create({
   timeout: 10000,
 });
 
-export default api;
+export function setAuthHeader(token) {
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    return;
+  }
 
+  delete api.defaults.headers.common.Authorization;
+}
+
+export default api;
