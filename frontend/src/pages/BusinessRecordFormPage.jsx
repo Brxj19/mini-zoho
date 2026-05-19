@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { BackButton } from "../components/BackButton";
+import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
+import { formatCurrency } from "../lib/format";
 
 const workflowFormConfigs = {
   package: {
@@ -18,6 +20,7 @@ const workflowFormConfigs = {
     dateField: null,
     numberField: "package_number",
     numberLabel: "Package number",
+    summaryLabel: "Packing timeline",
   },
   invoice: {
     title: "Create Invoice",
@@ -35,6 +38,7 @@ const workflowFormConfigs = {
     dueLabel: "Due date",
     numberField: "invoice_number",
     numberLabel: "Invoice number",
+    summaryLabel: "Receivables visibility",
   },
   salesReturn: {
     title: "Create Sales Return",
@@ -51,6 +55,7 @@ const workflowFormConfigs = {
     numberField: "return_number",
     numberLabel: "Return number",
     lineMode: "salesReturn",
+    summaryLabel: "Reverse-stock handling",
   },
   purchaseReceive: {
     title: "Post Purchase Receive",
@@ -67,6 +72,7 @@ const workflowFormConfigs = {
     numberField: "receive_number",
     numberLabel: "Receipt number",
     lineMode: "purchaseReceive",
+    summaryLabel: "Warehouse receipt posting",
   },
   bill: {
     title: "Create Bill",
@@ -84,6 +90,7 @@ const workflowFormConfigs = {
     dueLabel: "Due date",
     numberField: "bill_number",
     numberLabel: "Bill number",
+    summaryLabel: "Payables handoff",
   },
 };
 
@@ -202,6 +209,7 @@ export function BusinessRecordFormPage({ kind }) {
       tax: Number(orderDetail.tax_amount ?? 0),
       discount: Number(orderDetail.discount_amount ?? 0),
       total: Number(orderDetail.total_amount ?? 0),
+      items: (orderDetail.items ?? []).length,
     };
   }, [orderDetail]);
 
@@ -289,160 +297,206 @@ export function BusinessRecordFormPage({ kind }) {
   }
 
   return (
-    <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">{config.kicker}</p>
-          <h2>{config.title}</h2>
-          <p>{config.description}</p>
-        </div>
-        <BackButton fallbackTo={config.listPath} />
-      </section>
+    <div className="page-stack">
+      <PageHeader eyebrow={config.kicker} title={config.title} description={config.description} actions={<BackButton fallbackTo={config.listPath} />} />
 
-      <form className="workspace-card form-shell" onSubmit={handleSubmit}>
-        {state.loading ? <div className="surface-placeholder">Loading form…</div> : null}
+      <div className="commercial-summary-grid">
+        <article className="commercial-summary-card">
+          <span>{config.orderLabel}</span>
+          <strong>{orders.find((order) => String(order.id) === String(form.order_id))?.[config.orderNumberKey] ?? "Not selected"}</strong>
+          <p>Pick the source order first so the downstream workflow can inherit live quantities and value.</p>
+        </article>
+        <article className="commercial-summary-card">
+          <span>Workflow purpose</span>
+          <strong>{config.summaryLabel}</strong>
+          <p>{kind === "invoice" || kind === "bill" ? "Document financial follow-through after the operational order is created." : "Carry the operational order deeper into fulfillment or reverse-logistics stages."}</p>
+        </article>
+        <article className="commercial-summary-card">
+          <span>Linked lines</span>
+          <strong>{form.lineItems.length}</strong>
+          <p>{kind === "invoice" || kind === "bill" ? "This workflow is document-level and does not require editable line quantities." : "Editable order lines are available once an order is chosen."}</p>
+        </article>
+        <article className="commercial-summary-card">
+          <span>Order total</span>
+          <strong>{formatCurrency(totals?.total ?? 0)}</strong>
+          <p>Source order commercial value is shown here for quick operator context.</p>
+        </article>
+      </div>
+
+      <form className="form-shell" onSubmit={handleSubmit}>
+        {state.loading ? <div className="workspace-card surface-placeholder">Loading form…</div> : null}
         {state.error ? <div className="surface-error">{state.error}</div> : null}
 
         {!state.loading ? (
           <>
-            <div className="form-grid-wide">
-              <label>
-                {config.orderLabel}
-                <select className="field-input" value={form.order_id} onChange={(event) => update("order_id", event.target.value)} required>
-                  <option value="">Select {config.orderLabel.toLowerCase()}</option>
-                  {orders.map((order) => (
-                    <option key={order.id} value={order.id}>
-                      {order[config.orderNumberKey]} • {order.status}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                {config.numberLabel}
-                <input className="field-input" value={form[config.numberField]} onChange={(event) => update(config.numberField, event.target.value)} required />
-              </label>
-
-              {config.dateField ? (
+            <section className="form-section">
+              <div className="form-section-heading">
+                <h3>Document and source order</h3>
+                <p>Select the order this record belongs to, then set the commercial document number and milestone dates.</p>
+              </div>
+              <div className="form-grid-wide">
                 <label>
-                  {config.dateLabel}
-                  <input className="field-input" type="date" value={form[config.dateField]} onChange={(event) => update(config.dateField, event.target.value)} required />
+                  {config.orderLabel}
+                  <select className="field-input" value={form.order_id} onChange={(event) => update("order_id", event.target.value)} required>
+                    <option value="">Select {config.orderLabel.toLowerCase()}</option>
+                    {orders.map((order) => (
+                      <option key={order.id} value={order.id}>
+                        {order[config.orderNumberKey]} • {order.status}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-              ) : null}
 
-              {config.dueField ? (
                 <label>
-                  {config.dueLabel}
-                  <input className="field-input" type="date" value={form[config.dueField]} onChange={(event) => update(config.dueField, event.target.value)} />
+                  {config.numberLabel}
+                  <input className="field-input" value={form[config.numberField]} onChange={(event) => update(config.numberField, event.target.value)} required />
                 </label>
-              ) : null}
 
-              <label className="field-span-full">
-                Notes
-                <textarea className="field-input field-textarea" value={form.notes} onChange={(event) => update("notes", event.target.value)} />
-              </label>
-            </div>
+                {config.dateField ? (
+                  <label>
+                    {config.dateLabel}
+                    <input className="field-input" type="date" value={form[config.dateField]} onChange={(event) => update(config.dateField, event.target.value)} required />
+                  </label>
+                ) : null}
+
+                {config.dueField ? (
+                  <label>
+                    {config.dueLabel}
+                    <input className="field-input" type="date" value={form[config.dueField]} onChange={(event) => update(config.dueField, event.target.value)} />
+                  </label>
+                ) : null}
+              </div>
+            </section>
 
             {orderDetail ? (
-              <>
-                <div className="card-header-row">
-                  <h3>Selected order snapshot</h3>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <h3>Source order snapshot</h3>
+                  <p>Use this live order summary to verify commercial context before posting the downstream document.</p>
                 </div>
-                <div className="kv-grid">
-                  <div className="kv-item">
-                    <span>Status</span>
-                    <strong>{orderDetail.status}</strong>
+                <div className="commercial-order-snapshot">
+                  <div className="commercial-summary-card">
+                    <span>Source status</span>
+                    <strong>{orderDetail.status?.replaceAll("_", " ") ?? "—"}</strong>
+                    <p>Lines: {totals?.items ?? 0}</p>
                   </div>
-                  <div className="kv-item">
-                    <span>Partner ID</span>
-                    <strong>{orderDetail.customer_id ?? orderDetail.vendor_id}</strong>
+                  <div className="commercial-summary-card">
+                    <span>Subtotal</span>
+                    <strong>{formatCurrency(totals?.subtotal ?? 0)}</strong>
+                    <p>Tax {formatCurrency(totals?.tax ?? 0)}</p>
                   </div>
-                  <div className="kv-item">
-                    <span>Order date</span>
-                    <strong>{orderDetail.order_date}</strong>
+                  <div className="commercial-summary-card">
+                    <span>Discount</span>
+                    <strong>{formatCurrency(totals?.discount ?? 0)}</strong>
+                    <p>Included only if the source order supports discounts.</p>
                   </div>
-                  {totals ? (
-                    <div className="kv-item">
-                      <span>Total</span>
-                      <strong>{totals.total.toFixed(2)}</strong>
-                    </div>
-                  ) : null}
+                  <div className="commercial-summary-card">
+                    <span>Total</span>
+                    <strong>{formatCurrency(totals?.total ?? 0)}</strong>
+                    <p>Use this for quick cross-checking before posting.</p>
+                  </div>
                 </div>
-              </>
+              </section>
             ) : null}
 
             {form.lineItems.length ? (
-              <>
-                <div className="card-header-row">
-                  <h3>Line items</h3>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <h3>{kind === "purchaseReceive" ? "Receive quantities" : kind === "salesReturn" ? "Return lines" : "Package lines"}</h3>
+                  <p>{kind === "purchaseReceive" ? "Confirm the exact quantities received into the warehouse." : kind === "salesReturn" ? "Specify the lines coming back into stock and why they were returned." : "Choose the quantities that belong in this package."}</p>
                 </div>
                 <div className="line-items-stack">
                   {form.lineItems.map((item, index) => (
                     <div className="line-item-card" key={`${index}-${item.product_id}-${item.warehouse_id}`}>
-                      <div className="line-item-grid">
-                        <label>
-                          Product ID
-                          <input className="field-input" value={item.product_id} disabled />
-                        </label>
-                        <label>
-                          Warehouse ID
-                          <input className="field-input" value={item.warehouse_id} disabled />
-                        </label>
+                      <div className="commercial-line-header">
+                        <strong>Line {index + 1}</strong>
+                        <span>Product #{item.product_id} • Warehouse #{item.warehouse_id}</span>
+                      </div>
+                      <div className="form-grid-wide">
                         {kind === "purchaseReceive" ? (
                           <>
                             <label>
-                              Remaining
-                              <input className="field-input" value={item.remaining} disabled />
+                              Remaining quantity
+                              <input className="field-input" value={item.remaining ?? 0} disabled />
                             </label>
                             <label>
-                              Receive now
-                              <input
-                                className="field-input"
-                                type="number"
-                                min="0"
-                                max={item.remaining}
-                                step="1"
-                                value={item.quantity_received}
-                                onChange={(event) => updateLine(index, "quantity_received", event.target.value)}
-                              />
+                              Quantity received
+                              <input className="field-input" type="number" min="0" max={item.remaining ?? undefined} value={item.quantity_received} onChange={(event) => updateLine(index, "quantity_received", event.target.value)} />
                             </label>
                           </>
                         ) : (
-                          <label>
-                            Quantity
-                            <input
-                              className="field-input"
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={item.quantity}
-                              onChange={(event) => updateLine(index, "quantity", event.target.value)}
-                            />
-                          </label>
-                        )}
-
-                        {kind === "salesReturn" ? (
                           <>
                             <label>
-                              Reason
-                              <input className="field-input" value={item.reason} onChange={(event) => updateLine(index, "reason", event.target.value)} />
+                              Quantity
+                              <input className="field-input" type="number" min="0" value={item.quantity} onChange={(event) => updateLine(index, "quantity", event.target.value)} />
                             </label>
-                            <label className="field-span-full">
-                              Line notes
-                              <textarea className="field-input field-textarea" value={item.notes} onChange={(event) => updateLine(index, "notes", event.target.value)} />
-                            </label>
+                            {kind === "salesReturn" ? (
+                              <label>
+                                Return reason
+                                <input className="field-input" value={item.reason} onChange={(event) => updateLine(index, "reason", event.target.value)} />
+                              </label>
+                            ) : null}
                           </>
+                        )}
+                        {kind === "salesReturn" ? (
+                          <label className="field-span-full">
+                            Notes
+                            <textarea className="field-input field-textarea" value={item.notes} onChange={(event) => updateLine(index, "notes", event.target.value)} />
+                          </label>
                         ) : null}
                       </div>
                     </div>
                   ))}
                 </div>
-              </>
+              </section>
             ) : null}
 
-            <div className="form-actions">
-              <button className="primary-button" type="submit" disabled={state.saving}>
-                {state.saving ? "Saving…" : "Create Record"}
+            <div className="commercial-form-columns">
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <h3>Notes and internal context</h3>
+                  <p>Capture handoff notes, exceptions, or AP/AR context for the next operator.</p>
+                </div>
+                <label className="field-span-full">
+                  Notes
+                  <textarea className="field-input field-textarea" value={form.notes} onChange={(event) => update("notes", event.target.value)} />
+                </label>
+              </section>
+
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <h3>Posting guidance</h3>
+                  <p>Use this workflow to keep downstream activity tied directly to the source order and tenant data.</p>
+                </div>
+                <div className="mini-list">
+                  <div className="mini-list-row">
+                    <div>
+                      <strong>Linked order</strong>
+                      <span>{orderDetail ? "Ready" : "Select a source order"}</span>
+                    </div>
+                  </div>
+                  <div className="mini-list-row">
+                    <div>
+                      <strong>Document number</strong>
+                      <span>{form[config.numberField] || "Not entered yet"}</span>
+                    </div>
+                  </div>
+                  <div className="mini-list-row">
+                    <div>
+                      <strong>Workflow type</strong>
+                      <span>{config.summaryLabel}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div className="sticky-form-actions">
+              <button className="button button-ghost" type="button" onClick={() => navigate(config.listPath)}>
+                Cancel
+              </button>
+              <button className="button button-primary" type="submit" disabled={state.saving}>
+                {state.saving ? "Saving…" : config.title}
               </button>
             </div>
           </>

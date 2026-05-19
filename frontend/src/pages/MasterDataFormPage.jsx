@@ -2,53 +2,54 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { BackButton } from "../components/BackButton";
+import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
 
 const formConfigs = {
   category: {
     singular: "Category",
+    eyebrow: "Inventory Taxonomy",
+    description: "Organize items into commercial categories so downstream inventory and reporting screens stay structured.",
     endpoint: "/categories",
     listPath: "/categories",
     detailPath: (id) => `/categories/${id}`,
-    fields: [
+    primaryFields: [
       { key: "name", label: "Category name", required: true },
       { key: "status", label: "Status", type: "select", options: ["ACTIVE", "ARCHIVED"] },
-      { key: "description", label: "Description", type: "textarea", full: true },
     ],
-    initialForm: {
-      name: "",
-      status: "ACTIVE",
-      description: "",
-    },
+    secondaryFields: [{ key: "description", label: "Description", type: "textarea", full: true }],
+    initialForm: { name: "", status: "ACTIVE", description: "" },
   },
   brand: {
     singular: "Brand",
+    eyebrow: "Inventory Taxonomy",
+    description: "Keep the catalog brand-aware so stock, purchasing, and selling views can stay consistent.",
     endpoint: "/brands",
     listPath: "/brands",
     detailPath: (id) => `/brands/${id}`,
-    fields: [
+    primaryFields: [
       { key: "name", label: "Brand name", required: true },
       { key: "status", label: "Status", type: "select", options: ["ACTIVE", "ARCHIVED"] },
-      { key: "description", label: "Description", type: "textarea", full: true },
     ],
-    initialForm: {
-      name: "",
-      status: "ACTIVE",
-      description: "",
-    },
+    secondaryFields: [{ key: "description", label: "Description", type: "textarea", full: true }],
+    initialForm: { name: "", status: "ACTIVE", description: "" },
   },
   vendor: {
     singular: "Vendor",
+    eyebrow: "Purchase Directory",
+    description: "Maintain procurement-ready vendor profiles with tax, contact, and payable-friendly details.",
     endpoint: "/vendors",
     listPath: "/vendors",
     detailPath: (id) => `/vendors/${id}`,
-    fields: [
+    primaryFields: [
       { key: "name", label: "Vendor name", required: true },
       { key: "email", label: "Email", type: "email" },
       { key: "phone", label: "Phone" },
+      { key: "status", label: "Status", type: "select", options: ["ACTIVE", "ARCHIVED"] },
+    ],
+    secondaryFields: [
       { key: "gst_number", label: "GST number" },
       { key: "opening_balance", label: "Opening balance", type: "number", step: "0.01" },
-      { key: "status", label: "Status", type: "select", options: ["ACTIVE", "ARCHIVED"] },
       { key: "address", label: "Address", type: "textarea", full: true },
     ],
     initialForm: {
@@ -63,15 +64,19 @@ const formConfigs = {
   },
   customer: {
     singular: "Customer",
+    eyebrow: "Sales Directory",
+    description: "Build customer records that can flow directly into orders, invoices, returns, and delivery operations.",
     endpoint: "/customers",
     listPath: "/customers",
     detailPath: (id) => `/customers/${id}`,
-    fields: [
+    primaryFields: [
       { key: "name", label: "Customer name", required: true },
       { key: "email", label: "Email", type: "email" },
       { key: "phone", label: "Phone" },
-      { key: "gst_number", label: "GST number" },
       { key: "status", label: "Status", type: "select", options: ["ACTIVE", "ARCHIVED"] },
+    ],
+    secondaryFields: [
+      { key: "gst_number", label: "GST number" },
       { key: "billing_address", label: "Billing address", type: "textarea", full: true },
       { key: "shipping_address", label: "Shipping address", type: "textarea", full: true },
     ],
@@ -87,6 +92,42 @@ const formConfigs = {
   },
 };
 
+function renderField(field, value, update) {
+  if (field.type === "textarea") {
+    return (
+      <textarea
+        className="field-input field-textarea"
+        value={value ?? ""}
+        onChange={(event) => update(field.key, event.target.value)}
+        required={field.required}
+      />
+    );
+  }
+
+  if (field.type === "select") {
+    return (
+      <select className="field-input" value={value ?? ""} onChange={(event) => update(field.key, event.target.value)} required={field.required}>
+        {field.options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <input
+      className="field-input"
+      type={field.type ?? "text"}
+      step={field.step}
+      value={value ?? ""}
+      onChange={(event) => update(field.key, event.target.value)}
+      required={field.required}
+    />
+  );
+}
+
 export function MasterDataFormPage({ entityKey, paramKey }) {
   const navigate = useNavigate();
   const params = useParams();
@@ -97,9 +138,7 @@ export function MasterDataFormPage({ entityKey, paramKey }) {
   const [state, setState] = useState({ loading: isEditing, saving: false, error: "" });
 
   useEffect(() => {
-    if (!isEditing) {
-      return;
-    }
+    if (!isEditing) return;
 
     let active = true;
     api
@@ -147,9 +186,7 @@ export function MasterDataFormPage({ entityKey, paramKey }) {
     };
 
     try {
-      const response = isEditing
-        ? await api.patch(`${config.endpoint}/${recordId}`, payload)
-        : await api.post(config.endpoint, payload);
+      const response = isEditing ? await api.patch(`${config.endpoint}/${recordId}`, payload) : await api.post(config.endpoint, payload);
       navigate(config.detailPath(response.data.id));
     } catch (error) {
       setState((current) => ({
@@ -161,61 +198,55 @@ export function MasterDataFormPage({ entityKey, paramKey }) {
   }
 
   return (
-    <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Directory</p>
-          <h2>{isEditing ? `Edit ${config.singular}` : `Create ${config.singular}`}</h2>
-          <p>Manage core contact data and operational profile details for this record.</p>
-        </div>
-        <BackButton fallbackTo={config.listPath} />
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow={config.eyebrow}
+        title={isEditing ? `Edit ${config.singular}` : `Create ${config.singular}`}
+        description={config.description}
+        actions={<BackButton fallbackTo={isEditing ? config.detailPath(recordId) : config.listPath} />}
+      />
 
-      <form className="workspace-card form-shell" onSubmit={handleSubmit}>
-        {state.loading ? <div className="surface-placeholder">Loading form…</div> : null}
+      <form className="form-shell" onSubmit={handleSubmit}>
+        {state.loading ? <div className="workspace-card surface-placeholder">Loading form…</div> : null}
         {state.error ? <div className="surface-error">{state.error}</div> : null}
 
         {!state.loading ? (
           <>
-            <div className="form-grid-wide">
-              {config.fields.map((field) => (
-                <label key={field.key} className={field.full ? "field-span-full" : ""}>
-                  {field.label}
-                  {field.type === "textarea" ? (
-                    <textarea
-                      className="field-input field-textarea"
-                      value={form[field.key] ?? ""}
-                      onChange={(event) => update(field.key, event.target.value)}
-                      required={field.required}
-                    />
-                  ) : field.type === "select" ? (
-                    <select
-                      className="field-input"
-                      value={form[field.key] ?? ""}
-                      onChange={(event) => update(field.key, event.target.value)}
-                      required={field.required}
-                    >
-                      {field.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      className="field-input"
-                      type={field.type ?? "text"}
-                      step={field.step}
-                      value={form[field.key] ?? ""}
-                      onChange={(event) => update(field.key, event.target.value)}
-                      required={field.required}
-                    />
-                  )}
-                </label>
-              ))}
-            </div>
-            <div className="form-actions">
-              <button className="primary-button" type="submit" disabled={state.saving}>
+            <section className="form-section">
+              <div className="form-section-heading">
+                <h3>Primary details</h3>
+                <p>Capture the core operational identity and active status for this record.</p>
+              </div>
+              <div className="form-grid-wide">
+                {config.primaryFields.map((field) => (
+                  <label key={field.key} className={field.full ? "field-span-full" : ""}>
+                    {field.label}
+                    {renderField(field, form[field.key], update)}
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="form-section">
+              <div className="form-section-heading">
+                <h3>{entityKey === "vendor" || entityKey === "customer" ? "Commercial and address details" : "Additional context"}</h3>
+                <p>{entityKey === "vendor" || entityKey === "customer" ? "Keep tax, address, and balance context ready for downstream workflows." : "Add helpful descriptive context for inventory organization and search."}</p>
+              </div>
+              <div className="form-grid-wide">
+                {config.secondaryFields.map((field) => (
+                  <label key={field.key} className={field.full ? "field-span-full" : ""}>
+                    {field.label}
+                    {renderField(field, form[field.key], update)}
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <div className="sticky-form-actions">
+              <button className="button button-ghost" type="button" onClick={() => navigate(isEditing ? config.detailPath(recordId) : config.listPath)}>
+                Cancel
+              </button>
+              <button className="button button-primary" type="submit" disabled={state.saving}>
                 {state.saving ? "Saving…" : isEditing ? `Save ${config.singular}` : `Create ${config.singular}`}
               </button>
             </div>

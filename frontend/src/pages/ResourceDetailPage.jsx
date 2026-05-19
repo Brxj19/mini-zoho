@@ -4,9 +4,10 @@ import { Link, useParams } from "react-router-dom";
 import { BackButton } from "../components/BackButton";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { Tabs } from "../components/Tabs";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
-import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
+import { formatCurrency, formatDate, formatDateTime, titleCase } from "../lib/format";
 import { hasAnyRole } from "../lib/permissions";
 import { StatusBadge } from "../components/StatusBadge";
 
@@ -349,12 +350,106 @@ function workflowStepState(step, status, steps) {
   return "pending";
 }
 
+function getRecordHeadline(detailKey, record, fallbackTitle) {
+  if (!record) return fallbackTitle;
+  if (detailKey === "salesOrder") return record.so_number ?? fallbackTitle;
+  if (detailKey === "purchaseOrder") return record.po_number ?? fallbackTitle;
+  if (detailKey === "package") return record.package_number ?? fallbackTitle;
+  if (detailKey === "invoice") return record.invoice_number ?? fallbackTitle;
+  if (detailKey === "salesReturn") return record.return_number ?? fallbackTitle;
+  if (detailKey === "purchaseReceive") return record.receive_number ?? fallbackTitle;
+  if (detailKey === "bill") return record.bill_number ?? fallbackTitle;
+  if (detailKey === "customer" || detailKey === "vendor" || detailKey === "brand" || detailKey === "category" || detailKey === "warehouse" || detailKey === "user") {
+    return record.name ?? fallbackTitle;
+  }
+  if (detailKey === "tenant") return record.company_name ?? fallbackTitle;
+  return fallbackTitle;
+}
+
+function getRecordDescription(detailKey, record) {
+  if (!record) return "Key record details, line items, and related operational activity.";
+  if (detailKey === "salesOrder") return "Review customer order context, timeline progress, and warehouse-backed order lines.";
+  if (detailKey === "purchaseOrder") return "Review vendor commitments, receiving progress, and inbound line quantities.";
+  if (detailKey === "package") return "Track packing, shipping, and final delivery against the originating sales order.";
+  if (detailKey === "invoice") return "Review billing progress, due dates, and linked sales context.";
+  if (detailKey === "salesReturn") return "Manage the reverse-logistics journey from received goods to refund completion.";
+  if (detailKey === "purchaseReceive") return "Confirm warehouse receipt postings against the linked purchase order.";
+  if (detailKey === "bill") return "Track payable milestones and commercial context for the linked procurement record.";
+  if (detailKey === "customer") return "Customer profile, order relationships, and activity context for the sales workspace.";
+  if (detailKey === "vendor") return "Vendor profile, procurement context, and payable-facing details for purchasing teams.";
+  return "Key record details, line items, and related operational activity.";
+}
+
+function buildSummaryCards(detailKey, record, usage, stockRows, itemRows) {
+  if (!record) return [];
+
+  if (detailKey === "salesOrder") {
+    return [
+      { label: "Status", value: titleCase(record.status), helper: "Current order stage" },
+      { label: "Customer", value: record.customer_id ? `Customer #${record.customer_id}` : "—", helper: record.order_date ? `Created ${formatDate(record.order_date)}` : "Customer linkage" },
+      { label: "Total", value: formatCurrency(record.total_amount), helper: `${itemRows.length} order lines` },
+      { label: "Discount", value: formatCurrency(record.discount_amount), helper: "Applied at order level" },
+    ];
+  }
+
+  if (detailKey === "purchaseOrder") {
+    return [
+      { label: "Status", value: titleCase(record.status), helper: "Current procurement stage" },
+      { label: "Vendor", value: record.vendor_id ? `Vendor #${record.vendor_id}` : "—", helper: record.expected_delivery_date ? `Expected ${formatDate(record.expected_delivery_date)}` : "Vendor linkage" },
+      { label: "Total", value: formatCurrency(record.total_amount), helper: `${itemRows.length} incoming lines` },
+      { label: "Notes", value: record.notes ? "Available" : "—", helper: "Purchase context" },
+    ];
+  }
+
+  if (["package", "invoice", "salesReturn", "purchaseReceive", "bill"].includes(detailKey)) {
+    return [
+      { label: "Status", value: titleCase(record.status), helper: "Workflow stage" },
+      { label: "Linked Order", value: record.sales_order_id ? `SO #${record.sales_order_id}` : record.purchase_order_id ? `PO #${record.purchase_order_id}` : "—", helper: "Source document" },
+      { label: "Line Items", value: String(itemRows.length), helper: "Attached workflow rows" },
+      { label: "Total", value: record.total_amount != null ? formatCurrency(record.total_amount) : "—", helper: "Commercial value if available" },
+    ];
+  }
+
+  if (detailKey === "customer" || detailKey === "vendor") {
+    return [
+      { label: "Status", value: titleCase(record.status), helper: "Directory state" },
+      { label: "Email", value: record.email || "—", helper: "Primary communication" },
+      { label: "Phone", value: record.phone || "—", helper: "Contact number" },
+      { label: "GST", value: record.gst_number || "—", helper: detailKey === "vendor" ? "Procurement tax profile" : "Sales tax profile" },
+    ];
+  }
+
+  if (detailKey === "tenant" && usage) {
+    return [
+      { label: "Plan", value: usage.plan_name ?? "Unassigned", helper: "Assigned subscription" },
+      { label: "Users", value: String(usage.total_users ?? 0), helper: `${usage.active_users ?? 0} active` },
+      { label: "Products", value: String(usage.total_products ?? 0), helper: "Catalog records" },
+      { label: "Orders", value: String(usage.total_orders ?? 0), helper: "Combined purchase and sales" },
+    ];
+  }
+
+  if (detailKey === "product") {
+    return [
+      { label: "Status", value: titleCase(record.status), helper: "Catalog state" },
+      { label: "SKU", value: record.sku || "—", helper: "Stock keeping unit" },
+      { label: "Barcode", value: record.barcode || "—", helper: "Scan/search ready" },
+      { label: "Warehouses", value: String(stockRows.length), helper: "Active stock locations" },
+    ];
+  }
+
+  return [
+    { label: "Status", value: record.status ? titleCase(record.status) : "—", helper: "Current state" },
+    { label: "Created", value: formatDate(record.created_at ?? record.order_date), helper: "Record milestone" },
+  ];
+}
+
 export function ResourceDetailPage({ detailKey, paramKey }) {
   const { [paramKey]: entityId } = useParams();
   const { user } = useAuth();
   const config = detailConfigs[detailKey];
   const workflow = workflowConfigs[detailKey];
   const [reloadKey, setReloadKey] = useState(0);
+  const [activeTab, setActiveTab] = useState("overview");
   const [state, setState] = useState({
     loading: true,
     error: "",
@@ -423,6 +518,15 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
     state.record &&
     hasAnyRole(user, config.editRoles) &&
     (config.canEdit ? config.canEdit(state.record) : true);
+  const headerTitle = getRecordHeadline(detailKey, state.record, config.title);
+  const headerDescription = getRecordDescription(detailKey, state.record);
+  const summaryCards = buildSummaryCards(detailKey, state.record, usage, stockRows, itemRows);
+  const tabItems = useMemo(() => {
+    const items = [{ key: "overview", label: "Overview" }];
+    if (itemRows.length || showsLineItems) items.push({ key: "lines", label: "Line Items" });
+    if (transactionRows.length || detailKey === "customer" || detailKey === "vendor" || workflow) items.push({ key: "activity", label: "Activity" });
+    return items;
+  }, [detailKey, itemRows.length, showsLineItems, transactionRows.length, workflow]);
 
   function openActionModal(action) {
     setActionState({ submitting: false, error: "" });
@@ -517,9 +621,9 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
   return (
     <div className="view-stack">
       <PageHeader
-        eyebrow="Workspace Detail"
-        title={config.title}
-        description="Key record details, line items, and related operational activity."
+        eyebrow={workflow ? "Operational Workflow" : detailKey === "customer" ? "Sales Directory" : detailKey === "vendor" ? "Purchase Directory" : "Workspace Detail"}
+        title={headerTitle}
+        description={headerDescription}
         actions={
           <>
             <BackButton fallbackTo={config.listPath ?? "/"} />
@@ -547,6 +651,18 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
 
       {!state.loading && state.record ? (
         <>
+          {summaryCards.length ? (
+            <section className="commercial-summary-grid">
+              {summaryCards.map((card) => (
+                <article className="commercial-summary-card" key={card.label}>
+                  <span>{card.label}</span>
+                  <strong>{card.value}</strong>
+                  <p>{card.helper}</p>
+                </article>
+              ))}
+            </section>
+          ) : null}
+
           {workflow ? (
             <section className="workspace-card workflow-card">
               <div className="card-header-row">
@@ -592,166 +708,176 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
             </section>
           ) : null}
 
-          <section className="detail-grid">
-            <article className="workspace-card">
-              <div className="card-header-row">
-                <h3>Summary</h3>
-              </div>
-              <div className="kv-grid">
-                {entries.map(([key, value]) => (
-                  <div className="kv-item" key={key}>
-                    <span>{key.replaceAll("_", " ")}</span>
-                    <strong>{formatValue(key, value)}</strong>
-                  </div>
-                ))}
-              </div>
-            </article>
+          <Tabs items={tabItems} activeKey={activeTab} onChange={setActiveTab} />
 
-            {stockRows.length > 0 ? (
+          {activeTab === "overview" ? (
+            <section className="detail-grid">
               <article className="workspace-card">
                 <div className="card-header-row">
-                  <h3>Stock Footprint</h3>
+                  <h3>Overview</h3>
                 </div>
-                <div className="mini-list">
-                  {stockRows.map((item) => (
-                    <div className="mini-list-row" key={item.warehouse_id}>
-                      <div>
-                        <strong>Warehouse #{item.warehouse_id}</strong>
-                        <span>Available {item.available_quantity}</span>
-                      </div>
-                      <StatusBadge value={item.available_quantity <= item.reorder_level ? "LOW_STOCK" : "ACTIVE"} />
+                <div className="kv-grid">
+                  {entries.map(([key, value]) => (
+                    <div className="kv-item" key={key}>
+                      <span>{key.replaceAll("_", " ")}</span>
+                      <strong>{formatValue(key, value)}</strong>
                     </div>
                   ))}
                 </div>
               </article>
-            ) : null}
 
-            {detailKey === "tenant" && usage ? (
-              <article className="workspace-card">
-                <div className="card-header-row">
-                  <h3>Usage Snapshot</h3>
-                </div>
-                <div className="kv-grid">
-                  <div className="kv-item">
-                    <span>Total users</span>
-                    <strong>{usage.total_users}</strong>
+              {stockRows.length > 0 ? (
+                <article className="workspace-card">
+                  <div className="card-header-row">
+                    <h3>Stock Footprint</h3>
                   </div>
-                  <div className="kv-item">
-                    <span>Active users</span>
-                    <strong>{usage.active_users}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Products</span>
-                    <strong>{usage.total_products}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Warehouses</span>
-                    <strong>{usage.total_warehouses}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Sales orders</span>
-                    <strong>{usage.total_sales_orders}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Purchase orders</span>
-                    <strong>{usage.total_purchase_orders}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Stock transfers</span>
-                    <strong>{usage.total_stock_transfers}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Total orders</span>
-                    <strong>{usage.total_orders}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Assigned plan</span>
-                    <strong>{usage.plan_name ?? "Unassigned"}</strong>
-                  </div>
-                </div>
-              </article>
-            ) : null}
-
-            {detailKey === "user" && state.record?.tenant ? (
-              <article className="workspace-card">
-                <div className="card-header-row">
-                  <h3>Tenant Access</h3>
-                </div>
-                <div className="kv-grid">
-                  <div className="kv-item">
-                    <span>Company</span>
-                    <strong>{state.record.tenant.company_name}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Tenant status</span>
-                    <strong><StatusBadge value={state.record.tenant.status} /></strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Contact email</span>
-                    <strong>{state.record.tenant.contact_email}</strong>
-                  </div>
-                  <div className="kv-item">
-                    <span>Business type</span>
-                    <strong>{state.record.tenant.business_type ?? "—"}</strong>
-                  </div>
-                </div>
-              </article>
-            ) : null}
-          </section>
-
-          {itemRows.length > 0 ? (
-            <section className="workspace-card">
-              <div className="card-header-row">
-                <h3>Line Items</h3>
-              </div>
-              <div className="data-table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      {Object.keys(itemRows[0]).map((key) => (
-                        <th key={key}>{key.replaceAll("_", " ")}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itemRows.map((row) => (
-                      <tr key={row.id}>
-                        {Object.entries(row).map(([key, value]) => (
-                          <td key={key}>{formatValue(key, value)}</td>
-                        ))}
-                      </tr>
+                  <div className="mini-list">
+                    {stockRows.map((item) => (
+                      <div className="mini-list-row" key={item.warehouse_id}>
+                        <div>
+                          <strong>Warehouse #{item.warehouse_id}</strong>
+                          <span>Available {item.available_quantity}</span>
+                        </div>
+                        <StatusBadge value={item.available_quantity <= item.reorder_level ? "LOW_STOCK" : "ACTIVE"} />
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ) : showsLineItems ? (
-            <section className="workspace-card surface-empty">
-              No line items are attached to this record.
+                  </div>
+                </article>
+              ) : null}
+
+              {detailKey === "tenant" && usage ? (
+                <article className="workspace-card">
+                  <div className="card-header-row">
+                    <h3>Usage Snapshot</h3>
+                  </div>
+                  <div className="kv-grid">
+                    <div className="kv-item">
+                      <span>Total users</span>
+                      <strong>{usage.total_users}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Active users</span>
+                      <strong>{usage.active_users}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Products</span>
+                      <strong>{usage.total_products}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Warehouses</span>
+                      <strong>{usage.total_warehouses}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Sales orders</span>
+                      <strong>{usage.total_sales_orders}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Purchase orders</span>
+                      <strong>{usage.total_purchase_orders}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Stock transfers</span>
+                      <strong>{usage.total_stock_transfers}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Total orders</span>
+                      <strong>{usage.total_orders}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Assigned plan</span>
+                      <strong>{usage.plan_name ?? "Unassigned"}</strong>
+                    </div>
+                  </div>
+                </article>
+              ) : null}
+
+              {detailKey === "user" && state.record?.tenant ? (
+                <article className="workspace-card">
+                  <div className="card-header-row">
+                    <h3>Tenant Access</h3>
+                  </div>
+                  <div className="kv-grid">
+                    <div className="kv-item">
+                      <span>Company</span>
+                      <strong>{state.record.tenant.company_name}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Tenant status</span>
+                      <strong><StatusBadge value={state.record.tenant.status} /></strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Contact email</span>
+                      <strong>{state.record.tenant.contact_email}</strong>
+                    </div>
+                    <div className="kv-item">
+                      <span>Business type</span>
+                      <strong>{state.record.tenant.business_type ?? "—"}</strong>
+                    </div>
+                  </div>
+                </article>
+              ) : null}
             </section>
           ) : null}
 
-          {transactionRows.length > 0 ? (
-            <section className="workspace-card">
-              <div className="card-header-row">
-                <h3>Recent Movement</h3>
-              </div>
-              <div className="mini-list">
-                {transactionRows.slice(0, 6).map((row) => (
-                  <div className="mini-list-row" key={row.id}>
-                    <div>
-                      <strong>{row.transaction_type.replaceAll("_", " ")}</strong>
-                      <span>{formatDateTime(row.created_at)}</span>
+          {activeTab === "lines" ? (
+            itemRows.length > 0 ? (
+              <section className="workspace-card">
+                <div className="card-header-row">
+                  <h3>Line Items</h3>
+                </div>
+                <div className="data-table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {Object.keys(itemRows[0]).map((key) => (
+                          <th key={key}>{key.replaceAll("_", " ")}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itemRows.map((row) => (
+                        <tr key={row.id}>
+                          {Object.entries(row).map(([key, value]) => (
+                            <td key={key}>{formatValue(key, value)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ) : (
+              <section className="workspace-card surface-empty">No line items are attached to this record.</section>
+            )
+          ) : null}
+
+          {activeTab === "activity" ? (
+            transactionRows.length > 0 ? (
+              <section className="workspace-card">
+                <div className="card-header-row">
+                  <h3>{detailKey === "product" ? "Recent Movement" : "Recent Activity"}</h3>
+                </div>
+                <div className="mini-list">
+                  {transactionRows.slice(0, 6).map((row) => (
+                    <div className="mini-list-row" key={row.id}>
+                      <div>
+                        <strong>{row.transaction_type.replaceAll("_", " ")}</strong>
+                        <span>{formatDateTime(row.created_at)}</span>
+                      </div>
+                      <span>{row.quantity}</span>
                     </div>
-                    <span>{row.quantity}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ) : detailKey === "product" ? (
-            <section className="workspace-card surface-empty">
-              No recent movement has been recorded for this item yet.
-            </section>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="workspace-card surface-empty">
+                {workflow
+                  ? "Workflow activity will appear here as the record progresses."
+                  : detailKey === "customer" || detailKey === "vendor"
+                    ? "Related notes and recent activity will appear here once connected workflows start using this record."
+                    : "No recent movement has been recorded for this record yet."}
+              </section>
+            )
           ) : null}
         </>
       ) : null}
