@@ -1,23 +1,15 @@
-import { Link } from "react-router-dom";
+import { EmptyState as CommonEmptyState } from "./common/EmptyState";
 
-import { Icon } from "./Icon";
-
-export function EmptyState({ title, description, actionLabel, actionTo, onAction, icon = "box", actionTone = "primary" }) {
-  const actionClassName = actionTone === "ghost" ? "button button-ghost" : "button button-primary";
-
+export function EmptyState({ title, description, actionLabel, actionTo, onAction, animationKey = "emptyData" }) {
   return (
-    <div className="empty-state" role="status" aria-live="polite">
-      <div className="empty-state-icon">
-        <Icon name={icon} size={22} />
-      </div>
-      <h3>{title}</h3>
-      <p>{description}</p>
-      {actionLabel && actionTo ? <Link className={actionClassName} to={actionTo}>{actionLabel}</Link> : null}
-      {actionLabel && !actionTo && onAction ? (
-        <button className={actionClassName} type="button" onClick={onAction}>
-          {actionLabel}
-        </button>
-      ) : null}
-    </div>
+    <CommonEmptyState
+      animationKey={animationKey}
+      title={title}
+      description={description}
+      primaryActionLabel={actionLabel}
+      primaryActionTo={actionTo}
+      onPrimaryAction={onAction}
+      compact
+    />
   );
 }

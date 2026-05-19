@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "../components/EmptyState";
+import { ErrorState } from "../components/common/ErrorState";
+import { LoadingState } from "../components/common/LoadingState";
+import { LottieAnimation } from "../components/common/LottieAnimation";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
@@ -201,13 +204,20 @@ export function SubscriptionPage() {
       />
 
       {state.success ? <div className="surface-success">{state.success}</div> : null}
-      {state.error ? <div className="surface-error">{state.error}</div> : null}
+      {state.error && !state.loading ? (
+        <ErrorState
+          animationKey="financeReports"
+          title="Unable to load subscription governance"
+          description={state.error}
+          onRetry={() => setReloadKey((value) => value + 1)}
+        />
+      ) : null}
 
-      {state.loading ? <div className="workspace-card surface-placeholder">Loading subscription governance…</div> : null}
+      {state.loading ? <LoadingState animationKey="financeReports" message="Loading subscription governance…" fullPage /> : null}
 
-      {!state.loading && !plans.length ? (
+      {!state.loading && !state.error && !plans.length ? (
         <EmptyState
-          icon="sparkles"
+          animationKey="financeReports"
           title="No subscription plans configured"
           description="Create a plan catalog to start governing tenant usage and feature access."
         />
@@ -218,7 +228,17 @@ export function SubscriptionPage() {
           <section className="detail-grid">
             <article className="workspace-card">
               <div className="card-header-row">
-                <h3>Plan Catalog</h3>
+                <div>
+                  <h3>Plan Catalog</h3>
+                  <span className="helper-note">Select a plan to review limits, features, and tenant assignment readiness.</span>
+                </div>
+                <LottieAnimation
+                  animationKey="financeReports"
+                  size={148}
+                  className="lottie-animation--compact"
+                  ariaLabel="Plan usage illustration"
+                  decorative={false}
+                />
                 {isSuperAdmin ? (
                   <button
                     className="ghost-button"

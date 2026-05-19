@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { LottieAnimation } from "../components/common/LottieAnimation";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
@@ -134,6 +135,13 @@ export function OnboardingPage() {
             <span>Northstar Inventory</span>
           </div>
           <p className="eyebrow">Organization Setup</p>
+          <LottieAnimation
+            animationKey="onboarding"
+            size={380}
+            className="lottie-animation--large"
+            ariaLabel="Organization setup illustration"
+            decorative={false}
+          />
           <h1>Set up your workspace before you start receiving, selling, and moving stock.</h1>
           <p>
             This quick onboarding saves your core organization profile to the tenant record and keeps your

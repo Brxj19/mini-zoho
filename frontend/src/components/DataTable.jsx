@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { ActionMenu } from "./ActionMenu";
 import { EmptyState } from "./EmptyState";
 import { LoadingSkeleton } from "./LoadingSkeleton";
+import { ErrorState } from "./common/ErrorState";
 import { SearchInput } from "./SearchInput";
 import { StatusBadge } from "./StatusBadge";
 import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
@@ -195,13 +196,12 @@ export function DataTable({
       {isLoading ? (
         <LoadingSkeleton rows={7} />
       ) : error ? (
-        <EmptyState
-          icon="alert"
+        <ErrorState
+          animationKey="emptyData"
           title="Unable to load table data"
           description={error}
-          actionLabel={onRetry ? "Try Again" : undefined}
-          onAction={onRetry}
-          actionTone="ghost"
+          retryLabel="Try Again"
+          onRetry={onRetry}
         />
       ) : processedRows.length ? (
         <>

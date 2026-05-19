@@ -1810,6 +1810,104 @@ a {
   padding: 28px 20px;
 }
 
+.animation-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.animation-state.is-compact {
+  gap: 0;
+}
+
+.animation-state-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+}
+
+.animation-state.is-compact .animation-state-stage {
+  width: 84px;
+  height: 84px;
+}
+
+.animation-state-core {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  background: rgba(85, 139, 243, 0.12);
+  color: var(--color-primary);
+  animation: animation-core-float 2.8s ease-in-out infinite;
+}
+
+.animation-state.is-compact .animation-state-core {
+  width: 52px;
+  height: 52px;
+}
+
+.animation-player {
+  width: 104px;
+  height: 104px;
+}
+
+.animation-player.is-compact {
+  width: 84px;
+  height: 84px;
+}
+
+.animation-orb {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(85, 139, 243, 0.14);
+  animation: animation-orb-drift 3.4s ease-in-out infinite;
+}
+
+.orb-left {
+  left: 8px;
+  top: 18px;
+  width: 16px;
+  height: 16px;
+}
+
+.orb-right {
+  right: 10px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  animation-delay: 0.4s;
+}
+
+.orb-bottom {
+  bottom: 12px;
+  width: 18px;
+  height: 18px;
+  animation-delay: 0.8s;
+}
+
+.animation-state-copy {
+  display: grid;
+  gap: 4px;
+  max-width: 240px;
+  text-align: center;
+}
+
+.animation-state-copy strong {
+  font-size: 13px;
+}
+
+.animation-state-copy span {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .empty-state-icon {
   display: grid;
   place-items: center;
@@ -1830,6 +1928,28 @@ a {
   height: 14px;
   border-radius: var(--radius-sm);
   background: var(--color-soft);
+}
+
+@keyframes animation-core-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes animation-orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(2px, -6px, 0) scale(1.08);
+  }
 }
 
 .table-subtext {

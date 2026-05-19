@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
+import { LottieAnimation } from "../components/common/LottieAnimation";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -65,6 +66,13 @@ export function RegisterPage() {
             <span>Northstar Inventory</span>
           </div>
           <p className="eyebrow">Create Organization</p>
+          <LottieAnimation
+            animationKey="onboarding"
+            size={360}
+            className="lottie-animation--large"
+            ariaLabel="Organization signup illustration"
+            decorative={false}
+          />
           <h1>Launch a fresh inventory workspace with your first tenant admin already in place.</h1>
           <p>
             Registration creates your tenant and signs you in immediately so you can finish workspace setup,

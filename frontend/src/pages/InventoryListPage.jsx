@@ -425,6 +425,14 @@ export function InventoryListPage({ kind }) {
         hideHeaderCopy
         emptyState={{
           icon: kind === "warehouses" ? "warehouse" : kind === "inventoryTransactions" ? "activity" : kind === "stockTransfers" ? "shuffle" : "box",
+          animationKey:
+            kind === "products"
+              ? "emptyProducts"
+              : kind === "warehouses"
+                ? "emptyWarehouses"
+                : kind === "inventoryTransactions"
+                  ? "emptyData"
+                  : "emptyData",
           title:
             kind === "products"
               ? "No items yet"

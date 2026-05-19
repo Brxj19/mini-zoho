@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
+import { LottieAnimation } from "../components/common/LottieAnimation";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -52,6 +53,13 @@ export function LoginPage() {
             <span>Northstar Inventory</span>
           </div>
           <p className="eyebrow">Inventory Operations Cloud</p>
+          <LottieAnimation
+            animationKey="onboarding"
+            size={360}
+            className="lottie-animation--large"
+            ariaLabel="Inventory onboarding illustration"
+            decorative={false}
+          />
           <h1>Run your inventory, purchasing, sales, and warehouses from one compact workspace.</h1>
           <p>
             Sign in with your platform or tenant account to continue into the live Northstar Inventory

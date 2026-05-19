@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import api from "../lib/api";
+import { EmptyState } from "../components/common/EmptyState";
+import { ErrorState } from "../components/common/ErrorState";
+import { LoadingState } from "../components/common/LoadingState";
+import { LottieAnimation } from "../components/common/LottieAnimation";
 import { PageHeader } from "../components/PageHeader";
 import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
 import { reportCatalog } from "../lib/uiConfig";
@@ -317,6 +321,20 @@ export function ReportsPage() {
       />
 
       <section className="workspace-card">
+        <div className="card-header-row">
+          <div>
+            <h3>Report Workspace</h3>
+            <span className="helper-note">Choose a report, refine filters, and export the live results.</span>
+          </div>
+          <LottieAnimation
+            animationKey="financeReports"
+            size={148}
+            className="lottie-animation--compact"
+            ariaLabel="Reports illustration"
+            decorative={false}
+          />
+        </div>
+
         <div className="report-pill-row">
           {reportCatalog.map((report) => (
             <button
@@ -342,18 +360,31 @@ export function ReportsPage() {
           </div>
         </form>
 
-        {catalogState.error ? <div className="surface-error">{catalogState.error}</div> : null}
+        {catalogState.error ? (
+          <ErrorState
+            animationKey="financeReports"
+            title="Unable to load report filters"
+            description={catalogState.error}
+          />
+        ) : null}
         {state.data?.generated_at ? (
           <div className="helper-note">Generated {formatDateTime(state.data.generated_at)} for {rows.length} rows.</div>
         ) : null}
 
-        {state.loading ? <div className="surface-placeholder">Loading report…</div> : null}
-        {state.error ? <div className="surface-error">{state.error}</div> : null}
+        {state.loading ? <LoadingState animationKey="appLoading" message="Loading report…" compact /> : null}
+        {state.error ? (
+          <ErrorState
+            animationKey="financeReports"
+            title="Unable to load report"
+            description={state.error}
+          />
+        ) : null}
         {!state.loading && !state.error && rows.length === 0 ? (
-          <div className="surface-empty">
-            <h3>No rows returned</h3>
-            <p>This report is live. Broaden the filters or choose a different date window to populate results.</p>
-          </div>
+          <EmptyState
+            animationKey="emptyData"
+            title="No rows returned"
+            description="This report is live. Broaden the filters or choose a different date window to populate results."
+          />
         ) : null}
         {!state.loading && !state.error && rows.length > 0 ? (
           <div className="data-table-wrap">

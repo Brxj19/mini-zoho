@@ -1,0 +1,129 @@
+.lottie-animation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 280px);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.lottie-animation > div,
+.lottie-animation canvas,
+.lottie-animation svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.lottie-animation--compact {
+  width: clamp(120px, 24vw, 160px);
+}
+
+.lottie-animation--default {
+  width: clamp(220px, 30vw, 280px);
+}
+
+.lottie-animation--large {
+  width: clamp(320px, 36vw, 420px);
+}
+
+.lottie-animation--fallback {
+  position: relative;
+  min-height: 120px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(234, 235, 242, 0.56), rgba(255, 255, 255, 0.92));
+  border: 1px solid var(--color-border);
+}
+
+.lottie-animation__fallback-orb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(85, 139, 243, 0.9);
+  animation: lottieFallbackPulse 1.6s ease-in-out infinite;
+}
+
+.lottie-animation__fallback-orb.is-offset {
+  margin-left: 14px;
+  background: rgba(34, 38, 59, 0.9);
+  animation-delay: 0.2s;
+}
+
+.empty-state,
+.loading-state,
+.error-state,
+.coming-soon-state,
+.success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.empty-state,
+.error-state,
+.coming-soon-state,
+.success-state {
+  gap: 14px;
+  padding: 28px 20px;
+}
+
+.empty-state__animation {
+  margin-bottom: 4px;
+}
+
+.empty-state__title {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.empty-state__description {
+  max-width: 560px;
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.loading-state {
+  gap: 12px;
+  padding: 18px 12px;
+  color: var(--color-muted);
+}
+
+.loading-state--full-page {
+  min-height: 52vh;
+  padding: 32px 16px;
+}
+
+.error-state,
+.coming-soon-state,
+.success-state {
+  min-height: 260px;
+}
+
+@keyframes lottieFallbackPulse {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.72;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .lottie-animation--default,
+  .lottie-animation--large {
+    width: min(260px, 100%);
+  }
+}
