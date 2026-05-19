@@ -33,19 +33,21 @@ export function AppShell() {
 
   return (
     <div className={`app-shell ${isSidebarCollapsed ? "is-sidebar-collapsed" : ""}`}>
-      <Sidebar />
+      <Topbar />
       <Drawer open={isMobileSidebarOpen} onClose={closeMobileSidebar}>
         <Sidebar mobile />
       </Drawer>
 
-      <div className="shell-main">
-        <Topbar />
-        <div className="shell-content">
-          <div className="content-backdrop" />
-          <div className="content-scroll">
-            <div className="content-inner">
-              <Breadcrumbs />
-              <Outlet />
+      <div className="shell-body">
+        <Sidebar />
+        <div className="shell-main">
+          <div className="shell-content">
+            <div className="content-backdrop" />
+            <div className="content-scroll">
+              <div className="content-inner">
+                <Breadcrumbs />
+                <Outlet />
+              </div>
             </div>
           </div>
         </div>

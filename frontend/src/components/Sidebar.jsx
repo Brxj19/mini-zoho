@@ -27,18 +27,7 @@ export function Sidebar({ mobile = false }) {
 
   return (
     <aside className={`sidebar ${isCollapsed && !mobile ? "is-collapsed" : ""}`}>
-      <div className="sidebar-brand">
-        <div className="brand-symbol">N</div>
-        {isCollapsed && !mobile ? null : (
-          <div className="sidebar-brand-copy">
-            <strong>Northstar Inventory</strong>
-            <p>{user?.role === "SUPER_ADMIN" ? "Platform operations" : "Inventory operations"}</p>
-          </div>
-        )}
-        {!mobile ? (
-          <div className="sidebar-collapse-spacer" />
-        ) : null}
-      </div>
+      <div className="sidebar-head-spacer" aria-hidden="true" />
 
       <nav className="sidebar-groups" aria-label="Primary navigation">
         <NavLink

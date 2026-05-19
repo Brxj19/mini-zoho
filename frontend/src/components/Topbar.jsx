@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMatches, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
 import { useDropdown } from "../hooks/useDropdown";
@@ -21,7 +21,6 @@ export function Topbar() {
   const searchInputRef = useRef(null);
   const searchShellRef = useRef(null);
   const helpDropdown = useDropdown();
-  const matches = useMatches();
   const { user, tenant } = useAuth();
   const fetchNotifications = useUiStore((state) => state.fetchNotifications);
   const openMobileSidebar = useUiStore((state) => state.openMobileSidebar);
@@ -149,26 +148,19 @@ export function Topbar() {
     navigate(path);
   }
 
-  const currentMatch = [...matches].reverse().find((match) => match.handle?.title);
-  const currentTitle =
-    typeof currentMatch?.handle?.title === "function"
-      ? currentMatch.handle.title(currentMatch.params)
-      : currentMatch?.handle?.title ?? "Dashboard";
-  const currentSection = currentMatch?.handle?.section ?? "Workspace";
-
   return (
     <header className="topbar">
       <div className="topbar-left">
         <button className="icon-button mobile-only" type="button" onClick={openMobileSidebar}>
           <Icon name="menu" size={18} />
         </button>
-        <div className="topbar-brand-shell">
-          <div className="topbar-brand">
-            <span className="topbar-label">{currentTitle}</span>
-            <small>{currentSection}</small>
-          </div>
-          <div className="topbar-workspace-pill">{tenant?.company_name ?? "Northstar Inventory"}</div>
-        </div>
+        <button className="topbar-brand-lockup" type="button" onClick={() => navigate("/")}>
+          <span className="brand-symbol topbar-brand-symbol">N</span>
+          <span className="topbar-brand-copy">
+            <strong>Northstar Inventory</strong>
+            <small>{user?.role === "SUPER_ADMIN" ? "Platform console" : tenant?.company_name ?? "Workspace"}</small>
+          </span>
+        </button>
       </div>
 
       <div className="topbar-search">
