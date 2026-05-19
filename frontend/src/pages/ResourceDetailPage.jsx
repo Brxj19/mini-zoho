@@ -47,6 +47,19 @@ const detailConfigs = {
     editPath: (id) => `/customers/${id}/edit`,
     listPath: "/customers",
   },
+  user: {
+    title: "User Detail",
+    endpoint: (id) => `/users/${id}`,
+    editPath: (id) => `/users/${id}/edit`,
+    listPath: "/users",
+  },
+  tenant: {
+    title: "Tenant Detail",
+    endpoint: (id) => `/tenants/${id}`,
+    supplementary: (id) => [{ key: "usage", endpoint: `/tenants/${id}/usage` }],
+    editPath: (id) => `/tenants/${id}/edit`,
+    listPath: "/tenants",
+  },
   stockTransfer: {
     title: "Stock Transfer Detail",
     endpoint: (id) => `/inventory/transfers/${id}`,
@@ -276,6 +289,7 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
   const itemRows = state.record?.items ?? [];
   const stockRows = state.supplementary.stock?.warehouses ?? [];
   const transactionRows = state.supplementary.transactions?.items ?? [];
+  const usage = state.supplementary.usage ?? null;
   const workflowActions = workflow && state.record ? workflow.actions(state.record, entityId) : [];
   const canEdit = config.editPath && state.record ? (config.canEdit ? config.canEdit(state.record) : true) : false;
 
@@ -466,6 +480,74 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
                       <StatusBadge value={item.available_quantity <= item.reorder_level ? "LOW_STOCK" : "ACTIVE"} />
                     </div>
                   ))}
+                </div>
+              </article>
+            ) : null}
+
+            {detailKey === "tenant" && usage ? (
+              <article className="workspace-card">
+                <div className="card-header-row">
+                  <h3>Usage Snapshot</h3>
+                </div>
+                <div className="kv-grid">
+                  <div className="kv-item">
+                    <span>Total users</span>
+                    <strong>{usage.total_users}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Active users</span>
+                    <strong>{usage.active_users}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Products</span>
+                    <strong>{usage.total_products}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Warehouses</span>
+                    <strong>{usage.total_warehouses}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Sales orders</span>
+                    <strong>{usage.total_sales_orders}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Purchase orders</span>
+                    <strong>{usage.total_purchase_orders}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Stock transfers</span>
+                    <strong>{usage.total_stock_transfers}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Total orders</span>
+                    <strong>{usage.total_orders}</strong>
+                  </div>
+                </div>
+              </article>
+            ) : null}
+
+            {detailKey === "user" && state.record?.tenant ? (
+              <article className="workspace-card">
+                <div className="card-header-row">
+                  <h3>Tenant Access</h3>
+                </div>
+                <div className="kv-grid">
+                  <div className="kv-item">
+                    <span>Company</span>
+                    <strong>{state.record.tenant.company_name}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Tenant status</span>
+                    <strong><StatusBadge value={state.record.tenant.status} /></strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Contact email</span>
+                    <strong>{state.record.tenant.contact_email}</strong>
+                  </div>
+                  <div className="kv-item">
+                    <span>Business type</span>
+                    <strong>{state.record.tenant.business_type ?? "—"}</strong>
+                  </div>
                 </div>
               </article>
             ) : null}

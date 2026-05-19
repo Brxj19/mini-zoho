@@ -227,6 +227,10 @@ export const resourceConfigs = {
     title: "Users",
     description: "Review workspace users, roles, account status, and last-login visibility.",
     endpoint: "/users",
+    createPath: "/users/new",
+    createLabel: "+ New User",
+    createRoles: ["SUPER_ADMIN", "TENANT_ADMIN"],
+    detailPath: (id) => `/users/${id}`,
     searchPlaceholder: "Search users by name or email",
     filters: [
       { label: "All Users", value: "all" },
@@ -245,6 +249,10 @@ export const resourceConfigs = {
     title: "Tenants",
     description: "Super admin view of tenant companies, plans, and activation status.",
     endpoint: "/tenants",
+    createPath: "/tenants/new",
+    createLabel: "+ New Tenant",
+    createRoles: ["SUPER_ADMIN"],
+    detailPath: (id) => `/tenants/${id}`,
     searchPlaceholder: "Search tenant name or contact email",
     filters: [
       { label: "All Tenants", value: "all" },

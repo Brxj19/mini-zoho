@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+from sqlalchemy import func, select
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
+from app.models.product import Product
+from app.models.purchase_order import PurchaseOrder
 from app.models.enums import RoleEnum, TenantStatusEnum, UserStatusEnum
+from app.models.sales_order import SalesOrder
+from app.models.stock_transfer import StockTransfer
 from app.models.tenant import Tenant
 from app.models.user import User
+from app.models.warehouse import Warehouse
 from app.repositories.tenant_repository import TenantRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.tenant import TenantCreate, TenantUpdate
@@ -80,3 +86,26 @@ class TenantService:
         self.db.commit()
         self.db.refresh(tenant)
         return tenant
+
+    def get_usage(self, tenant_id: int) -> dict[str, int]:
+        total_users = self.user_repository.count_by_tenant(tenant_id)
+        active_users = self.user_repository.count_active_by_tenant(tenant_id)
+        total_products = self._count_model(Product, tenant_id)
+        total_warehouses = self._count_model(Warehouse, tenant_id)
+        total_purchase_orders = self._count_model(PurchaseOrder, tenant_id)
+        total_sales_orders = self._count_model(SalesOrder, tenant_id)
+        total_stock_transfers = self._count_model(StockTransfer, tenant_id)
+        return {
+            "tenant_id": tenant_id,
+            "total_users": total_users,
+            "active_users": active_users,
+            "total_products": total_products,
+            "total_warehouses": total_warehouses,
+            "total_orders": total_purchase_orders + total_sales_orders,
+            "total_purchase_orders": total_purchase_orders,
+            "total_sales_orders": total_sales_orders,
+            "total_stock_transfers": total_stock_transfers,
+        }
+
+    def _count_model(self, model, tenant_id: int) -> int:
+        return int(self.db.scalar(select(func.count(model.id)).where(model.tenant_id == tenant_id)) or 0)

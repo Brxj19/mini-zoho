@@ -62,3 +62,6 @@ class TenantUsageResponse(BaseModel):
     total_products: int = 0
     total_warehouses: int = 0
     total_orders: int = 0
+    total_purchase_orders: int = 0
+    total_sales_orders: int = 0
+    total_stock_transfers: int = 0

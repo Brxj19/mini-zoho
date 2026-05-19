@@ -15,7 +15,6 @@ from app.schemas.tenant import (
     TenantUsageResponse,
 )
 from app.services.tenant_service import TenantService
-from app.services.user_service import UserService
 
 router = APIRouter()
 
@@ -86,10 +85,6 @@ def update_tenant_status(
 @router.get("/{tenant_id}/usage", response_model=TenantUsageResponse)
 def get_tenant_usage(tenant_id: int, db: DbSession, current_user: CurrentUser) -> TenantUsageResponse:
     assert_tenant_access(current_user, tenant_id)
-    TenantService(db).get_tenant_or_404(tenant_id)
-    user_service = UserService(db)
-    return TenantUsageResponse(
-        tenant_id=tenant_id,
-        total_users=user_service.user_repository.count_by_tenant(tenant_id),
-        active_users=user_service.user_repository.count_active_by_tenant(tenant_id),
-    )
+    service = TenantService(db)
+    service.get_tenant_or_404(tenant_id)
+    return TenantUsageResponse(**service.get_usage(tenant_id))
