@@ -1,16 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { homeNavigation, navigationGroups } from "../lib/navigation";
-import { useAuthStore } from "../stores/authStore";
+import { useAuth } from "../contexts/AuthContext";
 import { useUiStore } from "../stores/uiStore";
 import { Icon } from "./Icon";
 
 export function Sidebar({ mobile = false }) {
   const location = useLocation();
-  const role = useAuthStore((state) => state.user?.role);
+  const { user } = useAuth();
+  const role = user?.role;
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const initialGroup = useMemo(
     () =>
       navigationGroups.find((group) => group.items.some((item) => location.pathname.startsWith(item.path)))?.title ??
@@ -18,6 +20,10 @@ export function Sidebar({ mobile = false }) {
     [location.pathname],
   );
   const [openGroup, setOpenGroup] = useState(initialGroup);
+
+  useEffect(() => {
+    setOpenGroup(initialGroup);
+  }, [initialGroup]);
 
   return (
     <aside className={`sidebar ${isCollapsed && !mobile ? "is-collapsed" : ""}`}>
@@ -29,6 +35,11 @@ export function Sidebar({ mobile = false }) {
             <p>Retail operations command center</p>
           </div>
         )}
+        {!mobile ? (
+          <button className="icon-button sidebar-collapse-button" type="button" onClick={toggleSidebar}>
+            <Icon name={isCollapsed ? "chevronRight" : "chevronDown"} size={14} />
+          </button>
+        ) : null}
       </div>
 
       <nav className="sidebar-groups" aria-label="Primary navigation">
@@ -43,7 +54,7 @@ export function Sidebar({ mobile = false }) {
 
         {navigationGroups.map((group) => {
           const visibleItems = group.items.filter((item) => !item.superAdminOnly || role === "SUPER_ADMIN");
-          const isOpen = openGroup === group.title || visibleItems.some((item) => location.pathname.startsWith(item.path));
+          const isOpen = openGroup === group.title;
 
           return (
             <div className="sidebar-group" key={group.title}>

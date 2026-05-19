@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import api from "../lib/api";
+import { PageHeader } from "../components/PageHeader";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { reportCatalog } from "../lib/uiConfig";
 
@@ -48,17 +49,17 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Reporting</p>
-          <h2>Operations Reports</h2>
-          <p>A light, fast reporting hub for inventory, order flow, and warehouse oversight.</p>
-        </div>
-        <button className="ghost-button" type="button" onClick={exportCsv}>
-          Export CSV
-        </button>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Analytics"
+        title="Reports"
+        description="Run inventory, warehouse, purchase, and sales reports from one reporting surface."
+        actions={
+          <button className="ghost-button" type="button" onClick={exportCsv}>
+            Export CSV
+          </button>
+        }
+      />
 
       <section className="workspace-card">
         <div className="report-pill-row">

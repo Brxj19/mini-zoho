@@ -1,166 +1,101 @@
-export const roleMatrix = {
-  adminOnly: ["SUPER_ADMIN", "TENANT_ADMIN"],
-  inventory: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"],
-  purchases: ["SUPER_ADMIN", "TENANT_ADMIN", "PURCHASE_STAFF"],
-  sales: ["SUPER_ADMIN", "TENANT_ADMIN", "SALES_STAFF"],
-  operations: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER", "PURCHASE_STAFF", "SALES_STAFF"],
-};
-
-export const navigationGroups = [
-  {
-    key: "home",
-    label: "Home",
-    icon: "home",
-    matcher: (pathname) => pathname === "/",
-    items: [
-      { label: "Workspace Overview", path: "/" },
-      { label: "Notifications", path: "/notifications" },
-    ],
-  },
-  {
-    key: "items",
-    label: "Items",
-    icon: "box",
-    matcher: (pathname) => pathname.startsWith("/products"),
-    items: [
-      { label: "Products", path: "/products" },
-      { label: "Create Product", path: "/products/new", roles: roleMatrix.inventory },
-    ],
-  },
-  {
-    key: "inventory",
-    label: "Inventory",
-    icon: "layers",
-    matcher: (pathname) => pathname.startsWith("/inventory"),
-    items: [
-      { label: "Transactions", path: "/inventory/transactions" },
-      { label: "Stock In", path: "/inventory/stock-in", roles: roleMatrix.inventory },
-      { label: "Stock Out", path: "/inventory/stock-out", roles: roleMatrix.inventory },
-      { label: "Adjustments", path: "/inventory/adjustment", roles: roleMatrix.inventory },
-      { label: "Transfers", path: "/inventory/transfers" },
-    ],
-  },
-  {
-    key: "sales",
-    label: "Sales",
-    icon: "cart",
-    matcher: (pathname) => pathname.startsWith("/sales-orders") || pathname.startsWith("/customers"),
-    items: [
-      { label: "Sales Orders", path: "/sales-orders" },
-      { label: "Create Sales Order", path: "/sales-orders/new", roles: roleMatrix.sales },
-      { label: "Customers", path: "/customers" },
-    ],
-  },
-  {
-    key: "purchases",
-    label: "Purchases",
-    icon: "bag",
-    matcher: (pathname) => pathname.startsWith("/purchase-orders") || pathname.startsWith("/vendors"),
-    items: [
-      { label: "Purchase Orders", path: "/purchase-orders" },
-      { label: "Create Purchase Order", path: "/purchase-orders/new", roles: roleMatrix.purchases },
-      { label: "Vendors", path: "/vendors" },
-    ],
-  },
-  {
-    key: "warehouses",
-    label: "Warehouses",
-    icon: "warehouse",
-    matcher: (pathname) => pathname.startsWith("/warehouses"),
-    items: [
-      { label: "Locations", path: "/warehouses" },
-      { label: "Stock Health", path: "/reports?focus=warehouse" },
-    ],
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    icon: "chart",
-    matcher: (pathname) => pathname.startsWith("/reports"),
-    items: [
-      { label: "Command Center", path: "/reports" },
-      { label: "Inventory Summary", path: "/reports?report=inventory-summary" },
-      { label: "Order Analytics", path: "/reports?report=sales-orders" },
-    ],
-  },
-  {
-    key: "admin",
-    label: "Admin",
-    icon: "users",
-    matcher: (pathname) => pathname.startsWith("/users") || pathname.startsWith("/settings"),
-    items: [
-      { label: "Users", path: "/users", roles: roleMatrix.adminOnly },
-      { label: "Settings", path: "/settings" },
-    ],
-  },
-];
-
 export const resourceConfigs = {
   products: {
-    title: "Products",
-    description: "Manage SKUs, pricing, vendors, and replenishment settings.",
+    title: "Items",
+    description: "Track products, stock posture, reorder levels, and pricing from a single dense inventory list.",
     endpoint: "/products",
-    createPath: "/products/new",
-    detailPath: (id) => `/products/${id}`,
-    searchPlaceholder: "Search products, SKUs, or barcode",
+    createPath: "/items/new",
+    createLabel: "+ New Item",
+    detailPath: (id) => `/items/${id}`,
+    searchPlaceholder: "Search items by name, SKU, or barcode",
+    filters: [
+      { label: "All Items", value: "all" },
+      { label: "Active Items", value: "ACTIVE" },
+      { label: "Archived Items", value: "ARCHIVED" },
+    ],
     columns: [
-      { key: "name", label: "Product" },
+      { key: "name", label: "Name" },
       { key: "sku", label: "SKU" },
       { key: "unit", label: "Unit" },
-      { key: "selling_price", label: "Selling" },
-      { key: "reorder_level", label: "Reorder" },
+      { key: "cost_price", label: "Cost Price", kind: "currency" },
+      { key: "selling_price", label: "Selling Price", kind: "currency" },
+      { key: "reorder_level", label: "Reorder Level" },
       { key: "status", label: "Status", kind: "status" },
     ],
   },
   warehouses: {
     title: "Warehouses",
-    description: "Track stock locations, default sites, and local operations coverage.",
+    description: "Monitor active stock locations, warehouse managers, and default fulfillment sites.",
     endpoint: "/warehouses",
     detailPath: (id) => `/warehouses/${id}`,
-    searchPlaceholder: "Search location, code, or city",
+    searchPlaceholder: "Search warehouse name, city, or manager",
+    filters: [
+      { label: "All Warehouses", value: "all" },
+      { label: "Active Warehouses", value: "ACTIVE" },
+      { label: "Archived Warehouses", value: "ARCHIVED" },
+    ],
     columns: [
       { key: "name", label: "Warehouse" },
       { key: "code", label: "Code" },
       { key: "city", label: "City" },
       { key: "manager_name", label: "Manager" },
-      { key: "is_default", label: "Default", kind: "boolean" },
+      { key: "is_default", label: "Primary", kind: "boolean" },
       { key: "status", label: "Status", kind: "status" },
     ],
   },
   vendors: {
     title: "Vendors",
-    description: "Supplier relationships for inbound purchasing and replenishment.",
+    description: "Keep supplier records ready for procurement, receiving, and replenishment planning.",
     endpoint: "/vendors",
-    searchPlaceholder: "Search vendors",
+    searchPlaceholder: "Search vendors by name, email, or GST number",
+    filters: [
+      { label: "All Vendors", value: "all" },
+      { label: "Active Vendors", value: "ACTIVE" },
+      { label: "Archived Vendors", value: "ARCHIVED" },
+    ],
     columns: [
       { key: "name", label: "Vendor" },
       { key: "email", label: "Email" },
       { key: "phone", label: "Phone" },
-      { key: "gst_number", label: "Tax ID" },
+      { key: "gst_number", label: "GST" },
       { key: "status", label: "Status", kind: "status" },
     ],
   },
   customers: {
     title: "Customers",
-    description: "Maintain customer billing details and sales-ready contact records.",
+    description: "Maintain customer contact records for sales, dispatch, and follow-up workflows.",
     endpoint: "/customers",
-    searchPlaceholder: "Search customers",
+    searchPlaceholder: "Search customers by name, email, or GST number",
+    filters: [
+      { label: "All Customers", value: "all" },
+      { label: "Active Customers", value: "ACTIVE" },
+      { label: "Archived Customers", value: "ARCHIVED" },
+    ],
     columns: [
       { key: "name", label: "Customer" },
       { key: "email", label: "Email" },
       { key: "phone", label: "Phone" },
-      { key: "gst_number", label: "Tax ID" },
+      { key: "gst_number", label: "GST" },
       { key: "status", label: "Status", kind: "status" },
     ],
   },
   inventoryTransactions: {
     title: "Inventory Transactions",
-    description: "A running ledger of stock movement across warehouses.",
+    description: "Review every stock movement with type, warehouse, quantity, and reference context.",
     endpoint: "/inventory/transactions",
-    searchPlaceholder: "Filter by transaction context",
+    searchPlaceholder: "Search by reference, product, or movement type",
+    filters: [
+      { label: "All Transactions", value: "all" },
+      { label: "Stock In", value: "STOCK_IN" },
+      { label: "Stock Out", value: "STOCK_OUT" },
+      { label: "Adjustment", value: "ADJUSTMENT" },
+      { label: "Transfer In", value: "TRANSFER_IN" },
+      { label: "Transfer Out", value: "TRANSFER_OUT" },
+      { label: "Purchase Receive", value: "PURCHASE_RECEIVE" },
+      { label: "Sales Deduct", value: "SALES_ORDER_DEDUCT" },
+    ],
     columns: [
       { key: "transaction_type", label: "Type", kind: "status" },
-      { key: "product_id", label: "Product ID" },
+      { key: "product_id", label: "Product" },
       { key: "warehouse_id", label: "Warehouse" },
       { key: "quantity", label: "Quantity" },
       { key: "reference_type", label: "Reference" },
@@ -169,9 +104,16 @@ export const resourceConfigs = {
   },
   stockTransfers: {
     title: "Stock Transfers",
-    description: "Move inventory between locations with full status tracking.",
+    description: "Move stock across locations while keeping transfer ownership and state visible.",
     endpoint: "/inventory/transfers",
-    searchPlaceholder: "Search transfer notes or IDs",
+    searchPlaceholder: "Search transfer number or transfer notes",
+    filters: [
+      { label: "All Transfers", value: "all" },
+      { label: "Draft", value: "DRAFT" },
+      { label: "In Transit", value: "IN_TRANSIT" },
+      { label: "Completed", value: "COMPLETED" },
+      { label: "Cancelled", value: "CANCELLED" },
+    ],
     columns: [
       { key: "id", label: "Transfer #" },
       { key: "source_warehouse_id", label: "Source" },
@@ -183,45 +125,100 @@ export const resourceConfigs = {
   },
   purchaseOrders: {
     title: "Purchase Orders",
-    description: "Plan inbound stock, issue vendor orders, and receive inventory cleanly.",
+    description: "Track issue, receipt, and partial receipt progress across inbound vendor orders.",
     endpoint: "/purchase-orders",
     createPath: "/purchase-orders/new",
+    createLabel: "+ New Purchase Order",
     detailPath: (id) => `/purchase-orders/${id}`,
-    searchPlaceholder: "Search PO number or note",
+    searchPlaceholder: "Search PO number or vendor",
+    filters: [
+      { label: "All Purchase Orders", value: "all" },
+      { label: "Draft", value: "DRAFT" },
+      { label: "Issued", value: "ISSUED" },
+      { label: "Partially Received", value: "PARTIALLY_RECEIVED" },
+      { label: "Received", value: "RECEIVED" },
+      { label: "Cancelled", value: "CANCELLED" },
+    ],
     columns: [
       { key: "po_number", label: "PO Number" },
       { key: "vendor_id", label: "Vendor" },
       { key: "order_date", label: "Order Date", kind: "date" },
-      { key: "total_amount", label: "Total" },
+      { key: "total_amount", label: "Amount", kind: "currency" },
       { key: "status", label: "Status", kind: "status" },
     ],
   },
   salesOrders: {
     title: "Sales Orders",
-    description: "Coordinate reservations, fulfillment, and shipped inventory flow.",
+    description: "Monitor the order flow from draft through delivery with clear status visibility.",
     endpoint: "/sales-orders",
     createPath: "/sales-orders/new",
+    createLabel: "+ New Sales Order",
     detailPath: (id) => `/sales-orders/${id}`,
-    searchPlaceholder: "Search SO number or note",
+    searchPlaceholder: "Search SO number or customer",
+    filters: [
+      { label: "All Sales Orders", value: "all" },
+      { label: "Draft", value: "DRAFT" },
+      { label: "Confirmed", value: "CONFIRMED" },
+      { label: "Packed", value: "PACKED" },
+      { label: "Shipped", value: "SHIPPED" },
+      { label: "Delivered", value: "DELIVERED" },
+      { label: "Cancelled", value: "CANCELLED" },
+    ],
     columns: [
       { key: "so_number", label: "SO Number" },
       { key: "customer_id", label: "Customer" },
       { key: "order_date", label: "Order Date", kind: "date" },
-      { key: "total_amount", label: "Total" },
+      { key: "total_amount", label: "Amount", kind: "currency" },
       { key: "status", label: "Status", kind: "status" },
     ],
   },
   users: {
     title: "Users",
-    description: "Control workspace access, roles, and operational permissions.",
+    description: "Review workspace users, roles, account status, and last-login visibility.",
     endpoint: "/users",
-    searchPlaceholder: "Search users",
+    searchPlaceholder: "Search users by name or email",
+    filters: [
+      { label: "All Users", value: "all" },
+      { label: "Active Users", value: "ACTIVE" },
+      { label: "Inactive Users", value: "INACTIVE" },
+    ],
     columns: [
       { key: "name", label: "Name" },
       { key: "email", label: "Email" },
       { key: "role", label: "Role", kind: "status" },
       { key: "status", label: "Status", kind: "status" },
       { key: "last_login_at", label: "Last Login", kind: "date" },
+    ],
+  },
+  tenants: {
+    title: "Tenants",
+    description: "Super admin view of tenant companies, plans, and activation status.",
+    endpoint: "/tenants",
+    searchPlaceholder: "Search tenant name or contact email",
+    filters: [
+      { label: "All Tenants", value: "all" },
+      { label: "Active Tenants", value: "ACTIVE" },
+      { label: "Disabled Tenants", value: "DISABLED" },
+    ],
+    columns: [
+      { key: "company_name", label: "Company" },
+      { key: "contact_email", label: "Contact Email" },
+      { key: "business_type", label: "Business Type" },
+      { key: "status", label: "Status", kind: "status" },
+      { key: "created_at", label: "Created", kind: "date" },
+    ],
+  },
+  auditLogs: {
+    title: "Audit Logs",
+    description: "Trace backend actions, entity changes, and operator activity across the workspace.",
+    endpoint: "/audit-logs",
+    searchPlaceholder: "Search action or entity type",
+    filters: [{ label: "All Logs", value: "all" }],
+    columns: [
+      { key: "action", label: "Action" },
+      { key: "entity_type", label: "Entity" },
+      { key: "entity_id", label: "Entity ID" },
+      { key: "created_at", label: "Created", kind: "date" },
     ],
   },
 };
@@ -235,14 +232,3 @@ export const reportCatalog = [
   { key: "purchase-orders", label: "Purchase Orders", endpoint: "/reports/purchase-orders" },
   { key: "sales-orders", label: "Sales Orders", endpoint: "/reports/sales-orders" },
 ];
-
-export function canAccess(userRole, roles) {
-  if (!roles?.length) {
-    return true;
-  }
-  return roles.includes(userRole);
-}
-
-export function resolveActiveGroup(pathname) {
-  return navigationGroups.find((group) => group.matcher(pathname)) ?? navigationGroups[0];
-}

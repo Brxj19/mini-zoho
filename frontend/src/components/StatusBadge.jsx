@@ -17,6 +17,10 @@ const toneMap = {
   DISABLED: "danger",
   INACTIVE: "danger",
   LOW_STOCK: "warning",
+  ORDER_STATUS: "info",
+  PURCHASE_RECEIVE: "success",
+  STOCK_ALERT: "warning",
+  SYSTEM: "muted",
 };
 
 export function StatusBadge({ value }) {

@@ -11,8 +11,17 @@ export const useUiStore = create(
       recentHistory: [],
       notifications: [],
       async fetchNotifications() {
-        const { data } = await api.get("/app/notifications/list");
-        set({ notifications: data.rows ?? [] });
+        const { data } = await api.get("/notifications", { params: { page_size: 8 } });
+        set({
+          notifications: (data.items ?? []).map((item) => ({
+            id: item.id,
+            title: item.title,
+            detail: item.message,
+            unread: !item.is_read,
+            createdAt: item.created_at,
+            type: item.type,
+          })),
+        });
       },
       toggleSidebar() {
         set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed }));
@@ -36,7 +45,7 @@ export const useUiStore = create(
         set({ recentHistory: nextHistory });
       },
       async markNotificationRead(notificationId) {
-        await api.post(`/app/notifications/${notificationId}/read`);
+        await api.post(`/notifications/${notificationId}/read`);
         set((state) => ({
           notifications: state.notifications.map((notification) =>
             notification.id === notificationId ? { ...notification, unread: false } : notification,
@@ -44,7 +53,7 @@ export const useUiStore = create(
         }));
       },
       async markAllNotificationsRead() {
-        await api.post("/app/notifications/read-all");
+        await api.post("/notifications/read-all");
         set((state) => ({
           notifications: state.notifications.map((notification) => ({ ...notification, unread: false })),
         }));

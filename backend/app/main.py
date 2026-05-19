@@ -10,6 +10,7 @@ from app.core.errors import register_exception_handlers
 from app.middleware import setup_middlewares
 from app.routers.api import api_router
 from app.services.bootstrap_service import ensure_super_admin
+from app.services.seed_service import ensure_demo_workspace
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -20,6 +21,8 @@ async def lifespan(_: FastAPI):
     db = SessionLocal()
     try:
         ensure_super_admin(db)
+        if settings.env.lower() == "development":
+            ensure_demo_workspace(db)
     except SQLAlchemyError:
         logger.exception("Startup seed failed.")
     finally:

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { useAuth } from "../contexts/AuthContext";
 import { useDropdown } from "../hooks/useDropdown";
-import { useActiveOrganization, useAuthStore } from "../stores/authStore";
 import { useUiStore } from "../stores/uiStore";
 import { Icon } from "./Icon";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
@@ -15,14 +15,12 @@ export function Topbar() {
   const helpDropdown = useDropdown();
   const notificationDropdown = useDropdown();
   const userDropdown = useDropdown();
-  const activeOrganization = useActiveOrganization();
+  const { logout, user, tenant } = useAuth();
   const notifications = useUiStore((state) => state.notifications);
   const fetchNotifications = useUiStore((state) => state.fetchNotifications);
   const markNotificationRead = useUiStore((state) => state.markNotificationRead);
   const markAllNotificationsRead = useUiStore((state) => state.markAllNotificationsRead);
   const openMobileSidebar = useUiStore((state) => state.openMobileSidebar);
-  const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const unreadCount = notifications.filter((notification) => notification.unread).length;
 
@@ -37,8 +35,8 @@ export function Topbar() {
           <Icon name="menu" size={18} />
         </button>
         <div className="topbar-brand">
-          <span className="topbar-label">Northstar Inventory</span>
-          <small>{activeOrganization?.plan ?? "Workspace"} plan</small>
+          <span className="topbar-label">{tenant?.company_name ?? "Northstar Inventory"}</span>
+          <small>{user?.role?.replaceAll("_", " ").toLowerCase() ?? "workspace"} access</small>
         </div>
       </div>
 
@@ -93,7 +91,7 @@ export function Topbar() {
           {helpDropdown.open ? (
             <div className="menu-popover is-open">
               <div className="menu-title">Need help?</div>
-              <div className="menu-empty">Support center wiring can plug in here without another layout change.</div>
+              <div className="menu-empty">Support, onboarding guides, and product tour links can sit here without changing the shell again.</div>
             </div>
           ) : null}
         </div>
@@ -112,11 +110,9 @@ export function Topbar() {
               <button className="menu-item" type="button" onClick={() => navigate("/settings")}>
                 Settings
               </button>
-              {user?.role !== "SUPER_ADMIN" ? (
-                <button className="menu-item" type="button" onClick={() => navigate("/setup")}>
-                  Organization setup
-                </button>
-              ) : null}
+              <button className="menu-item" type="button" onClick={() => navigate("/notifications")}>
+                Notifications
+              </button>
               <button className="menu-item is-danger" type="button" onClick={logout}>
                 Sign out
               </button>

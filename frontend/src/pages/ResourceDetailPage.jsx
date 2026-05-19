@@ -7,9 +7,9 @@ import { StatusBadge } from "../components/StatusBadge";
 
 const detailConfigs = {
   product: {
-    title: "Product Detail",
+    title: "Item Detail",
     endpoint: (id) => `/products/${id}`,
-    editPath: (id) => `/products/${id}/edit`,
+    editPath: (id) => `/items/${id}/edit`,
     supplementary: (id) => [
       { key: "stock", endpoint: `/products/${id}/stock` },
       { key: "transactions", endpoint: `/products/${id}/transactions` },

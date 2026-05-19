@@ -80,7 +80,7 @@ export function ProductFormPage() {
 
     try {
       const response = isEditing ? await api.patch(`/products/${productId}`, payload) : await api.post("/products", payload);
-      navigate(`/products/${response.data.id}`);
+      navigate(`/items/${response.data.id}`);
     } catch (error) {
       setState((current) => ({
         ...current,
@@ -95,8 +95,8 @@ export function ProductFormPage() {
       <section className="page-intro">
         <div>
           <p className="page-kicker">Catalog</p>
-          <h2>{isEditing ? "Edit Product" : "Create Product"}</h2>
-          <p>Use a clean SKU setup with price, vendor, and replenishment signals.</p>
+          <h2>{isEditing ? "Edit Item" : "Create Item"}</h2>
+          <p>Set up item details, pricing, and replenishment controls in one clean workflow.</p>
         </div>
       </section>
 
@@ -108,7 +108,7 @@ export function ProductFormPage() {
           <>
             <div className="form-grid-wide">
               <label>
-                Product name
+                Item name
                 <input className="field-input" value={form.name} onChange={(event) => update("name", event.target.value)} required />
               </label>
               <label>
@@ -182,7 +182,7 @@ export function ProductFormPage() {
             </div>
             <div className="form-actions">
               <button className="primary-button" type="submit" disabled={state.saving}>
-                {state.saving ? "Saving…" : isEditing ? "Save Product" : "Create Product"}
+                {state.saving ? "Saving…" : isEditing ? "Save Item" : "Create Item"}
               </button>
             </div>
           </>

@@ -1,55 +1,70 @@
+import { useSearchParams } from "react-router-dom";
+
+import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
+import { settingsNavigation } from "../lib/navigation";
 
 export function SettingsPage() {
   const { user, tenant } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const section = searchParams.get("section") ?? "organization";
+  const activeSection = settingsNavigation.find((item) => item.key === section) ?? settingsNavigation[0];
 
   return (
-    <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Workspace Settings</p>
-          <h2>Platform Controls</h2>
-          <p>Profile context, workspace identity, and backend operating rails at a glance.</p>
-        </div>
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Admin"
+        title="Settings"
+        description="Workspace profile, operational preferences, and account-level controls."
+      />
 
-      <section className="detail-grid">
-        <article className="workspace-card">
-          <div className="card-header-row">
-            <h3>Signed-in user</h3>
+      <div className="detail-grid">
+        <section className="workspace-card">
+          <div className="widget-header">
+            <h2>Configuration Areas</h2>
+          </div>
+          <div className="mini-list">
+            {settingsNavigation.map((item) => (
+              <button
+                key={item.key}
+                className={`sidebar-link ${activeSection.key === item.key ? "is-active" : ""}`}
+                type="button"
+                onClick={() => setSearchParams({ section: item.key })}
+              >
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="workspace-card">
+          <div className="widget-header">
+            <h2>{activeSection.label}</h2>
           </div>
           <div className="kv-grid">
             <div className="kv-item">
-              <span>Name</span>
-              <strong>{user?.name}</strong>
+              <span>Organization</span>
+              <strong>{tenant?.company_name ?? "Platform"}</strong>
             </div>
             <div className="kv-item">
-              <span>Email</span>
-              <strong>{user?.email}</strong>
+              <span>Contact Email</span>
+              <strong>{tenant?.contact_email ?? user?.email ?? "—"}</strong>
+            </div>
+            <div className="kv-item">
+              <span>Current User</span>
+              <strong>{user?.name ?? "—"}</strong>
             </div>
             <div className="kv-item">
               <span>Role</span>
-              <strong>{user?.role?.replaceAll("_", " ")}</strong>
-            </div>
-            <div className="kv-item">
-              <span>Tenant</span>
-              <strong>{tenant?.company_name ?? "Platform"}</strong>
+              <strong>{user?.role?.replaceAll("_", " ") ?? "—"}</strong>
             </div>
           </div>
-        </article>
-
-        <article className="workspace-card">
-          <div className="card-header-row">
-            <h3>Backend rails</h3>
-          </div>
-          <ul className="notes-list">
-            <li>Tenant isolation is enforced in the API layer.</li>
-            <li>Request IDs and response timing are available through middleware.</li>
-            <li>Notifications, reports, and audit logs are active in the current workspace.</li>
-            <li>Phase 9 focuses on making the operating UI feel cohesive and fast.</li>
-          </ul>
-        </article>
-      </section>
+          <p>
+            This section is structured for future module-specific settings. The shell and navigation are now in
+            place so backend-backed settings can slot in without another redesign.
+          </p>
+        </section>
+      </div>
     </div>
   );
 }

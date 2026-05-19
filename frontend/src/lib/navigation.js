@@ -6,10 +6,10 @@ export const navigationGroups = [
     items: [
       { label: "Items", path: "/items", icon: "box" },
       { label: "Item Groups", path: "/item-groups", icon: "layers", placeholder: true },
-      { label: "Inventory Adjustments", path: "/inventory-adjustments", icon: "sliders" },
-      { label: "Stock Transfers", path: "/stock-transfers", icon: "shuffle" },
+      { label: "Inventory Adjustments", path: "/inventory/adjustment", icon: "sliders" },
+      { label: "Stock Transfers", path: "/inventory/transfers", icon: "shuffle" },
       { label: "Warehouses", path: "/warehouses", icon: "warehouse" },
-      { label: "Low Stock", path: "/low-stock", icon: "alert" },
+      { label: "Low Stock", path: "/reports?report=low-stock", icon: "alert" },
     ],
   },
   {
@@ -44,7 +44,7 @@ export const navigationGroups = [
     items: [
       { label: "Users", path: "/users", icon: "userCog" },
       { label: "Tenants", path: "/tenants", icon: "building", superAdminOnly: true },
-      { label: "Subscription", path: "/subscription", icon: "sparkles" },
+      { label: "Subscription", path: "/subscription", icon: "sparkles", placeholder: true },
       { label: "Settings", path: "/settings", icon: "settings" },
     ],
   },
@@ -60,8 +60,8 @@ export const quickCreateItems = [
   { label: "New Vendor", path: "/vendors", icon: "briefcase" },
   { label: "New Sales Order", path: "/sales-orders/new", icon: "cart" },
   { label: "New Purchase Order", path: "/purchase-orders/new", icon: "clipboard" },
-  { label: "Stock Adjustment", path: "/inventory-adjustments", icon: "sliders" },
-  { label: "Stock Transfer", path: "/stock-transfers", icon: "shuffle" },
+  { label: "Stock In", path: "/inventory/stock-in", icon: "packagePlus" },
+  { label: "Stock Transfer", path: "/inventory/transfers", icon: "shuffle" },
 ];
 
 export const settingsNavigation = [

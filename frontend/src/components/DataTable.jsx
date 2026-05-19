@@ -6,6 +6,7 @@ import { EmptyState } from "./EmptyState";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { SearchInput } from "./SearchInput";
 import { StatusBadge } from "./StatusBadge";
+import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
 
 const PAGE_SIZE = 6;
 
@@ -37,7 +38,7 @@ export function DataTable({
           return true;
         }
 
-        return String(row.status ?? row.type ?? "").toLowerCase() === filterValue.toLowerCase();
+        return String(row.status ?? row.type ?? row.transaction_type ?? "").toLowerCase() === filterValue.toLowerCase();
       })
       .filter((row) =>
         normalizedQuery
@@ -46,6 +47,33 @@ export function DataTable({
       )
       .sort((left, right) => String(left[sortValue] ?? "").localeCompare(String(right[sortValue] ?? "")));
   }, [filterValue, query, rows, sortValue]);
+
+  function renderCell(column, row) {
+    const value = row[column.key];
+    if (column.kind === "status") {
+      return <StatusBadge value={value} />;
+    }
+    if (column.kind === "boolean") {
+      return value ? "Yes" : "No";
+    }
+    if (column.kind === "currency") {
+      return formatCurrency(value);
+    }
+    if (column.kind === "date") {
+      return String(value ?? "").includes("T") ? formatDateTime(value) : formatDate(value);
+    }
+    if (column.render) {
+      return column.render(value, row);
+    }
+    if (rowLink && column.key === columns[0].key) {
+      return (
+        <Link className="row-link" to={rowLink(row)}>
+          {value}
+        </Link>
+      );
+    }
+    return value ?? "—";
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -116,18 +144,8 @@ export function DataTable({
                 {visibleRows.map((row) => (
                   <tr key={row.id}>
                     {columns.map((column) => (
-                      <td key={column.key}>
-                        {column.key === "status" ? (
-                          <StatusBadge status={row[column.key]} />
-                        ) : column.render ? (
-                          column.render(row[column.key], row)
-                        ) : rowLink && column.key === columns[0].key ? (
-                          <Link className="row-link" to={rowLink(row)}>
-                            {row[column.key]}
-                          </Link>
-                        ) : (
-                          row[column.key]
-                        )}
+                    <td key={column.key}>
+                        {renderCell(column, row)}
                       </td>
                     ))}
                     <td>
