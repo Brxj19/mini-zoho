@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { BackButton } from "../components/BackButton";
+import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
 
 const initialForm = {
@@ -100,133 +101,176 @@ export function ProductFormPage() {
   }
 
   return (
-    <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Catalog</p>
-          <h2>{isEditing ? "Edit Item" : "Create Item"}</h2>
-          <p>Set up item details, pricing, and replenishment controls in one clean workflow.</p>
-        </div>
-        <BackButton fallbackTo={isEditing ? `/items/${productId}` : "/items"} />
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Inventory Catalog"
+        title={isEditing ? "Edit Item" : "Create Item"}
+        description="Capture item identity, pricing, purchasing context, and tracking controls in one structured workflow."
+        actions={<BackButton fallbackTo={isEditing ? `/items/${productId}` : "/items"} />}
+      />
 
-      <form className="workspace-card form-shell" onSubmit={handleSubmit}>
+      <form className="form-shell" onSubmit={handleSubmit}>
         {state.loading ? <div className="surface-placeholder">Loading product form…</div> : null}
         {state.error ? <div className="surface-error">{state.error}</div> : null}
 
         {!state.loading ? (
           <>
-            <div className="form-grid-wide">
-              <label>
-                Item name
-                <input className="field-input" value={form.name} onChange={(event) => update("name", event.target.value)} required />
-              </label>
-              <label>
-                SKU
-                <input className="field-input" value={form.sku} onChange={(event) => update("sku", event.target.value)} required />
-              </label>
-              <label>
-                Barcode
-                <div className="stacked-inline">
-                  <input className="field-input" value={form.barcode} onChange={(event) => update("barcode", event.target.value)} />
-                  <button
-                    className="ghost-button compact-button"
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const response = await api.get("/inventory/barcode/generate");
-                        update("barcode", response.data.barcode);
-                        setState((current) => ({ ...current, error: "" }));
-                      } catch (error) {
-                        setState((current) => ({
-                          ...current,
-                          error: error?.response?.data?.detail ?? "Unable to generate a barcode.",
-                        }));
-                      }
-                    }}
-                  >
-                    Generate
-                  </button>
-                </div>
-              </label>
-              <label>
-                Unit
-                <input className="field-input" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
-              </label>
-              <label>
-                Category
-                <select className="field-input" value={form.category_id} onChange={(event) => update("category_id", event.target.value)}>
-                  <option value="">Select category</option>
-                  {catalog.categories.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Brand
-                <select className="field-input" value={form.brand_id} onChange={(event) => update("brand_id", event.target.value)}>
-                  <option value="">Select brand</option>
-                  {catalog.brands.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Vendor
-                <select className="field-input" value={form.vendor_id} onChange={(event) => update("vendor_id", event.target.value)}>
-                  <option value="">Select vendor</option>
-                  {catalog.vendors.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Status
-                <select className="field-input" value={form.status} onChange={(event) => update("status", event.target.value)}>
-                  <option value="ACTIVE">Active</option>
-                  <option value="ARCHIVED">Archived</option>
-                </select>
-              </label>
-              <label>
-                Cost price
-                <input className="field-input" type="number" min="0" step="0.01" value={form.cost_price} onChange={(event) => update("cost_price", event.target.value)} />
-              </label>
-              <label>
-                Selling price
-                <input className="field-input" type="number" min="0" step="0.01" value={form.selling_price} onChange={(event) => update("selling_price", event.target.value)} />
-              </label>
-              <label>
-                Reorder level
-                <input className="field-input" type="number" min="0" step="1" value={form.reorder_level} onChange={(event) => update("reorder_level", event.target.value)} />
-              </label>
-              <label className="checkbox-row">
-                <input type="checkbox" checked={form.serial_tracking_enabled} onChange={(event) => update("serial_tracking_enabled", event.target.checked)} />
-                Enable serial tracking
-              </label>
-              <label className="checkbox-row">
-                <input type="checkbox" checked={form.batch_tracking_enabled} onChange={(event) => update("batch_tracking_enabled", event.target.checked)} />
-                Enable batch tracking
-              </label>
-              <label className="checkbox-row">
-                <input type="checkbox" checked={form.expiry_tracking_enabled} onChange={(event) => update("expiry_tracking_enabled", event.target.checked)} />
-                Track expiry dates
-              </label>
-              <label className="checkbox-row">
-                <input type="checkbox" checked={form.warranty_tracking_enabled} onChange={(event) => update("warranty_tracking_enabled", event.target.checked)} />
-                Track warranty dates
-              </label>
-              <label className="field-span-full">
-                Description
-                <textarea className="field-input field-textarea" value={form.description} onChange={(event) => update("description", event.target.value)} />
-              </label>
-            </div>
-            <div className="form-actions">
+            <section className="workspace-card form-section">
+              <div className="form-section-heading">
+                <h3>Primary Details</h3>
+                <p>Define the core identity and catalog structure for this item.</p>
+              </div>
+              <div className="form-grid-wide">
+                <label>
+                  Item name
+                  <input className="field-input" value={form.name} onChange={(event) => update("name", event.target.value)} required />
+                </label>
+                <label>
+                  SKU
+                  <input className="field-input" value={form.sku} onChange={(event) => update("sku", event.target.value)} required />
+                </label>
+                <label>
+                  Barcode
+                  <div className="stacked-inline">
+                    <input className="field-input" value={form.barcode} onChange={(event) => update("barcode", event.target.value)} />
+                    <button
+                      className="ghost-button compact-button"
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const response = await api.get("/inventory/barcode/generate");
+                          update("barcode", response.data.barcode);
+                          setState((current) => ({ ...current, error: "" }));
+                        } catch (error) {
+                          setState((current) => ({
+                            ...current,
+                            error: error?.response?.data?.detail ?? "Unable to generate a barcode.",
+                          }));
+                        }
+                      }}
+                    >
+                      Generate
+                    </button>
+                  </div>
+                </label>
+                <label>
+                  Unit
+                  <input className="field-input" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
+                </label>
+                <label>
+                  Category
+                  <select className="field-input" value={form.category_id} onChange={(event) => update("category_id", event.target.value)}>
+                    <option value="">Select category</option>
+                    {catalog.categories.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Brand
+                  <select className="field-input" value={form.brand_id} onChange={(event) => update("brand_id", event.target.value)}>
+                    <option value="">Select brand</option>
+                    {catalog.brands.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field-span-full">
+                  Product image
+                  <div className="surface-placeholder">Image upload is reserved for a future media enhancement without changing the item form structure again.</div>
+                </label>
+              </div>
+            </section>
+
+            <section className="workspace-card form-section">
+              <div className="form-section-heading">
+                <h3>Sales and Purchase Information</h3>
+                <p>Set pricing and supplier context used across sales and procurement workflows.</p>
+              </div>
+              <div className="form-grid-wide">
+                <label>
+                  Selling price
+                  <input className="field-input" type="number" min="0" step="0.01" value={form.selling_price} onChange={(event) => update("selling_price", event.target.value)} />
+                </label>
+                <label>
+                  Cost price
+                  <input className="field-input" type="number" min="0" step="0.01" value={form.cost_price} onChange={(event) => update("cost_price", event.target.value)} />
+                </label>
+                <label>
+                  Preferred vendor
+                  <select className="field-input" value={form.vendor_id} onChange={(event) => update("vendor_id", event.target.value)}>
+                    <option value="">Select vendor</option>
+                    {catalog.vendors.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Status
+                  <select className="field-input" value={form.status} onChange={(event) => update("status", event.target.value)}>
+                    <option value="ACTIVE">Active</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
+                </label>
+                <label className="field-span-full">
+                  Description
+                  <textarea className="field-input field-textarea" value={form.description} onChange={(event) => update("description", event.target.value)} />
+                </label>
+              </div>
+            </section>
+
+            <section className="workspace-card form-section">
+              <div className="form-section-heading">
+                <h3>Inventory Tracking</h3>
+                <p>Control replenishment thresholds and advanced tracking modes for operational traceability.</p>
+              </div>
+              <div className="form-grid-wide">
+                <label>
+                  Reorder level
+                  <input className="field-input" type="number" min="0" step="1" value={form.reorder_level} onChange={(event) => update("reorder_level", event.target.value)} />
+                </label>
+                <label>
+                  Opening stock
+                  <div className="surface-placeholder">Opening stock is posted through stock-in after the item is created so every movement remains auditable.</div>
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={form.serial_tracking_enabled} onChange={(event) => update("serial_tracking_enabled", event.target.checked)} />
+                  Enable serial tracking
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={form.batch_tracking_enabled} onChange={(event) => update("batch_tracking_enabled", event.target.checked)} />
+                  Enable batch tracking
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={form.expiry_tracking_enabled} onChange={(event) => update("expiry_tracking_enabled", event.target.checked)} />
+                  Track expiry dates
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={form.warranty_tracking_enabled} onChange={(event) => update("warranty_tracking_enabled", event.target.checked)} />
+                  Track warranty dates
+                </label>
+              </div>
+            </section>
+
+            <section className="workspace-card form-section">
+              <div className="form-section-heading">
+                <h3>Dimensions and Codes</h3>
+                <p>Reserved for richer catalog metadata such as UPC, EAN, MPN, and dimensional data.</p>
+              </div>
+              <div className="surface-placeholder">Additional dimensions, tax preferences, and code systems can plug into this section without disrupting the core inventory form.</div>
+            </section>
+
+            <div className="workspace-card sticky-form-actions">
+              <BackButton fallbackTo={isEditing ? `/items/${productId}` : "/items"} />
+              <button className="ghost-button" type="button" onClick={() => navigate(isEditing ? `/items/${productId}` : "/items")}>
+                Cancel
+              </button>
               <button className="primary-button" type="submit" disabled={state.saving}>
                 {state.saving ? "Saving…" : isEditing ? "Save Item" : "Create Item"}
               </button>

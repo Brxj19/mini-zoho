@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { BackButton } from "../components/BackButton";
+import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
 
 const initialForm = {
@@ -89,68 +90,96 @@ export function WarehouseFormPage() {
   }
 
   return (
-    <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Inventory Location</p>
-          <h2>{isEditing ? "Edit Warehouse" : "Create Warehouse"}</h2>
-          <p>Configure fulfillment location details, warehouse ownership, and primary-site behavior.</p>
-        </div>
-        <BackButton fallbackTo={isEditing ? `/warehouses/${warehouseId}` : "/warehouses"} />
-      </section>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Inventory Location"
+        title={isEditing ? "Edit Warehouse" : "Create Warehouse"}
+        description="Define location identity, contact ownership, and primary-site behavior for this warehouse."
+        actions={<BackButton fallbackTo={isEditing ? `/warehouses/${warehouseId}` : "/warehouses"} />}
+      />
 
-      <form className="workspace-card form-shell" onSubmit={handleSubmit}>
+      <form className="form-shell" onSubmit={handleSubmit}>
         {state.loading ? <div className="surface-placeholder">Loading warehouse form…</div> : null}
         {state.error ? <div className="surface-error">{state.error}</div> : null}
 
         {!state.loading ? (
           <>
-            <div className="form-grid-wide">
-              <label>
-                Warehouse name
-                <input className="field-input" value={form.name} onChange={(event) => update("name", event.target.value)} required />
-              </label>
-              <label>
-                Code
-                <input className="field-input" value={form.code} onChange={(event) => update("code", event.target.value)} required />
-              </label>
-              <label>
-                City
-                <input className="field-input" value={form.city} onChange={(event) => update("city", event.target.value)} />
-              </label>
-              <label>
-                State
-                <input className="field-input" value={form.state} onChange={(event) => update("state", event.target.value)} />
-              </label>
-              <label>
-                Country
-                <input className="field-input" value={form.country} onChange={(event) => update("country", event.target.value)} />
-              </label>
-              <label>
-                Manager name
-                <input className="field-input" value={form.manager_name} onChange={(event) => update("manager_name", event.target.value)} />
-              </label>
-              <label>
-                Phone
-                <input className="field-input" value={form.phone} onChange={(event) => update("phone", event.target.value)} />
-              </label>
-              <label>
-                Status
-                <select className="field-input" value={form.status} onChange={(event) => update("status", event.target.value)}>
-                  <option value="ACTIVE">Active</option>
-                  <option value="ARCHIVED">Archived</option>
-                </select>
-              </label>
-              <label className="field-span-full">
-                Address
-                <textarea className="field-input field-textarea" value={form.address} onChange={(event) => update("address", event.target.value)} />
-              </label>
-              <label className="field-span-full checkbox-row">
-                <input type="checkbox" checked={Boolean(form.is_default)} onChange={(event) => update("is_default", event.target.checked)} />
-                <span>Set as default warehouse</span>
-              </label>
-            </div>
-            <div className="form-actions">
+            <section className="workspace-card form-section">
+              <div className="form-section-heading">
+                <h3>Warehouse Identity</h3>
+                <p>Set the operational name and code your team uses during transfers and stock transactions.</p>
+              </div>
+              <div className="form-grid-wide">
+                <label>
+                  Warehouse name
+                  <input className="field-input" value={form.name} onChange={(event) => update("name", event.target.value)} required />
+                </label>
+                <label>
+                  Code
+                  <input className="field-input" value={form.code} onChange={(event) => update("code", event.target.value)} required />
+                </label>
+                <label>
+                  Status
+                  <select className="field-input" value={form.status} onChange={(event) => update("status", event.target.value)}>
+                    <option value="ACTIVE">Active</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
+                </label>
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={Boolean(form.is_default)} onChange={(event) => update("is_default", event.target.checked)} />
+                  <span>Set as default warehouse</span>
+                </label>
+              </div>
+            </section>
+
+            <section className="workspace-card form-section">
+              <div className="form-section-heading">
+                <h3>Location and contact</h3>
+                <p>Capture the physical location and local warehouse contact information.</p>
+              </div>
+              <div className="form-grid-wide">
+                <label>
+                  City
+                  <input className="field-input" value={form.city} onChange={(event) => update("city", event.target.value)} />
+                </label>
+                <label>
+                  State
+                  <input className="field-input" value={form.state} onChange={(event) => update("state", event.target.value)} />
+                </label>
+                <label>
+                  Country
+                  <input className="field-input" value={form.country} onChange={(event) => update("country", event.target.value)} />
+                </label>
+                <label>
+                  Manager name
+                  <input className="field-input" value={form.manager_name} onChange={(event) => update("manager_name", event.target.value)} />
+                </label>
+                <label>
+                  Phone
+                  <input className="field-input" value={form.phone} onChange={(event) => update("phone", event.target.value)} />
+                </label>
+                <label className="field-span-full">
+                  Address
+                  <textarea className="field-input field-textarea" value={form.address} onChange={(event) => update("address", event.target.value)} />
+                </label>
+              </div>
+            </section>
+
+            <section className="workspace-card form-section">
+              <div className="form-section-heading">
+                <h3>Operational note</h3>
+                <p>Primary warehouses are used as default fulfillment destinations where backend workflows need a default location.</p>
+              </div>
+              <div className="surface-placeholder">
+                Warehouse-specific permissions and staffing controls can slot into this section later without changing the base warehouse form.
+              </div>
+            </section>
+
+            <div className="workspace-card sticky-form-actions">
+              <BackButton fallbackTo={isEditing ? `/warehouses/${warehouseId}` : "/warehouses"} />
+              <button className="ghost-button" type="button" onClick={() => navigate(isEditing ? `/warehouses/${warehouseId}` : "/warehouses")}>
+                Cancel
+              </button>
               <button className="primary-button" type="submit" disabled={state.saving}>
                 {state.saving ? "Saving…" : isEditing ? "Save Warehouse" : "Create Warehouse"}
               </button>

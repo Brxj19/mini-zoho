@@ -36,6 +36,7 @@ export function DataTable({
   totalCount,
   pageSize = PAGE_SIZE,
   serverSide = false,
+  filterRow,
 }) {
   const [query, setQuery] = useState("");
   const [filterValue, setFilterValue] = useState(filters[0]?.value ?? "all");
@@ -53,6 +54,10 @@ export function DataTable({
       .filter((row) => {
         if (serverSide || effectiveFilterValue === "all") {
           return true;
+        }
+
+        if (filterRow) {
+          return filterRow(row, effectiveFilterValue);
         }
 
         return String(row.status ?? row.type ?? row.transaction_type ?? "").toLowerCase() === effectiveFilterValue.toLowerCase();

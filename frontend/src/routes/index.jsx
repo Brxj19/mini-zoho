@@ -26,6 +26,8 @@ import { StockTransferFormPage } from "../pages/StockTransferFormPage";
 import { SubscriptionPage } from "../pages/SubscriptionPage";
 import { WarehouseFormPage } from "../pages/WarehouseFormPage";
 import { LowStockPage } from "../pages/LowStockPage";
+import { InventoryDetailPage } from "../pages/InventoryDetailPage";
+import { InventoryListPage } from "../pages/InventoryListPage";
 import { UserFormPage } from "../pages/UserFormPage";
 import { TenantFormPage } from "../pages/TenantFormPage";
 
@@ -78,9 +80,9 @@ export const router = createBrowserRouter([
       { path: "brands/new", element: <MasterDataFormPage entityKey="brand" paramKey="brandId" />, handle: withHandle("New Brand", "Inventory") },
       { path: "brands/:brandId", element: <ResourceDetailPage detailKey="brand" paramKey="brandId" />, handle: withHandle("Brand Detail", "Inventory") },
       { path: "brands/:brandId/edit", element: <MasterDataFormPage entityKey="brand" paramKey="brandId" />, handle: withHandle("Edit Brand", "Inventory") },
-      { path: "items", element: <ResourceListPage resourceKey="products" />, handle: withHandle("Items", "Inventory") },
+      { path: "items", element: <InventoryListPage kind="products" />, handle: withHandle("Items", "Inventory") },
       { path: "items/new", element: <ProductFormPage />, handle: withHandle("New Item", "Inventory") },
-      { path: "items/:productId", element: <ResourceDetailPage detailKey="product" paramKey="productId" />, handle: withHandle("Item Detail", "Inventory") },
+      { path: "items/:productId", element: <InventoryDetailPage kind="product" />, handle: withHandle("Item Detail", "Inventory") },
       { path: "items/:productId/edit", element: <ProductFormPage />, handle: withHandle("Edit Item", "Inventory") },
       { path: "products", element: <Navigate to="/items" replace /> },
       { path: "products/new", element: <Navigate to="/items/new" replace /> },
@@ -88,13 +90,13 @@ export const router = createBrowserRouter([
       { path: "products/:productId/edit", element: <Navigate to="/items" replace /> },
       { path: "item-groups", element: <ItemGroupsPage />, handle: withHandle("Item Groups", "Inventory") },
 
-      { path: "warehouses", element: <ResourceListPage resourceKey="warehouses" />, handle: withHandle("Warehouses", "Inventory") },
+      { path: "warehouses", element: <InventoryListPage kind="warehouses" />, handle: withHandle("Warehouses", "Inventory") },
       { path: "warehouses/new", element: <WarehouseFormPage />, handle: withHandle("New Warehouse", "Inventory") },
-      { path: "warehouses/:warehouseId", element: <ResourceDetailPage detailKey="warehouse" paramKey="warehouseId" />, handle: withHandle("Warehouse Detail", "Inventory") },
+      { path: "warehouses/:warehouseId", element: <InventoryDetailPage kind="warehouse" />, handle: withHandle("Warehouse Detail", "Inventory") },
       { path: "warehouses/:warehouseId/edit", element: <WarehouseFormPage />, handle: withHandle("Edit Warehouse", "Inventory") },
-      { path: "inventory/transactions", element: <ResourceListPage resourceKey="inventoryTransactions" />, handle: withHandle("Inventory Transactions", "Inventory") },
+      { path: "inventory/transactions", element: <InventoryListPage kind="inventoryTransactions" />, handle: withHandle("Inventory Transactions", "Inventory") },
       { path: "inventory/barcodes", element: <BarcodeToolsPage />, handle: withHandle("Barcode Tools", "Inventory") },
-      { path: "inventory/transfers", element: <ResourceListPage resourceKey="stockTransfers" />, handle: withHandle("Stock Transfers", "Inventory") },
+      { path: "inventory/transfers", element: <InventoryListPage kind="stockTransfers" />, handle: withHandle("Stock Transfers", "Inventory") },
       { path: "inventory/transfers/new", element: <StockTransferFormPage />, handle: withHandle("New Stock Transfer", "Inventory") },
       { path: "inventory/transfers/:transferId", element: <ResourceDetailPage detailKey="stockTransfer" paramKey="transferId" />, handle: withHandle("Stock Transfer Detail", "Inventory") },
       { path: "inventory/transfers/:transferId/edit", element: <StockTransferFormPage />, handle: withHandle("Edit Stock Transfer", "Inventory") },
