@@ -70,16 +70,26 @@ export function SettingsPage() {
           ) : activeSection.key === "users" ? (
             <div className="placeholder-shell">
               <p>
-                Users and roles are managed in the admin workspace. This panel is a placeholder for a future permissions
-                and role governance experience.
+                This workspace connects platform administrators to user accounts and roles. Use the admin panel to manage
+                active workspace users.
               </p>
               <p>
-                In the next phase, this section will include role definitions, default access rules, and tenant-level
-                membership controls.
+                The next evolution of this screen will let you define tenant-scoped roles, default permissions, and rapid
+                access control workflows.
               </p>
               <Link className="button button-primary" to="/users">
                 Open Users
               </Link>
+            </div>
+          ) : activeSection.key === "roles" ? (
+            <div className="placeholder-shell">
+              <p>
+                Role governance is coming soon. This section will offer a dedicated surface for role templates,
+                permission groups, and platform access rules.
+              </p>
+              <p>
+                In the meantime, manage user assignments and tenant admin roles from the Users page.
+              </p>
             </div>
           ) : activeSection.key === "subscription" ? (
             <>
