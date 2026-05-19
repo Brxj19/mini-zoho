@@ -5,6 +5,38 @@ import { BackButton } from "../components/BackButton";
 import api from "../lib/api";
 
 const formConfigs = {
+  category: {
+    singular: "Category",
+    endpoint: "/categories",
+    listPath: "/categories",
+    detailPath: (id) => `/categories/${id}`,
+    fields: [
+      { key: "name", label: "Category name", required: true },
+      { key: "status", label: "Status", type: "select", options: ["ACTIVE", "ARCHIVED"] },
+      { key: "description", label: "Description", type: "textarea", full: true },
+    ],
+    initialForm: {
+      name: "",
+      status: "ACTIVE",
+      description: "",
+    },
+  },
+  brand: {
+    singular: "Brand",
+    endpoint: "/brands",
+    listPath: "/brands",
+    detailPath: (id) => `/brands/${id}`,
+    fields: [
+      { key: "name", label: "Brand name", required: true },
+      { key: "status", label: "Status", type: "select", options: ["ACTIVE", "ARCHIVED"] },
+      { key: "description", label: "Description", type: "textarea", full: true },
+    ],
+    initialForm: {
+      name: "",
+      status: "ACTIVE",
+      description: "",
+    },
+  },
   vendor: {
     singular: "Vendor",
     endpoint: "/vendors",
@@ -108,6 +140,7 @@ export function MasterDataFormPage({ entityKey, paramKey }) {
       phone: form.phone || null,
       gst_number: form.gst_number || null,
       opening_balance: "opening_balance" in form ? (form.opening_balance === "" ? null : Number(form.opening_balance)) : undefined,
+      description: "description" in form ? form.description || null : undefined,
       address: "address" in form ? form.address || null : undefined,
       billing_address: "billing_address" in form ? form.billing_address || null : undefined,
       shipping_address: "shipping_address" in form ? form.shipping_address || null : undefined,

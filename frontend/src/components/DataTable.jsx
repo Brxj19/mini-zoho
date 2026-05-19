@@ -50,6 +50,7 @@ export function DataTable({
 
   function renderCell(column, row) {
     const value = row[column.key];
+    const detailLink = rowLink ? rowLink(row.id, row) : null;
     if (column.kind === "status") {
       return <StatusBadge value={value} />;
     }
@@ -65,9 +66,9 @@ export function DataTable({
     if (column.render) {
       return column.render(value, row);
     }
-    if (rowLink && column.key === columns[0].key) {
+    if (detailLink && column.key === columns[0].key) {
       return (
-        <Link className="row-link" to={rowLink(row.id)}>
+        <Link className="row-link" to={detailLink}>
           {value}
         </Link>
       );
@@ -151,7 +152,7 @@ export function DataTable({
                     <td>
                       <ActionMenu
                         items={[
-                          ...(rowLink ? [{ label: "View details", to: rowLink(row.id) }] : []),
+                          ...(rowLink ? [{ label: "View details", to: rowLink(row.id, row) }] : []),
                           ...(createTo ? [{ label: "Create similar", to: createTo }] : []),
                         ]}
                       />

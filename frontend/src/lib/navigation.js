@@ -5,11 +5,13 @@ export const navigationGroups = [
     title: "Inventory",
     items: [
       { label: "Items", path: "/items", icon: "box" },
-      { label: "Item Groups", path: "/item-groups", icon: "layers", placeholder: true },
+      { label: "Categories", path: "/categories", icon: "layers" },
+      { label: "Brands", path: "/brands", icon: "stars" },
+      { label: "Item Groups", path: "/item-groups", icon: "layers" },
       { label: "Inventory Adjustments", path: "/inventory/adjustment", icon: "sliders" },
       { label: "Stock Transfers", path: "/inventory/transfers", icon: "shuffle" },
       { label: "Warehouses", path: "/warehouses", icon: "warehouse" },
-      { label: "Low Stock", path: "/reports?report=low-stock", icon: "alert" },
+      { label: "Low Stock", path: "/inventory/low-stock", icon: "alert" },
     ],
   },
   {
@@ -17,9 +19,9 @@ export const navigationGroups = [
     items: [
       { label: "Customers", path: "/customers", icon: "users" },
       { label: "Sales Orders", path: "/sales-orders", icon: "cart" },
-      { label: "Packages", path: "/packages", icon: "package", placeholder: true },
-      { label: "Invoices", path: "/invoices", icon: "receipt", placeholder: true },
-      { label: "Sales Returns", path: "/sales-returns", icon: "undo", placeholder: true },
+      { label: "Packages", path: "/packages", icon: "package" },
+      { label: "Invoices", path: "/invoices", icon: "receipt" },
+      { label: "Sales Returns", path: "/sales-returns", icon: "undo" },
     ],
   },
   {
@@ -27,8 +29,8 @@ export const navigationGroups = [
     items: [
       { label: "Vendors", path: "/vendors", icon: "briefcase" },
       { label: "Purchase Orders", path: "/purchase-orders", icon: "clipboard" },
-      { label: "Purchase Receives", path: "/purchase-receives", icon: "truck", placeholder: true },
-      { label: "Bills", path: "/bills", icon: "bill", placeholder: true },
+      { label: "Purchase Receives", path: "/purchase-receives", icon: "truck" },
+      { label: "Bills", path: "/bills", icon: "bill" },
     ],
   },
   {
@@ -56,12 +58,15 @@ export const navigationGroups = [
 
 export const quickCreateItems = [
   { label: "New Item", path: "/items/new", icon: "box" },
+  { label: "New Category", path: "/categories/new", icon: "layers" },
+  { label: "New Brand", path: "/brands/new", icon: "stars" },
   { label: "New Customer", path: "/customers/new", icon: "users" },
   { label: "New Vendor", path: "/vendors/new", icon: "briefcase" },
+  { label: "New Warehouse", path: "/warehouses/new", icon: "warehouse" },
   { label: "New Sales Order", path: "/sales-orders/new", icon: "cart" },
   { label: "New Purchase Order", path: "/purchase-orders/new", icon: "clipboard" },
   { label: "Stock In", path: "/inventory/stock-in", icon: "packagePlus" },
-  { label: "Stock Transfer", path: "/inventory/transfers", icon: "shuffle" },
+  { label: "Stock Transfer", path: "/inventory/transfers/new", icon: "shuffle" },
 ];
 
 export const settingsNavigation = [

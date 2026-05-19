@@ -17,7 +17,10 @@ import { ResourceDetailPage } from "../pages/ResourceDetailPage";
 import { ResourceListPage } from "../pages/ResourceListPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { StockActionPage } from "../pages/StockActionPage";
+import { StockTransferFormPage } from "../pages/StockTransferFormPage";
 import { WorkflowWorkbenchPage } from "../pages/WorkflowWorkbenchPage";
+import { WarehouseFormPage } from "../pages/WarehouseFormPage";
+import { LowStockPage } from "../pages/LowStockPage";
 
 function withHandle(title, section, breadcrumb = title) {
   return { title, section, breadcrumb };
@@ -44,6 +47,14 @@ export const router = createBrowserRouter([
       { index: true, element: <DashboardPage />, handle: withHandle("Dashboard", "Main", "Dashboard") },
       { path: "notifications", element: <NotificationsPage />, handle: withHandle("Notifications", "Main") },
 
+      { path: "categories", element: <ResourceListPage resourceKey="categories" />, handle: withHandle("Categories", "Inventory") },
+      { path: "categories/new", element: <MasterDataFormPage entityKey="category" paramKey="categoryId" />, handle: withHandle("New Category", "Inventory") },
+      { path: "categories/:categoryId", element: <ResourceDetailPage detailKey="category" paramKey="categoryId" />, handle: withHandle("Category Detail", "Inventory") },
+      { path: "categories/:categoryId/edit", element: <MasterDataFormPage entityKey="category" paramKey="categoryId" />, handle: withHandle("Edit Category", "Inventory") },
+      { path: "brands", element: <ResourceListPage resourceKey="brands" />, handle: withHandle("Brands", "Inventory") },
+      { path: "brands/new", element: <MasterDataFormPage entityKey="brand" paramKey="brandId" />, handle: withHandle("New Brand", "Inventory") },
+      { path: "brands/:brandId", element: <ResourceDetailPage detailKey="brand" paramKey="brandId" />, handle: withHandle("Brand Detail", "Inventory") },
+      { path: "brands/:brandId/edit", element: <MasterDataFormPage entityKey="brand" paramKey="brandId" />, handle: withHandle("Edit Brand", "Inventory") },
       { path: "items", element: <ResourceListPage resourceKey="products" />, handle: withHandle("Items", "Inventory") },
       { path: "items/new", element: <ProductFormPage />, handle: withHandle("New Item", "Inventory") },
       { path: "items/:productId", element: <ResourceDetailPage detailKey="product" paramKey="productId" />, handle: withHandle("Item Detail", "Inventory") },
@@ -55,10 +66,15 @@ export const router = createBrowserRouter([
       { path: "item-groups", element: <ItemGroupsPage />, handle: withHandle("Item Groups", "Inventory") },
 
       { path: "warehouses", element: <ResourceListPage resourceKey="warehouses" />, handle: withHandle("Warehouses", "Inventory") },
+      { path: "warehouses/new", element: <WarehouseFormPage />, handle: withHandle("New Warehouse", "Inventory") },
       { path: "warehouses/:warehouseId", element: <ResourceDetailPage detailKey="warehouse" paramKey="warehouseId" />, handle: withHandle("Warehouse Detail", "Inventory") },
+      { path: "warehouses/:warehouseId/edit", element: <WarehouseFormPage />, handle: withHandle("Edit Warehouse", "Inventory") },
       { path: "inventory/transactions", element: <ResourceListPage resourceKey="inventoryTransactions" />, handle: withHandle("Inventory Transactions", "Inventory") },
       { path: "inventory/transfers", element: <ResourceListPage resourceKey="stockTransfers" />, handle: withHandle("Stock Transfers", "Inventory") },
+      { path: "inventory/transfers/new", element: <StockTransferFormPage />, handle: withHandle("New Stock Transfer", "Inventory") },
       { path: "inventory/transfers/:transferId", element: <ResourceDetailPage detailKey="stockTransfer" paramKey="transferId" />, handle: withHandle("Stock Transfer Detail", "Inventory") },
+      { path: "inventory/transfers/:transferId/edit", element: <StockTransferFormPage />, handle: withHandle("Edit Stock Transfer", "Inventory") },
+      { path: "inventory/low-stock", element: <LowStockPage />, handle: withHandle("Low Stock", "Inventory") },
       { path: "inventory/stock-in", element: <StockActionPage actionKey="stock-in" />, handle: withHandle("Stock In", "Inventory") },
       { path: "inventory/stock-out", element: <StockActionPage actionKey="stock-out" />, handle: withHandle("Stock Out", "Inventory") },
       { path: "inventory/adjustment", element: <StockActionPage actionKey="adjustment" />, handle: withHandle("Inventory Adjustment", "Inventory") },
