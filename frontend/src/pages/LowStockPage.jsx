@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { DataTable } from "../components/DataTable";
 import { BackButton } from "../components/BackButton";
+import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
 
 export function LowStockPage() {
+  const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState({
     loading: true,
     error: "",
@@ -36,7 +38,7 @@ export function LowStockPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const sourceNote = useMemo(() => {
     if (!state.items.length) return "No low-stock alerts are active for the current tenant.";
@@ -45,18 +47,12 @@ export function LowStockPage() {
 
   return (
     <div className="page-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Inventory Signal</p>
-          <h2>Low Stock</h2>
-          <p>Review products below reorder level and jump straight into replenishment or stock corrections.</p>
-        </div>
-        <div className="page-header-actions">
-          <BackButton fallbackTo="/reports?report=low-stock" />
-        </div>
-      </section>
-
-      {state.error ? <div className="form-error">{state.error}</div> : null}
+      <PageHeader
+        eyebrow="Inventory Signal"
+        title="Low Stock"
+        description="Review products below reorder level and jump straight into replenishment or stock corrections."
+        actions={<BackButton fallbackTo="/reports?report=low-stock" />}
+      />
 
       <DataTable
         title="Low Stock Queue"
@@ -75,6 +71,8 @@ export function LowStockPage() {
         searchPlaceholder="Search item name, SKU, or warehouse"
         rowLink={(_, row) => `/items/${row.product_id}`}
         isLoading={state.loading}
+        error={state.error}
+        onRetry={() => setReloadKey((value) => value + 1)}
         sourceNote={sourceNote}
         emptyState={{
           icon: "alert",

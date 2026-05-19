@@ -4,6 +4,7 @@ import { DataTable } from "../components/DataTable";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 import { normalizeItems } from "../lib/format";
+import { hasAnyRole } from "../lib/permissions";
 import { resourceConfigs } from "../lib/uiConfig";
 
 export function ResourceListPage({ resourceKey }) {
@@ -13,8 +14,13 @@ export function ResourceListPage({ resourceKey }) {
     loading: true,
     error: "",
     items: [],
+    meta: { page: 1, page_size: 12, total: 0 },
   });
-  const canCreate = !config.createRoles || config.createRoles.includes(user?.role);
+  const canCreate = hasAnyRole(user, config.createRoles);
+  const [query, setQuery] = useState("");
+  const [filterValue, setFilterValue] = useState(config.filters?.[0]?.value ?? "all");
+  const [sortValue, setSortValue] = useState(config.columns?.[0]?.key ?? "");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     let active = true;
@@ -22,7 +28,17 @@ export function ResourceListPage({ resourceKey }) {
     async function loadRows() {
       setState((current) => ({ ...current, loading: true, error: "" }));
       try {
-        const response = await api.get(config.endpoint, { params: { page_size: 100 } });
+        const params = {
+          page,
+          page_size: state.meta.page_size,
+        };
+        if (config.searchParam && query.trim()) {
+          params[config.searchParam] = query.trim();
+        }
+        if (config.filterParam && filterValue && filterValue !== "all") {
+          params[config.filterParam] = filterValue;
+        }
+        const response = await api.get(config.endpoint, { params });
         if (!active) {
           return;
         }
@@ -30,6 +46,7 @@ export function ResourceListPage({ resourceKey }) {
           loading: false,
           error: "",
           items: normalizeItems(response.data),
+          meta: response.data.meta ?? state.meta,
         });
       } catch (error) {
         if (!active) {
@@ -39,6 +56,7 @@ export function ResourceListPage({ resourceKey }) {
           loading: false,
           error: error?.response?.data?.detail ?? "Unable to load this workspace view.",
           items: [],
+          meta: { ...state.meta, total: 0 },
         });
       }
     }
@@ -47,7 +65,7 @@ export function ResourceListPage({ resourceKey }) {
     return () => {
       active = false;
     };
-  }, [config.endpoint]);
+  }, [config.endpoint, config.filterParam, config.searchParam, filterValue, page, query, state.meta.page_size]);
 
   return (
     <div className="page-stack">
@@ -63,6 +81,20 @@ export function ResourceListPage({ resourceKey }) {
         searchPlaceholder={config.searchPlaceholder}
         rowLink={config.detailPath}
         isLoading={state.loading}
+        query={query}
+        onQueryChange={setQuery}
+        filterValue={filterValue}
+        onFilterChange={(value) => {
+          setFilterValue(value);
+          setPage(1);
+        }}
+        sortValue={sortValue}
+        onSortChange={setSortValue}
+        page={page}
+        onPageChange={setPage}
+        totalCount={state.meta.total}
+        pageSize={state.meta.page_size}
+        serverSide
         emptyState={{
           icon: "box",
           title: `No ${config.title.toLowerCase()} yet`,

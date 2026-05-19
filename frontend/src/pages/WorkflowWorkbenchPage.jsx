@@ -207,6 +207,7 @@ function toDomainRow(record, partnerName, domain) {
 export function WorkflowWorkbenchPage({ pageKey }) {
   const config = pageConfigs[pageKey];
   const [period, setPeriod] = useState("this_month");
+  const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState({ loading: true, error: "", rows: [] });
 
   useEffect(() => {
@@ -250,7 +251,7 @@ export function WorkflowWorkbenchPage({ pageKey }) {
     return () => {
       active = false;
     };
-  }, [config]);
+  }, [config, reloadKey]);
 
   const visibleRows = useMemo(
     () => state.rows.filter((row) => isWithinPeriod(row.order_date, period)),
@@ -299,6 +300,8 @@ export function WorkflowWorkbenchPage({ pageKey }) {
         searchPlaceholder={`Search ${config.title.toLowerCase()} by order number or partner`}
         rowLink={config.detailPath}
         isLoading={state.loading}
+        error={state.error}
+        onRetry={() => setReloadKey((value) => value + 1)}
         emptyState={{
           icon: config.domain === "sales" ? "cart" : "clipboard",
           title: `No ${config.title.toLowerCase()} records in this period`,

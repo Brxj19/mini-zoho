@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 
 import { BackButton } from "../components/BackButton";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
+import { hasAnyRole } from "../lib/permissions";
 
 const actionConfig = {
   "stock-in": {
@@ -9,23 +13,29 @@ const actionConfig = {
     description: "Record inbound stock against a warehouse and create a transaction log entry.",
     endpoint: "/inventory/stock-in",
     fields: { quantityLabel: "Quantity", quantityKey: "quantity", noteRequired: false },
+    roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"],
   },
   "stock-out": {
     title: "Stock Out",
     description: "Ship inventory out while preserving a complete stock movement record.",
     endpoint: "/inventory/stock-out",
     fields: { quantityLabel: "Quantity", quantityKey: "quantity", noteRequired: false },
+    roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"],
   },
   adjustment: {
     title: "Stock Adjustment",
     description: "Apply a counted correction with a required operational note.",
     endpoint: "/inventory/adjust",
     fields: { quantityLabel: "Quantity Delta", quantityKey: "quantity_delta", noteRequired: true },
+    roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"],
   },
 };
 
 export function StockActionPage({ actionKey }) {
   const config = actionConfig[actionKey];
+  const { user } = useAuth();
+  const canSubmit = hasAnyRole(user, config.roles);
+  const [reloadKey, setReloadKey] = useState(0);
   const [options, setOptions] = useState({ products: [], warehouses: [] });
   const [form, setForm] = useState({
     product_id: "",
@@ -56,7 +66,7 @@ export function StockActionPage({ actionKey }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -97,21 +107,33 @@ export function StockActionPage({ actionKey }) {
 
   return (
     <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Inventory Action</p>
-          <h2>{config.title}</h2>
-          <p>{config.description}</p>
-        </div>
-        <BackButton fallbackTo="/inventory/transactions" />
-      </section>
+      <PageHeader
+        eyebrow="Inventory Action"
+        title={config.title}
+        description={config.description}
+        actions={<BackButton fallbackTo="/inventory/transactions" />}
+      />
       <form className="workspace-card form-shell" onSubmit={handleSubmit}>
         {state.loading ? <div className="surface-placeholder">Loading action form…</div> : null}
-        {state.error ? <div className="surface-error">{state.error}</div> : null}
         {state.success ? <div className="surface-success">{state.success}</div> : null}
+        {!state.loading && state.error ? (
+          <EmptyState
+            icon="alert"
+            title="Unable to load stock action options"
+            description={state.error}
+            actionLabel="Try Again"
+            onAction={() => setReloadKey((value) => value + 1)}
+            actionTone="ghost"
+          />
+        ) : null}
 
-        {!state.loading ? (
+        {!state.loading && !state.error ? (
           <>
+            {!canSubmit ? (
+              <div className="surface-placeholder">
+                You can review this form, but only inventory operators can submit stock movements.
+              </div>
+            ) : null}
             <div className="form-grid-wide">
               <label>
                 Product
@@ -160,7 +182,7 @@ export function StockActionPage({ actionKey }) {
               </label>
             </div>
             <div className="form-actions">
-              <button className="primary-button" type="submit" disabled={state.saving}>
+              <button className="primary-button" type="submit" disabled={state.saving || !canSubmit}>
                 {state.saving ? "Submitting…" : `Submit ${config.title}`}
               </button>
             </div>

@@ -2,9 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { BackButton } from "../components/BackButton";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
+import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
+import { hasAnyRole } from "../lib/permissions";
 import { StatusBadge } from "../components/StatusBadge";
+
+const inventoryRoles = ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"];
+const salesRoles = ["SUPER_ADMIN", "TENANT_ADMIN", "SALES_STAFF"];
+const purchaseRoles = ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER", "PURCHASE_STAFF"];
+const adminRoles = ["SUPER_ADMIN", "TENANT_ADMIN"];
+const superAdminRoles = ["SUPER_ADMIN"];
 
 const detailConfigs = {
   product: {
@@ -16,42 +26,49 @@ const detailConfigs = {
       { key: "stock", endpoint: `/products/${id}/stock` },
       { key: "transactions", endpoint: `/products/${id}/transactions` },
     ],
+    editRoles: inventoryRoles,
   },
   warehouse: {
     title: "Warehouse Detail",
     endpoint: (id) => `/warehouses/${id}`,
     editPath: (id) => `/warehouses/${id}/edit`,
     listPath: "/warehouses",
+    editRoles: inventoryRoles,
   },
   category: {
     title: "Category Detail",
     endpoint: (id) => `/categories/${id}`,
     editPath: (id) => `/categories/${id}/edit`,
     listPath: "/categories",
+    editRoles: inventoryRoles,
   },
   brand: {
     title: "Brand Detail",
     endpoint: (id) => `/brands/${id}`,
     editPath: (id) => `/brands/${id}/edit`,
     listPath: "/brands",
+    editRoles: inventoryRoles,
   },
   vendor: {
     title: "Vendor Detail",
     endpoint: (id) => `/vendors/${id}`,
     editPath: (id) => `/vendors/${id}/edit`,
     listPath: "/vendors",
+    editRoles: purchaseRoles,
   },
   customer: {
     title: "Customer Detail",
     endpoint: (id) => `/customers/${id}`,
     editPath: (id) => `/customers/${id}/edit`,
     listPath: "/customers",
+    editRoles: salesRoles,
   },
   user: {
     title: "User Detail",
     endpoint: (id) => `/users/${id}`,
     editPath: (id) => `/users/${id}/edit`,
     listPath: "/users",
+    editRoles: adminRoles,
   },
   tenant: {
     title: "Tenant Detail",
@@ -59,6 +76,7 @@ const detailConfigs = {
     supplementary: (id) => [{ key: "usage", endpoint: `/tenants/${id}/usage` }],
     editPath: (id) => `/tenants/${id}/edit`,
     listPath: "/tenants",
+    editRoles: superAdminRoles,
   },
   stockTransfer: {
     title: "Stock Transfer Detail",
@@ -66,6 +84,7 @@ const detailConfigs = {
     editPath: (id) => `/inventory/transfers/${id}/edit`,
     canEdit: (record) => record?.status === "DRAFT",
     listPath: "/inventory/transfers",
+    editRoles: inventoryRoles,
   },
   purchaseOrder: {
     title: "Purchase Order Detail",
@@ -73,6 +92,7 @@ const detailConfigs = {
     editPath: (id) => `/purchase-orders/${id}/edit`,
     canEdit: (record) => record?.status === "DRAFT",
     listPath: "/purchase-orders",
+    editRoles: purchaseRoles,
   },
   salesOrder: {
     title: "Sales Order Detail",
@@ -80,6 +100,7 @@ const detailConfigs = {
     editPath: (id) => `/sales-orders/${id}/edit`,
     canEdit: (record) => record?.status === "DRAFT",
     listPath: "/sales-orders",
+    editRoles: salesRoles,
   },
 };
 
@@ -87,6 +108,7 @@ const workflowConfigs = {
   stockTransfer: {
     title: "Transfer Progress",
     steps: ["DRAFT", "IN_TRANSIT", "COMPLETED"],
+    actionRoles: inventoryRoles,
     actions: (record, id) => {
       const actions = [];
       if (record.status === "DRAFT") {
@@ -125,6 +147,7 @@ const workflowConfigs = {
   purchaseOrder: {
     title: "Purchase Timeline",
     steps: ["DRAFT", "ISSUED", "PARTIALLY_RECEIVED", "RECEIVED"],
+    actionRoles: purchaseRoles,
     actions: (record, id) => {
       const actions = [];
       if (record.status === "DRAFT") {
@@ -156,6 +179,7 @@ const workflowConfigs = {
   salesOrder: {
     title: "Sales Timeline",
     steps: ["DRAFT", "CONFIRMED", "PACKED", "SHIPPED", "DELIVERED"],
+    actionRoles: salesRoles,
     actions: (record, id) => {
       const actions = [];
       if (record.status === "DRAFT") {
@@ -227,6 +251,7 @@ function workflowStepState(step, status, steps) {
 
 export function ResourceDetailPage({ detailKey, paramKey }) {
   const { [paramKey]: entityId } = useParams();
+  const { user } = useAuth();
   const config = detailConfigs[detailKey];
   const workflow = workflowConfigs[detailKey];
   const [reloadKey, setReloadKey] = useState(0);
@@ -290,8 +315,14 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
   const stockRows = state.supplementary.stock?.warehouses ?? [];
   const transactionRows = state.supplementary.transactions?.items ?? [];
   const usage = state.supplementary.usage ?? null;
-  const workflowActions = workflow && state.record ? workflow.actions(state.record, entityId) : [];
-  const canEdit = config.editPath && state.record ? (config.canEdit ? config.canEdit(state.record) : true) : false;
+  const showsLineItems = ["purchaseOrder", "salesOrder", "stockTransfer"].includes(detailKey);
+  const canRunWorkflowActions = hasAnyRole(user, workflow?.actionRoles);
+  const workflowActions = workflow && state.record && canRunWorkflowActions ? workflow.actions(state.record, entityId) : [];
+  const canEdit =
+    config.editPath &&
+    state.record &&
+    hasAnyRole(user, config.editRoles) &&
+    (config.canEdit ? config.canEdit(state.record) : true);
 
   function openActionModal(action) {
     setActionState({ submitting: false, error: "" });
@@ -385,25 +416,34 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
 
   return (
     <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Workspace Detail</p>
-          <h2>{config.title}</h2>
-          <p>Key record details, line items, and related operational activity.</p>
-        </div>
-        <div className="page-header-actions">
-          <BackButton fallbackTo={config.listPath ?? "/"} />
-          {canEdit ? (
-            <Link className="ghost-button" to={config.editPath(entityId)}>
-              Edit
-            </Link>
-          ) : null}
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Workspace Detail"
+        title={config.title}
+        description="Key record details, line items, and related operational activity."
+        actions={
+          <>
+            <BackButton fallbackTo={config.listPath ?? "/"} />
+            {canEdit ? (
+              <Link className="ghost-button" to={config.editPath(entityId)}>
+                Edit
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       {feedback.success ? <div className="surface-success">{feedback.success}</div> : null}
       {state.loading ? <div className="workspace-card surface-placeholder">Loading detail…</div> : null}
-      {!state.loading && state.error ? <div className="workspace-card surface-error">{state.error}</div> : null}
+      {!state.loading && state.error ? (
+        <EmptyState
+          icon="alert"
+          title="Unable to load record details"
+          description={state.error}
+          actionLabel="Try Again"
+          onAction={() => setReloadKey((value) => value + 1)}
+          actionTone="ghost"
+        />
+      ) : null}
 
       {!state.loading && state.record ? (
         <>
@@ -444,8 +484,10 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
                     </button>
                   ))}
                 </div>
-              ) : (
+              ) : canRunWorkflowActions ? (
                 <div className="surface-placeholder">No further operational actions are available for the current status.</div>
+              ) : (
+                <div className="surface-placeholder">You have read-only access to this workflow. Ask an administrator for operational permissions if you need to progress it.</div>
               )}
             </section>
           ) : null}
@@ -579,6 +621,10 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
                 </table>
               </div>
             </section>
+          ) : showsLineItems ? (
+            <section className="workspace-card surface-empty">
+              No line items are attached to this record.
+            </section>
           ) : null}
 
           {transactionRows.length > 0 ? (
@@ -597,6 +643,10 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
                   </div>
                 ))}
               </div>
+            </section>
+          ) : detailKey === "product" ? (
+            <section className="workspace-card surface-empty">
+              No recent movement has been recorded for this item yet.
             </section>
           ) : null}
         </>

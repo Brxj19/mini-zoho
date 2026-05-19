@@ -13,6 +13,10 @@ from app.services.bootstrap_service import ensure_super_admin
 from app.services.seed_service import ensure_demo_workspace
 
 settings = get_settings()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 

@@ -23,30 +23,73 @@ export function DataTable({
   rowLink,
   isLoading = false,
   sourceNote,
+  error,
+  onRetry,
+  query: controlledQuery,
+  onQueryChange,
+  filterValue: controlledFilterValue,
+  onFilterChange,
+  sortValue: controlledSortValue,
+  onSortChange,
+  page: controlledPage,
+  onPageChange,
+  totalCount,
+  pageSize = PAGE_SIZE,
+  serverSide = false,
 }) {
   const [query, setQuery] = useState("");
   const [filterValue, setFilterValue] = useState(filters[0]?.value ?? "all");
   const [sortValue, setSortValue] = useState(columns[0]?.key ?? "");
   const [page, setPage] = useState(1);
+  const effectiveQuery = controlledQuery ?? query;
+  const effectiveFilterValue = controlledFilterValue ?? filterValue;
+  const effectiveSortValue = controlledSortValue ?? sortValue;
+  const effectivePage = controlledPage ?? page;
 
-  const filteredRows = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const processedRows = useMemo(() => {
+    const normalizedQuery = effectiveQuery.trim().toLowerCase();
 
-    return rows
+    const nextRows = rows
       .filter((row) => {
-        if (filterValue === "all") {
+        if (serverSide || effectiveFilterValue === "all") {
           return true;
         }
 
-        return String(row.status ?? row.type ?? row.transaction_type ?? "").toLowerCase() === filterValue.toLowerCase();
+        return String(row.status ?? row.type ?? row.transaction_type ?? "").toLowerCase() === effectiveFilterValue.toLowerCase();
       })
       .filter((row) =>
-        normalizedQuery
-          ? Object.values(row).some((value) => String(value).toLowerCase().includes(normalizedQuery))
-          : true,
+        serverSide || !normalizedQuery
+          ? true
+          : Object.values(row).some((value) => String(value).toLowerCase().includes(normalizedQuery))
       )
-      .sort((left, right) => String(left[sortValue] ?? "").localeCompare(String(right[sortValue] ?? "")));
-  }, [filterValue, query, rows, sortValue]);
+      .sort((left, right) => String(left[effectiveSortValue] ?? "").localeCompare(String(right[effectiveSortValue] ?? "")));
+
+    return nextRows;
+  }, [effectiveFilterValue, effectiveQuery, effectiveSortValue, rows, serverSide]);
+
+  function updateQuery(value) {
+    onQueryChange ? onQueryChange(value) : setQuery(value);
+  }
+
+  function updateFilter(value) {
+    onFilterChange ? onFilterChange(value) : setFilterValue(value);
+  }
+
+  function updateSort(value) {
+    onSortChange ? onSortChange(value) : setSortValue(value);
+  }
+
+  function updatePage(value) {
+    onPageChange ? onPageChange(value) : setPage(value);
+  }
+
+  const totalPages = serverSide
+    ? Math.max(1, Math.ceil((totalCount ?? rows.length) / pageSize))
+    : Math.max(1, Math.ceil(processedRows.length / PAGE_SIZE));
+  const currentPage = Math.min(effectivePage, totalPages);
+  const visibleRows = serverSide
+    ? processedRows
+    : processedRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function renderCell(column, row) {
     const value = row[column.key];
@@ -76,10 +119,6 @@ export function DataTable({
     return value ?? "—";
   }
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const visibleRows = filteredRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
   return (
     <section className="table-shell">
       <header className="table-header">
@@ -100,7 +139,14 @@ export function DataTable({
 
       <div className="table-toolbar">
         {filters.length ? (
-          <select className="field-input compact-field" value={filterValue} onChange={(event) => setFilterValue(event.target.value)}>
+          <select
+            className="field-input compact-field"
+            value={effectiveFilterValue}
+            onChange={(event) => {
+              updateFilter(event.target.value);
+              updatePage(1);
+            }}
+          >
             {filters.map((filter) => (
               <option key={filter.value} value={filter.value}>
                 {filter.label}
@@ -110,15 +156,22 @@ export function DataTable({
         ) : null}
 
         <SearchInput
-          value={query}
+          value={effectiveQuery}
           onChange={(event) => {
-            setQuery(event.target.value);
-            setPage(1);
+            updateQuery(event.target.value);
+            updatePage(1);
           }}
           placeholder={searchPlaceholder}
         />
 
-        <select className="field-input compact-field" value={sortValue} onChange={(event) => setSortValue(event.target.value)}>
+        <select
+          className="field-input compact-field"
+          value={effectiveSortValue}
+          onChange={(event) => {
+            updateSort(event.target.value);
+            updatePage(1);
+          }}
+        >
           {columns.map((column) => (
             <option key={column.key} value={column.key}>
               Sort by {column.label}
@@ -129,7 +182,16 @@ export function DataTable({
 
       {isLoading ? (
         <LoadingSkeleton rows={7} />
-      ) : filteredRows.length ? (
+      ) : error ? (
+        <EmptyState
+          icon="alert"
+          title="Unable to load table data"
+          description={error}
+          actionLabel={onRetry ? "Try Again" : undefined}
+          onAction={onRetry}
+          actionTone="ghost"
+        />
+      ) : processedRows.length ? (
         <>
           <div className="table-wrap">
             <table className="data-table">
@@ -168,10 +230,20 @@ export function DataTable({
               Page {currentPage} of {totalPages}
             </span>
             <div className="pagination-actions">
-              <button className="ghost-button compact-button" type="button" onClick={() => setPage((value) => Math.max(1, value - 1))}>
+              <button
+                className="ghost-button compact-button"
+                type="button"
+                onClick={() => updatePage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
                 Previous
               </button>
-              <button className="ghost-button compact-button" type="button" onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
+              <button
+                className="ghost-button compact-button"
+                type="button"
+                onClick={() => updatePage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
                 Next
               </button>
             </div>

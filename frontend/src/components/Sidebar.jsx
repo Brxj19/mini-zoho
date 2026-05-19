@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 
 import { homeNavigation, navigationGroups } from "../lib/navigation";
 import { useAuth } from "../contexts/AuthContext";
+import { hasAnyRole } from "../lib/permissions";
 import { useUiStore } from "../stores/uiStore";
 import { Icon } from "./Icon";
 
@@ -53,7 +54,12 @@ export function Sidebar({ mobile = false }) {
         </NavLink>
 
         {navigationGroups.map((group) => {
-          const visibleItems = group.items.filter((item) => !item.superAdminOnly || role === "SUPER_ADMIN");
+          const visibleItems = group.items.filter(
+            (item) => (!item.superAdminOnly || role === "SUPER_ADMIN") && hasAnyRole(user, item.roles),
+          );
+          if (!visibleItems.length) {
+            return null;
+          }
           const isOpen = openGroup === group.title;
 
           return (

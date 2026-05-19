@@ -5,19 +5,19 @@ export const navigationGroups = [
     title: "Inventory",
     items: [
       { label: "Items", path: "/items", icon: "box" },
-      { label: "Categories", path: "/categories", icon: "layers" },
-      { label: "Brands", path: "/brands", icon: "stars" },
+      { label: "Categories", path: "/categories", icon: "layers", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
+      { label: "Brands", path: "/brands", icon: "stars", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
       { label: "Item Groups", path: "/item-groups", icon: "layers" },
-      { label: "Inventory Adjustments", path: "/inventory/adjustment", icon: "sliders" },
-      { label: "Stock Transfers", path: "/inventory/transfers", icon: "shuffle" },
-      { label: "Warehouses", path: "/warehouses", icon: "warehouse" },
+      { label: "Inventory Adjustments", path: "/inventory/adjustment", icon: "sliders", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
+      { label: "Stock Transfers", path: "/inventory/transfers", icon: "shuffle", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
+      { label: "Warehouses", path: "/warehouses", icon: "warehouse", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
       { label: "Low Stock", path: "/inventory/low-stock", icon: "alert" },
     ],
   },
   {
     title: "Sales",
     items: [
-      { label: "Customers", path: "/customers", icon: "users" },
+      { label: "Customers", path: "/customers", icon: "users", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "SALES_STAFF"] },
       { label: "Sales Orders", path: "/sales-orders", icon: "cart" },
       { label: "Packages", path: "/packages", icon: "package" },
       { label: "Invoices", path: "/invoices", icon: "receipt" },
@@ -27,7 +27,7 @@ export const navigationGroups = [
   {
     title: "Purchases",
     items: [
-      { label: "Vendors", path: "/vendors", icon: "briefcase" },
+      { label: "Vendors", path: "/vendors", icon: "briefcase", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER", "PURCHASE_STAFF"] },
       { label: "Purchase Orders", path: "/purchase-orders", icon: "clipboard" },
       { label: "Purchase Receives", path: "/purchase-receives", icon: "truck" },
       { label: "Bills", path: "/bills", icon: "bill" },
@@ -44,7 +44,7 @@ export const navigationGroups = [
   {
     title: "Admin",
     items: [
-      { label: "Users", path: "/users", icon: "userCog" },
+      { label: "Users", path: "/users", icon: "userCog", roles: ["SUPER_ADMIN", "TENANT_ADMIN"] },
       { label: "Tenants", path: "/tenants", icon: "building", superAdminOnly: true },
       { label: "Subscription", path: "/subscription", icon: "sparkles", placeholder: true },
       { label: "Settings", path: "/settings", icon: "settings" },
@@ -57,16 +57,16 @@ export const navigationGroups = [
 ];
 
 export const quickCreateItems = [
-  { label: "New Item", path: "/items/new", icon: "box" },
-  { label: "New Category", path: "/categories/new", icon: "layers" },
-  { label: "New Brand", path: "/brands/new", icon: "stars" },
-  { label: "New Customer", path: "/customers/new", icon: "users" },
-  { label: "New Vendor", path: "/vendors/new", icon: "briefcase" },
-  { label: "New Warehouse", path: "/warehouses/new", icon: "warehouse" },
+  { label: "New Item", path: "/items/new", icon: "box", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
+  { label: "New Category", path: "/categories/new", icon: "layers", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
+  { label: "New Brand", path: "/brands/new", icon: "stars", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
+  { label: "New Customer", path: "/customers/new", icon: "users", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "SALES_STAFF"] },
+  { label: "New Vendor", path: "/vendors/new", icon: "briefcase", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER", "PURCHASE_STAFF"] },
+  { label: "New Warehouse", path: "/warehouses/new", icon: "warehouse", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
   { label: "New Sales Order", path: "/sales-orders/new", icon: "cart" },
   { label: "New Purchase Order", path: "/purchase-orders/new", icon: "clipboard" },
-  { label: "Stock In", path: "/inventory/stock-in", icon: "packagePlus" },
-  { label: "Stock Transfer", path: "/inventory/transfers/new", icon: "shuffle" },
+  { label: "Stock In", path: "/inventory/stock-in", icon: "packagePlus", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
+  { label: "Stock Transfer", path: "/inventory/transfers/new", icon: "shuffle", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
 ];
 
 export const settingsNavigation = [

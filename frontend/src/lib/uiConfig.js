@@ -6,6 +6,8 @@ export const resourceConfigs = {
     createPath: "/categories/new",
     createLabel: "+ New Category",
     detailPath: (id) => `/categories/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search categories by name or description",
     filters: [
       { label: "All Categories", value: "all" },
@@ -26,6 +28,8 @@ export const resourceConfigs = {
     createPath: "/brands/new",
     createLabel: "+ New Brand",
     detailPath: (id) => `/brands/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search brands by name or description",
     filters: [
       { label: "All Brands", value: "all" },
@@ -46,6 +50,8 @@ export const resourceConfigs = {
     createPath: "/items/new",
     createLabel: "+ New Item",
     detailPath: (id) => `/items/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search items by name, SKU, or barcode",
     filters: [
       { label: "All Items", value: "all" },
@@ -69,6 +75,8 @@ export const resourceConfigs = {
     createPath: "/warehouses/new",
     createLabel: "+ New Warehouse",
     detailPath: (id) => `/warehouses/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search warehouse name, city, or manager",
     filters: [
       { label: "All Warehouses", value: "all" },
@@ -91,6 +99,8 @@ export const resourceConfigs = {
     createPath: "/vendors/new",
     createLabel: "+ New Vendor",
     detailPath: (id) => `/vendors/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search vendors by name, email, or GST number",
     filters: [
       { label: "All Vendors", value: "all" },
@@ -112,6 +122,8 @@ export const resourceConfigs = {
     createPath: "/customers/new",
     createLabel: "+ New Customer",
     detailPath: (id) => `/customers/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search customers by name, email, or GST number",
     filters: [
       { label: "All Customers", value: "all" },
@@ -130,6 +142,8 @@ export const resourceConfigs = {
     title: "Inventory Transactions",
     description: "Review every stock movement with type, warehouse, quantity, and reference context.",
     endpoint: "/inventory/transactions",
+    searchParam: null,
+    filterParam: "transaction_type",
     searchPlaceholder: "Search by reference, product, or movement type",
     filters: [
       { label: "All Transactions", value: "all" },
@@ -157,6 +171,8 @@ export const resourceConfigs = {
     createPath: "/inventory/transfers/new",
     createLabel: "+ New Transfer",
     detailPath: (id) => `/inventory/transfers/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search transfer number or transfer notes",
     filters: [
       { label: "All Transfers", value: "all" },
@@ -181,6 +197,8 @@ export const resourceConfigs = {
     createPath: "/purchase-orders/new",
     createLabel: "+ New Purchase Order",
     detailPath: (id) => `/purchase-orders/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search PO number or vendor",
     filters: [
       { label: "All Purchase Orders", value: "all" },
@@ -205,6 +223,8 @@ export const resourceConfigs = {
     createPath: "/sales-orders/new",
     createLabel: "+ New Sales Order",
     detailPath: (id) => `/sales-orders/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search SO number or customer",
     filters: [
       { label: "All Sales Orders", value: "all" },
@@ -231,6 +251,8 @@ export const resourceConfigs = {
     createLabel: "+ New User",
     createRoles: ["SUPER_ADMIN", "TENANT_ADMIN"],
     detailPath: (id) => `/users/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search users by name or email",
     filters: [
       { label: "All Users", value: "all" },
@@ -253,6 +275,8 @@ export const resourceConfigs = {
     createLabel: "+ New Tenant",
     createRoles: ["SUPER_ADMIN"],
     detailPath: (id) => `/tenants/${id}`,
+    searchParam: "search",
+    filterParam: "status",
     searchPlaceholder: "Search tenant name or contact email",
     filters: [
       { label: "All Tenants", value: "all" },
@@ -271,6 +295,8 @@ export const resourceConfigs = {
     title: "Audit Logs",
     description: "Trace backend actions, entity changes, and operator activity across the workspace.",
     endpoint: "/audit-logs",
+    searchParam: null,
+    filterParam: null,
     searchPlaceholder: "Search action or entity type",
     filters: [{ label: "All Logs", value: "all" }],
     columns: [

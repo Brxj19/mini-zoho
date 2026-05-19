@@ -2,7 +2,9 @@ import { Link } from "react-router-dom";
 
 import { Icon } from "./Icon";
 
-export function EmptyState({ title, description, actionLabel, actionTo, icon = "box" }) {
+export function EmptyState({ title, description, actionLabel, actionTo, onAction, icon = "box", actionTone = "primary" }) {
+  const actionClassName = actionTone === "ghost" ? "button button-ghost" : "button button-primary";
+
   return (
     <div className="empty-state">
       <div className="empty-state-icon">
@@ -10,10 +12,11 @@ export function EmptyState({ title, description, actionLabel, actionTo, icon = "
       </div>
       <h3>{title}</h3>
       <p>{description}</p>
-      {actionLabel && actionTo ? (
-        <Link className="button button-primary" to={actionTo}>
+      {actionLabel && actionTo ? <Link className={actionClassName} to={actionTo}>{actionLabel}</Link> : null}
+      {actionLabel && !actionTo && onAction ? (
+        <button className={actionClassName} type="button" onClick={onAction}>
           {actionLabel}
-        </Link>
+        </button>
       ) : null}
     </div>
   );
