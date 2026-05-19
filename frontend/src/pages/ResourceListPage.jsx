@@ -71,7 +71,7 @@ export function ResourceListPage({ resourceKey }) {
   return (
     <div className="page-stack">
       {state.error ? <div className="form-error">{state.error}</div> : null}
-      <PageHeader eyebrow={config.eyebrow ?? "Workspace"} title={config.title} description={config.description} backTo="/" />
+      <PageHeader eyebrow="Workspace" title={config.title} description={config.description} backTo="/" />
       <DataTable
         title={config.title}
         description={config.description}

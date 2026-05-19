@@ -198,20 +198,6 @@ export function SubscriptionPage() {
         title="Subscription And Usage"
         description="Track tenant plan limits, feature access, and operational usage across the workspace."
         backTo="/"
-        actions={
-          isSuperAdmin ? (
-            <button
-              className="ghost-button"
-              type="button"
-              onClick={() => {
-                setSelectedPlanId("");
-                setPlanForm(blankPlan);
-              }}
-            >
-              New Plan
-            </button>
-          ) : null
-        }
       />
 
       {state.success ? <div className="surface-success">{state.success}</div> : null}
@@ -232,10 +218,19 @@ export function SubscriptionPage() {
           <section className="detail-grid">
             <article className="workspace-card">
               <div className="card-header-row">
-                <div>
-                  <h3>Plan Catalog</h3>
-                  <span className="helper-note">Select a plan to review limits and configure tenant assignment.</span>
-                </div>
+                <h3>Plan Catalog</h3>
+                {isSuperAdmin ? (
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => {
+                      setSelectedPlanId("");
+                      setPlanForm(blankPlan);
+                    }}
+                  >
+                    New Plan
+                  </button>
+                ) : null}
               </div>
               <div className="metric-grid">
                 {plans.map((plan) => (

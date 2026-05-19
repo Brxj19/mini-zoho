@@ -317,11 +317,6 @@ export function ReportsPage() {
       />
 
       <section className="workspace-card">
-        <div className="card-header-row">
-          <h3>Report Workspace</h3>
-          <span className="helper-note">Choose a report and refine filters before exporting or inspecting results.</span>
-        </div>
-
         <div className="report-pill-row">
           {reportCatalog.map((report) => (
             <button

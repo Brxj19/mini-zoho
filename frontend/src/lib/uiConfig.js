@@ -363,7 +363,6 @@ export const resourceConfigs = {
     ],
   },
   users: {
-    eyebrow: "Admin",
     title: "Users",
     description: "Review workspace users, roles, account status, and last-login visibility.",
     endpoint: "/users",
@@ -388,7 +387,6 @@ export const resourceConfigs = {
     ],
   },
   tenants: {
-    eyebrow: "Platform",
     title: "Tenants",
     description: "Super admin view of tenant companies, plans, and activation status.",
     endpoint: "/tenants",
@@ -413,7 +411,6 @@ export const resourceConfigs = {
     ],
   },
   auditLogs: {
-    eyebrow: "Platform",
     title: "Audit Logs",
     description: "Trace backend actions, entity changes, and operator activity across the workspace.",
     endpoint: "/audit-logs",

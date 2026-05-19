@@ -126,7 +126,7 @@ export function DataTable({
   }
 
   return (
-    <section className="table-shell">
+    <section className="table-shell" aria-busy={isLoading ? "true" : "false"}>
       <header className="table-header">
         {!hideHeaderCopy ? (
           <div>

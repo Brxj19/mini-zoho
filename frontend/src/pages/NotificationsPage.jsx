@@ -45,7 +45,7 @@ export function NotificationsPage() {
   }
 
   return (
-    <div className="page-stack">
+    <div className="view-stack">
       <PageHeader
         eyebrow="Inbox"
         title="Workspace Notifications"
@@ -59,10 +59,6 @@ export function NotificationsPage() {
       />
 
       <section className="workspace-card">
-        <div className="card-header-row">
-          <h3>Notification Inbox</h3>
-          <span className="helper-note">Recent system alerts and operational messages are listed here.</span>
-        </div>
         <div className="card-header-row">
           <h3>Unread {state.unread}</h3>
         </div>

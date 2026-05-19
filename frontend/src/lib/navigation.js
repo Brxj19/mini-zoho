@@ -236,8 +236,7 @@ export function getQuickCreateItems(role) {
 
 export const settingsNavigation = [
   { key: "organization", label: "Organization Profile", icon: "building" },
-  { key: "users", label: "Users", icon: "users" },
-  { key: "roles", label: "Roles", icon: "shield" },
+  { key: "users", label: "Users & Roles", icon: "users" },
   { key: "warehouses", label: "Warehouses", icon: "warehouse" },
   { key: "taxes", label: "Taxes", icon: "receipt" },
   { key: "preferences", label: "Preferences", icon: "sliders" },

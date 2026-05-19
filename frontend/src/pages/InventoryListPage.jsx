@@ -407,6 +407,8 @@ export function InventoryListPage({ kind }) {
         rows={state.rows}
         columns={columns}
         filters={config.filters}
+        createLabel={config.createLabel}
+        createTo={config.createTo}
         searchPlaceholder={config.searchPlaceholder}
         rowLink={rowLink}
         isLoading={state.loading}
