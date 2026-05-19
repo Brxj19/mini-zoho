@@ -13,6 +13,7 @@ import { MasterDataFormPage } from "../pages/MasterDataFormPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { NotificationsPage } from "../pages/NotificationsPage";
 import { OrderFormPage } from "../pages/OrderFormPage";
+import { OnboardingPage } from "../pages/OnboardingPage";
 import { ProductFormPage } from "../pages/ProductFormPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
@@ -48,6 +49,14 @@ export const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPasswordPage />,
+  },
+  {
+    path: "/onboarding",
+    element: (
+      <ProtectedRoute>
+        <OnboardingPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/",

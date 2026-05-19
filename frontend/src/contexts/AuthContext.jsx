@@ -97,6 +97,17 @@ export function AuthProvider({ children }) {
     return response.data;
   }
 
+  async function refreshProfile() {
+    if (!accessToken) {
+      return null;
+    }
+
+    const profile = await loadProfile(accessToken);
+    setUser(profile);
+    setTenant(profile.tenant ?? profile.user?.tenant ?? null);
+    return profile;
+  }
+
   async function logout() {
     try {
       if (accessToken) {
@@ -130,20 +141,27 @@ export function AuthProvider({ children }) {
     clearAuthError,
     async login(credentials) {
       try {
-        await login(credentials);
+        return await login(credentials);
       } catch (error) {
         throw new Error(setErrorFromResponse(error, "Unable to sign in."));
       }
     },
     async register(payload) {
       try {
-        await register(payload);
+        return await register(payload);
       } catch (error) {
         throw new Error(setErrorFromResponse(error, "Unable to create your workspace."));
       }
     },
     async logout() {
       await logout();
+    },
+    async refreshProfile() {
+      try {
+        return await refreshProfile();
+      } catch (error) {
+        throw new Error(setErrorFromResponse(error, "Unable to refresh your workspace profile."));
+      }
     },
   };
 

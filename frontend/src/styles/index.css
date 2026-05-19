@@ -865,10 +865,15 @@ a {
   grid-template-columns: minmax(0, 1.1fr) minmax(380px, 0.9fr);
   gap: 26px;
   width: min(1100px, 100%);
+  padding: 26px;
 }
 
 .auth-panel-wide {
   width: min(1180px, 100%);
+}
+
+.auth-panel-onboarding {
+  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
 }
 
 .auth-copy {
@@ -878,10 +883,141 @@ a {
   padding: 4px;
 }
 
+.auth-copy-rich {
+  gap: 18px;
+}
+
+.auth-copy-onboarding {
+  padding-top: 10px;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(85, 139, 243, 0.12);
+  color: var(--color-primary);
+}
+
+.auth-feature-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-highlight-card,
+.auth-card,
+.form-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.auth-highlight-card {
+  padding: 18px;
+}
+
+.auth-highlight-card h3,
+.auth-card-header h2,
+.form-section-heading h3 {
+  margin: 0;
+}
+
+.auth-highlight-card p,
+.auth-card-header p,
+.form-section-heading p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.auth-bullet-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text);
+}
+
+.auth-bullet-list li {
+  line-height: 1.5;
+}
+
+.auth-credentials-card {
+  gap: 14px;
+}
+
+.auth-credential-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.auth-credential-row span {
+  color: var(--color-muted);
+}
+
 .auth-form,
 .form-shell {
   display: grid;
   gap: 16px;
+}
+
+.auth-card {
+  gap: 18px;
+  align-content: start;
+  padding: 22px;
+}
+
+.auth-card-wide {
+  gap: 20px;
+}
+
+.auth-card-onboarding {
+  padding: 24px;
+}
+
+.auth-card-header {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-card-header .eyebrow {
+  margin-bottom: 0;
+}
+
+.auth-card-footer,
+.auth-card-footer-split,
+.auth-form-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-card-footer {
+  justify-content: flex-end;
+}
+
+.auth-card-footer-split,
+.auth-form-meta {
+  justify-content: space-between;
+}
+
+.auth-form-meta {
+  flex-wrap: wrap;
+  color: var(--color-muted);
+  font-size: 12px;
 }
 
 .auth-form label,
@@ -900,6 +1036,39 @@ a {
   padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-text);
+}
+
+.auth-form textarea {
+  min-height: 112px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  resize: vertical;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.auth-links-centered {
+  justify-content: center;
+}
+
+.form-section {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.form-section-heading {
+  display: grid;
+  gap: 6px;
 }
 
 .form-grid,
@@ -932,6 +1101,10 @@ a {
   width: 16px;
   height: 16px;
   margin: 0;
+}
+
+.auth-screen-onboarding .checklist-grid {
+  grid-template-columns: 1fr;
 }
 
 .stacked-inline {
