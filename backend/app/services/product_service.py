@@ -71,6 +71,7 @@ class ProductService:
         data = payload.model_dump(exclude_none=True)
         data["tenant_id"] = scoped_tenant_id
         self.governance_service.assert_limit(tenant_id=scoped_tenant_id, metric_key="products")
+        self._validate_tracking_features(tenant_id=scoped_tenant_id, data=data)
         self._validate_unique_fields(tenant_id=scoped_tenant_id, data=data)
         self._validate_master_data_refs(tenant_id=scoped_tenant_id, data=data)
         product = Product(**data)
@@ -83,6 +84,7 @@ class ProductService:
         updates = payload.model_dump(exclude_unset=True)
         if not updates:
             return product
+        self._validate_tracking_features(tenant_id=product.tenant_id, data=updates)
         self._validate_unique_fields(tenant_id=product.tenant_id, data=updates, exclude_id=product.id)
         self._validate_master_data_refs(tenant_id=product.tenant_id, data=updates)
         self.repository.update(product, updates)
@@ -111,9 +113,24 @@ class ProductService:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="SKU already exists in this tenant.")
         barcode = data.get("barcode")
         if barcode:
+            self.governance_service.assert_feature_enabled(tenant_id=tenant_id, feature_attr="barcode_enabled", feature_label="Barcode tools")
             existing = self.repository.find_by_barcode(tenant_id=tenant_id, barcode=barcode, exclude_id=exclude_id)
             if existing:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Barcode already exists in this tenant.")
+
+    def _validate_tracking_features(self, *, tenant_id: int, data: dict) -> None:
+        advanced_flags = [
+            data.get("serial_tracking_enabled"),
+            data.get("batch_tracking_enabled"),
+            data.get("expiry_tracking_enabled"),
+            data.get("warranty_tracking_enabled"),
+        ]
+        if any(flag is True for flag in advanced_flags):
+            self.governance_service.assert_feature_enabled(
+                tenant_id=tenant_id,
+                feature_attr="advanced_inventory_enabled",
+                feature_label="Advanced inventory tracking",
+            )
 
     def _validate_master_data_refs(self, *, tenant_id: int, data: dict) -> None:
         self._validate_ref(repository=self.category_repository, ref_id=data.get("category_id"), tenant_id=tenant_id, name="Category")

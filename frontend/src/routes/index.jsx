@@ -3,6 +3,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { AppShell } from "../layouts/AppShell";
 import { DashboardPage } from "../pages/DashboardPage";
+import { BarcodeToolsPage } from "../pages/BarcodeToolsPage";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
 import { ItemGroupsPage } from "../pages/ItemGroupsPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -83,6 +84,7 @@ export const router = createBrowserRouter([
       { path: "warehouses/:warehouseId", element: <ResourceDetailPage detailKey="warehouse" paramKey="warehouseId" />, handle: withHandle("Warehouse Detail", "Inventory") },
       { path: "warehouses/:warehouseId/edit", element: <WarehouseFormPage />, handle: withHandle("Edit Warehouse", "Inventory") },
       { path: "inventory/transactions", element: <ResourceListPage resourceKey="inventoryTransactions" />, handle: withHandle("Inventory Transactions", "Inventory") },
+      { path: "inventory/barcodes", element: <BarcodeToolsPage />, handle: withHandle("Barcode Tools", "Inventory") },
       { path: "inventory/transfers", element: <ResourceListPage resourceKey="stockTransfers" />, handle: withHandle("Stock Transfers", "Inventory") },
       { path: "inventory/transfers/new", element: <StockTransferFormPage />, handle: withHandle("New Stock Transfer", "Inventory") },
       { path: "inventory/transfers/:transferId", element: <ResourceDetailPage detailKey="stockTransfer" paramKey="transferId" />, handle: withHandle("Stock Transfer Detail", "Inventory") },

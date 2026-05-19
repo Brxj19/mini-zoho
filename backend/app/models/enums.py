@@ -41,6 +41,13 @@ class InventoryTransactionTypeEnum(str, Enum):
     DAMAGE_OUT = "DAMAGE_OUT"
 
 
+class InventorySerialStatusEnum(str, Enum):
+    IN_STOCK = "IN_STOCK"
+    ALLOCATED = "ALLOCATED"
+    SOLD = "SOLD"
+    RETURNED = "RETURNED"
+
+
 class StockTransferStatusEnum(str, Enum):
     DRAFT = "DRAFT"
     IN_TRANSIT = "IN_TRANSIT"

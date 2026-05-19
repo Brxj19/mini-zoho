@@ -45,6 +45,10 @@ export function StockActionPage({ actionKey }) {
     note: "",
     reference_type: "",
     reference_id: "",
+    batch_number: "",
+    expiry_date: "",
+    warranty_until: "",
+    serial_numbers: "",
   });
   const [state, setState] = useState({ loading: true, saving: false, error: "", success: "" });
 
@@ -72,6 +76,8 @@ export function StockActionPage({ actionKey }) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  const selectedProduct = options.products.find((product) => String(product.id) === String(form.product_id));
+
   async function handleSubmit(event) {
     event.preventDefault();
     setState((current) => ({ ...current, saving: true, error: "", success: "" }));
@@ -85,6 +91,27 @@ export function StockActionPage({ actionKey }) {
       [config.fields.quantityKey]: Number(form[config.fields.quantityKey]),
     };
 
+    const serialNumbers = form.serial_numbers
+      .split(/[\n,]+/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (actionKey === "stock-in") {
+      payload.serial_numbers = serialNumbers;
+      if (selectedProduct?.batch_tracking_enabled) {
+        payload.batch = {
+          batch_number: form.batch_number,
+          expiry_date: form.expiry_date || null,
+          warranty_until: form.warranty_until || null,
+        };
+      }
+    }
+
+    if (actionKey === "stock-out" || actionKey === "adjustment") {
+      payload.serial_numbers = serialNumbers;
+      payload.batch_number = form.batch_number || null;
+    }
+
     try {
       await api.post(config.endpoint, payload);
       setState({ loading: false, saving: false, error: "", success: `${config.title} saved successfully.` });
@@ -95,6 +122,10 @@ export function StockActionPage({ actionKey }) {
         note: "",
         reference_type: "",
         reference_id: "",
+        batch_number: "",
+        expiry_date: "",
+        warranty_until: "",
+        serial_numbers: "",
       }));
     } catch (error) {
       setState((current) => ({
@@ -176,6 +207,35 @@ export function StockActionPage({ actionKey }) {
                 Reference ID
                 <input className="field-input" type="number" min="0" value={form.reference_id} onChange={(event) => update("reference_id", event.target.value)} />
               </label>
+              {selectedProduct?.batch_tracking_enabled ? (
+                <label>
+                  Batch number
+                  <input className="field-input" value={form.batch_number} onChange={(event) => update("batch_number", event.target.value)} required={actionKey !== "adjustment"} />
+                </label>
+              ) : null}
+              {actionKey === "stock-in" && selectedProduct?.expiry_tracking_enabled ? (
+                <label>
+                  Expiry date
+                  <input className="field-input" type="date" value={form.expiry_date} onChange={(event) => update("expiry_date", event.target.value)} />
+                </label>
+              ) : null}
+              {actionKey === "stock-in" && selectedProduct?.warranty_tracking_enabled ? (
+                <label>
+                  Warranty until
+                  <input className="field-input" type="date" value={form.warranty_until} onChange={(event) => update("warranty_until", event.target.value)} />
+                </label>
+              ) : null}
+              {selectedProduct?.serial_tracking_enabled ? (
+                <label className="field-span-full">
+                  Serial numbers
+                  <textarea
+                    className="field-input field-textarea"
+                    value={form.serial_numbers}
+                    onChange={(event) => update("serial_numbers", event.target.value)}
+                    placeholder="Enter one serial per line or comma separated"
+                  />
+                </label>
+              ) : null}
               <label className="field-span-full">
                 Note
                 <textarea className="field-input field-textarea" value={form.note} onChange={(event) => update("note", event.target.value)} required={config.fields.noteRequired} />

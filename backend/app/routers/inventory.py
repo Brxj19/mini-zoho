@@ -5,10 +5,16 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.core.dependencies import CurrentUser, DbSession, get_pagination_params, require_roles
-from app.models.enums import InventoryTransactionTypeEnum, RoleEnum
+from app.models.enums import InventorySerialStatusEnum, InventoryTransactionTypeEnum, RoleEnum
 from app.models.user import User
 from app.schemas.common import PaginationMeta
 from app.schemas.inventory import (
+    BarcodeGenerateResponse,
+    BarcodeSearchResponse,
+    InventoryBatchListResponse,
+    InventoryBatchResponse,
+    InventorySerialListResponse,
+    InventorySerialResponse,
     InventoryTransactionListResponse,
     InventoryTransactionResponse,
     LowStockItemResponse,
@@ -94,6 +100,18 @@ def adjust_stock(
     return InventoryTransactionResponse.model_validate(transaction)
 
 
+@router.get("/barcode/generate", response_model=BarcodeGenerateResponse)
+def generate_barcode(db: DbSession, current_user: CurrentUser) -> BarcodeGenerateResponse:
+    barcode = InventoryService(db).generate_barcode(current_user=current_user)
+    return BarcodeGenerateResponse(barcode=barcode)
+
+
+@router.get("/barcode-search", response_model=BarcodeSearchResponse)
+def barcode_search(barcode: str, db: DbSession, current_user: CurrentUser) -> BarcodeSearchResponse:
+    product = InventoryService(db).search_product_by_barcode(current_user=current_user, barcode=barcode)
+    return BarcodeSearchResponse(product_id=product.id, name=product.name, sku=product.sku, barcode=product.barcode)
+
+
 @router.get("/low-stock", response_model=LowStockListResponse)
 def low_stock(
     db: DbSession,
@@ -125,5 +143,55 @@ def low_stock(
             )
             for stock, product, warehouse in items
         ],
+        meta=PaginationMeta(page=page, page_size=page_size, total=total),
+    )
+
+
+@router.get("/batches", response_model=InventoryBatchListResponse)
+def list_batches(
+    db: DbSession,
+    current_user: CurrentUser,
+    pagination: tuple[int, int] = Depends(get_pagination_params),
+    tenant_id: int | None = Query(default=None),
+    product_id: int | None = Query(default=None),
+    warehouse_id: int | None = Query(default=None),
+) -> InventoryBatchListResponse:
+    page, page_size = pagination
+    items, total = InventoryService(db).list_batches(
+        current_user=current_user,
+        page=page,
+        page_size=page_size,
+        tenant_id=tenant_id,
+        product_id=product_id,
+        warehouse_id=warehouse_id,
+    )
+    return InventoryBatchListResponse(
+        items=[InventoryBatchResponse.model_validate(item) for item in items],
+        meta=PaginationMeta(page=page, page_size=page_size, total=total),
+    )
+
+
+@router.get("/serials", response_model=InventorySerialListResponse)
+def list_serials(
+    db: DbSession,
+    current_user: CurrentUser,
+    pagination: tuple[int, int] = Depends(get_pagination_params),
+    tenant_id: int | None = Query(default=None),
+    product_id: int | None = Query(default=None),
+    warehouse_id: int | None = Query(default=None),
+    status_filter: InventorySerialStatusEnum | None = Query(default=None, alias="status"),
+) -> InventorySerialListResponse:
+    page, page_size = pagination
+    items, total = InventoryService(db).list_serials(
+        current_user=current_user,
+        page=page,
+        page_size=page_size,
+        tenant_id=tenant_id,
+        product_id=product_id,
+        warehouse_id=warehouse_id,
+        status_filter=status_filter,
+    )
+    return InventorySerialListResponse(
+        items=[InventorySerialResponse.model_validate(item) for item in items],
         meta=PaginationMeta(page=page, page_size=page_size, total=total),
     )

@@ -32,6 +32,10 @@ class Product(TenantOwnedMixin, TimestampMixin, Base):
     cost_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     selling_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     reorder_level: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    serial_tracking_enabled: Mapped[bool] = mapped_column(nullable=False, default=False)
+    batch_tracking_enabled: Mapped[bool] = mapped_column(nullable=False, default=False)
+    expiry_tracking_enabled: Mapped[bool] = mapped_column(nullable=False, default=False)
+    warranty_tracking_enabled: Mapped[bool] = mapped_column(nullable=False, default=False)
     status: Mapped[RecordStatusEnum] = mapped_column(
         Enum(RecordStatusEnum, name="record_status_enum"),
         nullable=False,

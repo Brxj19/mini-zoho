@@ -806,6 +806,13 @@ a {
   margin: 0;
 }
 
+.stacked-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
 .line-items-stack,
 .mini-list,
 .notes-list,

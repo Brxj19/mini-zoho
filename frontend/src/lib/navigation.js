@@ -12,6 +12,7 @@ export const navigationGroups = [
       { label: "Stock Transfers", path: "/inventory/transfers", icon: "shuffle", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
       { label: "Warehouses", path: "/warehouses", icon: "warehouse", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
       { label: "Low Stock", path: "/inventory/low-stock", icon: "alert" },
+      { label: "Barcode Tools", path: "/inventory/barcodes", icon: "hash", roles: ["SUPER_ADMIN", "TENANT_ADMIN", "INVENTORY_MANAGER"] },
     ],
   },
   {

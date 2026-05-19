@@ -21,6 +21,10 @@ class ProductCreate(BaseModel):
     cost_price: Decimal = Field(default=0, ge=0)
     selling_price: Decimal = Field(default=0, ge=0)
     reorder_level: int = Field(default=0, ge=0)
+    serial_tracking_enabled: bool = False
+    batch_tracking_enabled: bool = False
+    expiry_tracking_enabled: bool = False
+    warranty_tracking_enabled: bool = False
     status: RecordStatusEnum = RecordStatusEnum.ACTIVE
 
 
@@ -36,6 +40,10 @@ class ProductUpdate(BaseModel):
     cost_price: Decimal | None = Field(default=None, ge=0)
     selling_price: Decimal | None = Field(default=None, ge=0)
     reorder_level: int | None = Field(default=None, ge=0)
+    serial_tracking_enabled: bool | None = None
+    batch_tracking_enabled: bool | None = None
+    expiry_tracking_enabled: bool | None = None
+    warranty_tracking_enabled: bool | None = None
     status: RecordStatusEnum | None = None
 
 
@@ -53,6 +61,10 @@ class ProductResponse(ORMBaseSchema):
     cost_price: Decimal
     selling_price: Decimal
     reorder_level: int
+    serial_tracking_enabled: bool
+    batch_tracking_enabled: bool
+    expiry_tracking_enabled: bool
+    warranty_tracking_enabled: bool
     status: RecordStatusEnum
     created_at: datetime
     updated_at: datetime

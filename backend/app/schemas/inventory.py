@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import InventoryTransactionTypeEnum
+from app.models.enums import InventorySerialStatusEnum, InventoryTransactionTypeEnum
 from app.schemas.common import ORMBaseSchema, PaginationMeta
+
+
+class BatchTrackingInput(BaseModel):
+    batch_number: str = Field(min_length=1, max_length=128)
+    expiry_date: date | None = None
+    warranty_until: date | None = None
 
 
 class StockInRequest(BaseModel):
@@ -15,6 +21,8 @@ class StockInRequest(BaseModel):
     note: str | None = None
     reference_type: str | None = Field(default=None, max_length=100)
     reference_id: int | None = None
+    batch: BatchTrackingInput | None = None
+    serial_numbers: list[str] = Field(default_factory=list)
 
 
 class StockOutRequest(BaseModel):
@@ -24,6 +32,8 @@ class StockOutRequest(BaseModel):
     note: str | None = None
     reference_type: str | None = Field(default=None, max_length=100)
     reference_id: int | None = None
+    batch_number: str | None = Field(default=None, max_length=128)
+    serial_numbers: list[str] = Field(default_factory=list)
 
 
 class StockAdjustmentRequest(BaseModel):
@@ -33,6 +43,8 @@ class StockAdjustmentRequest(BaseModel):
     note: str = Field(min_length=3)
     reference_type: str | None = Field(default=None, max_length=100)
     reference_id: int | None = None
+    batch_number: str | None = Field(default=None, max_length=128)
+    serial_numbers: list[str] = Field(default_factory=list)
 
 
 class InventoryTransactionResponse(ORMBaseSchema):
@@ -68,4 +80,53 @@ class LowStockItemResponse(BaseModel):
 
 class LowStockListResponse(BaseModel):
     items: list[LowStockItemResponse]
+    meta: PaginationMeta
+
+
+class BarcodeGenerateResponse(BaseModel):
+    barcode: str
+
+
+class BarcodeSearchResponse(BaseModel):
+    product_id: int
+    name: str
+    sku: str
+    barcode: str | None
+
+
+class InventoryBatchResponse(ORMBaseSchema):
+    id: int
+    tenant_id: int
+    product_id: int
+    warehouse_id: int
+    batch_number: str
+    expiry_date: date | None
+    warranty_until: date | None
+    quantity: int
+    available_quantity: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class InventoryBatchListResponse(BaseModel):
+    items: list[InventoryBatchResponse]
+    meta: PaginationMeta
+
+
+class InventorySerialResponse(ORMBaseSchema):
+    id: int
+    tenant_id: int
+    product_id: int
+    warehouse_id: int
+    batch_id: int | None
+    serial_number: str
+    expires_on: date | None
+    warranty_until: date | None
+    status: InventorySerialStatusEnum
+    created_at: datetime
+    updated_at: datetime
+
+
+class InventorySerialListResponse(BaseModel):
+    items: list[InventorySerialResponse]
     meta: PaginationMeta

@@ -16,6 +16,10 @@ const initialForm = {
   cost_price: "0",
   selling_price: "0",
   reorder_level: "0",
+  serial_tracking_enabled: false,
+  batch_tracking_enabled: false,
+  expiry_tracking_enabled: false,
+  warranty_tracking_enabled: false,
   status: "ACTIVE",
 };
 
@@ -75,6 +79,10 @@ export function ProductFormPage() {
       cost_price: Number(form.cost_price),
       selling_price: Number(form.selling_price),
       reorder_level: Number(form.reorder_level),
+      serial_tracking_enabled: Boolean(form.serial_tracking_enabled),
+      batch_tracking_enabled: Boolean(form.batch_tracking_enabled),
+      expiry_tracking_enabled: Boolean(form.expiry_tracking_enabled),
+      warranty_tracking_enabled: Boolean(form.warranty_tracking_enabled),
       barcode: form.barcode || null,
       description: form.description || null,
     };
@@ -119,7 +127,27 @@ export function ProductFormPage() {
               </label>
               <label>
                 Barcode
-                <input className="field-input" value={form.barcode} onChange={(event) => update("barcode", event.target.value)} />
+                <div className="stacked-inline">
+                  <input className="field-input" value={form.barcode} onChange={(event) => update("barcode", event.target.value)} />
+                  <button
+                    className="ghost-button compact-button"
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const response = await api.get("/inventory/barcode/generate");
+                        update("barcode", response.data.barcode);
+                        setState((current) => ({ ...current, error: "" }));
+                      } catch (error) {
+                        setState((current) => ({
+                          ...current,
+                          error: error?.response?.data?.detail ?? "Unable to generate a barcode.",
+                        }));
+                      }
+                    }}
+                  >
+                    Generate
+                  </button>
+                </div>
               </label>
               <label>
                 Unit
@@ -176,6 +204,22 @@ export function ProductFormPage() {
               <label>
                 Reorder level
                 <input className="field-input" type="number" min="0" step="1" value={form.reorder_level} onChange={(event) => update("reorder_level", event.target.value)} />
+              </label>
+              <label className="checkbox-row">
+                <input type="checkbox" checked={form.serial_tracking_enabled} onChange={(event) => update("serial_tracking_enabled", event.target.checked)} />
+                Enable serial tracking
+              </label>
+              <label className="checkbox-row">
+                <input type="checkbox" checked={form.batch_tracking_enabled} onChange={(event) => update("batch_tracking_enabled", event.target.checked)} />
+                Enable batch tracking
+              </label>
+              <label className="checkbox-row">
+                <input type="checkbox" checked={form.expiry_tracking_enabled} onChange={(event) => update("expiry_tracking_enabled", event.target.checked)} />
+                Track expiry dates
+              </label>
+              <label className="checkbox-row">
+                <input type="checkbox" checked={form.warranty_tracking_enabled} onChange={(event) => update("warranty_tracking_enabled", event.target.checked)} />
+                Track warranty dates
               </label>
               <label className="field-span-full">
                 Description

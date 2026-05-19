@@ -70,6 +70,16 @@ class GovernanceService:
                 detail=f"The tenant has reached the {limit_def.label} limit for the {plan.name} plan.",
             )
 
+    def assert_feature_enabled(self, *, tenant_id: int, feature_attr: str, feature_label: str) -> None:
+        plan = self.get_plan_for_tenant(tenant_id)
+        if not plan:
+            return
+        if not getattr(plan, feature_attr):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"{feature_label} is not enabled on the {plan.name} plan.",
+            )
+
     def get_usage_summary(self, tenant_id: int) -> dict[str, object]:
         plan = self.get_plan_for_tenant(tenant_id)
         total_users = self.user_repository.count_by_tenant(tenant_id)

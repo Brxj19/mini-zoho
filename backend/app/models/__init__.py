@@ -2,6 +2,8 @@ from app.models.base import Base, TenantOwnedMixin, TimestampMixin
 from app.models.brand import Brand
 from app.models.category import Category
 from app.models.customer import Customer
+from app.models.inventory_batch import InventoryBatch
+from app.models.inventory_serial import InventorySerial
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
@@ -29,6 +31,8 @@ __all__ = [
     "Brand",
     "Vendor",
     "Customer",
+    "InventoryBatch",
+    "InventorySerial",
     "Warehouse",
     "Product",
     "PurchaseOrder",
