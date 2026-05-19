@@ -106,7 +106,7 @@ export function ProductFormPage() {
         eyebrow="Inventory Catalog"
         title={isEditing ? "Edit Item" : "Create Item"}
         description="Capture item identity, pricing, purchasing context, and tracking controls in one structured workflow."
-        actions={<BackButton fallbackTo={isEditing ? `/items/${productId}` : "/items"} />}
+        backTo={isEditing ? `/items/${productId}` : "/items"}
       />
 
       <form className="form-shell" onSubmit={handleSubmit}>

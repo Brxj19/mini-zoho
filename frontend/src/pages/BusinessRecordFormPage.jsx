@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
 import { formatCurrency } from "../lib/format";
@@ -298,7 +297,7 @@ export function BusinessRecordFormPage({ kind }) {
 
   return (
     <div className="page-stack">
-      <PageHeader eyebrow={config.kicker} title={config.title} description={config.description} actions={<BackButton fallbackTo={config.listPath} />} />
+      <PageHeader eyebrow={config.kicker} title={config.title} description={config.description} backTo={config.listPath} />
 
       <div className="commercial-summary-grid">
         <article className="commercial-summary-card">

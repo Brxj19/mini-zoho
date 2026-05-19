@@ -37,6 +37,7 @@ export function DataTable({
   pageSize = PAGE_SIZE,
   serverSide = false,
   filterRow,
+  hideHeaderCopy = false,
 }) {
   const [query, setQuery] = useState("");
   const [filterValue, setFilterValue] = useState(filters[0]?.value ?? "all");
@@ -127,11 +128,17 @@ export function DataTable({
   return (
     <section className="table-shell">
       <header className="table-header">
-        <div>
-          <h2>{title}</h2>
-          {description ? <p>{description}</p> : null}
-          {sourceNote ? <span className="helper-note">{sourceNote}</span> : null}
-        </div>
+        {!hideHeaderCopy ? (
+          <div>
+            <h2>{title}</h2>
+            {description ? <p>{description}</p> : null}
+            {sourceNote ? <span className="helper-note">{sourceNote}</span> : null}
+          </div>
+        ) : (
+          <div>
+            {sourceNote ? <span className="helper-note">{sourceNote}</span> : null}
+          </div>
+        )}
 
         <div className="table-header-actions">
           {createLabel && createTo ? (

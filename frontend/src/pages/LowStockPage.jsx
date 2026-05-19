@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { DataTable } from "../components/DataTable";
-import { BackButton } from "../components/BackButton";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
@@ -59,7 +58,7 @@ export function LowStockPage() {
         eyebrow="Inventory Signal"
         title="Low Stock"
         description="Review products below reorder level and jump straight into replenishment or stock corrections."
-        actions={<BackButton fallbackTo="/reports?report=low-stock" />}
+        backTo="/reports?report=low-stock"
       />
 
       <div className="metric-grid">
@@ -98,6 +97,7 @@ export function LowStockPage() {
         error={state.error}
         onRetry={() => setReloadKey((value) => value + 1)}
         sourceNote={sourceNote}
+        hideHeaderCopy
         emptyState={{
           icon: "alert",
           title: "No low stock items",

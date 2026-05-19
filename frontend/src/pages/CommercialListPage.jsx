@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { DataTable } from "../components/DataTable";
 import { MetricCard } from "../components/MetricCard";
@@ -296,11 +295,7 @@ export function CommercialListPage({ kind }) {
         eyebrow={config.eyebrow}
         title={config.title}
         description={config.description}
-        actions={
-          <Link className="button button-primary" to={config.createTo}>
-            {config.createLabel}
-          </Link>
-        }
+        backTo="/"
       />
 
       <div className="metric-grid">
@@ -330,6 +325,7 @@ export function CommercialListPage({ kind }) {
         sortValue={sortValue}
         onSortChange={setSortValue}
         filterRow={passesStatusFilter}
+        hideHeaderCopy
         emptyState={{
           icon: kind === "customers" ? "users" : kind === "vendors" ? "briefcase" : kind === "purchaseOrders" ? "clipboard" : kind === "bills" ? "bill" : kind === "packages" ? "package" : kind === "invoices" ? "receipt" : kind === "salesReturns" ? "undo" : kind === "purchaseReceives" ? "truck" : "cart",
           title: `No ${config.title.toLowerCase()} yet`,

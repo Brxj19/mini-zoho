@@ -856,7 +856,26 @@ a {
 }
 
 .back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  min-height: auto;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.back-button:hover {
+  color: var(--color-primary);
+}
+
+.page-header .back-button,
+.page-intro .back-button {
+  margin-bottom: 10px;
 }
 
 .primary-button,

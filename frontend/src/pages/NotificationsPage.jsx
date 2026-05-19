@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { BackButton } from "../components/BackButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import api from "../lib/api";
 import { formatDateTime } from "../lib/format";
@@ -46,19 +46,17 @@ export function NotificationsPage() {
 
   return (
     <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Inbox</p>
-          <h2>Workspace Notifications</h2>
-          <p>Stay on top of low stock, receiving events, and order-status movement.</p>
-        </div>
-        <div className="page-header-actions">
-          <BackButton fallbackTo="/" />
+      <PageHeader
+        eyebrow="Inbox"
+        title="Workspace Notifications"
+        description="Stay on top of low stock, receiving events, and order-status movement."
+        backTo="/"
+        actions={
           <button className="ghost-button" type="button" onClick={() => setState((current) => ({ ...current, confirming: true }))}>
             Mark All Read
           </button>
-        </div>
-      </section>
+        }
+      />
 
       <section className="workspace-card">
         <div className="card-header-row">

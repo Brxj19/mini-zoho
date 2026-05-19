@@ -183,7 +183,7 @@ export function StockActionPage({ actionKey }) {
         eyebrow="Inventory Action"
         title={config.title}
         description={config.description}
-        actions={<BackButton fallbackTo="/inventory/transactions" />}
+        backTo="/inventory/transactions"
       />
 
       <div className="metric-grid">

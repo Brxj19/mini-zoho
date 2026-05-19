@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { DataTable } from "../components/DataTable";
 import { MetricCard } from "../components/MetricCard";
@@ -393,13 +392,7 @@ export function InventoryListPage({ kind }) {
         eyebrow={config.eyebrow}
         title={config.title}
         description={config.description}
-        actions={
-          config.createTo ? (
-            <Link className="button button-primary" to={config.createTo}>
-              {config.createLabel}
-            </Link>
-          ) : null
-        }
+        backTo="/"
       />
 
       <div className="metric-grid">
@@ -427,6 +420,7 @@ export function InventoryListPage({ kind }) {
         sortValue={sortValue}
         onSortChange={setSortValue}
         filterRow={(row, nextFilter) => inventoryFilter(kind, row, nextFilter)}
+        hideHeaderCopy
         emptyState={{
           icon: kind === "warehouses" ? "warehouse" : kind === "inventoryTransactions" ? "activity" : kind === "stockTransfers" ? "shuffle" : "box",
           title:

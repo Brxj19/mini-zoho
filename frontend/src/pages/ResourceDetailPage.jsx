@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { Tabs } from "../components/Tabs";
@@ -624,9 +623,9 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
         eyebrow={workflow ? "Operational Workflow" : detailKey === "customer" ? "Sales Directory" : detailKey === "vendor" ? "Purchase Directory" : "Workspace Detail"}
         title={headerTitle}
         description={headerDescription}
+        backTo={config.listPath ?? "/"}
         actions={
           <>
-            <BackButton fallbackTo={config.listPath ?? "/"} />
             {canEdit ? (
               <Link className="ghost-button" to={config.editPath(entityId)}>
                 Edit

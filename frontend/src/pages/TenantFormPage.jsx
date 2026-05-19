@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
+import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 
@@ -141,14 +141,12 @@ export function TenantFormPage() {
 
   return (
     <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">SaaS Administration</p>
-          <h2>{isEditing ? "Edit Tenant" : "Create Tenant"}</h2>
-          <p>Manage company profile details, contact data, and tenant administrator onboarding.</p>
-        </div>
-        <BackButton fallbackTo={isEditing ? `/tenants/${tenantId}` : "/tenants"} />
-      </section>
+      <PageHeader
+        eyebrow="SaaS Administration"
+        title={isEditing ? "Edit Tenant" : "Create Tenant"}
+        description="Manage company profile details, contact data, and tenant administrator onboarding."
+        backTo={isEditing ? `/tenants/${tenantId}` : "/tenants"}
+      />
 
       <form className="workspace-card form-shell" onSubmit={handleSubmit}>
         {state.loading ? <div className="surface-placeholder">Loading tenant form…</div> : null}

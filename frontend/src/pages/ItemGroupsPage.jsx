@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { DataTable } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { MetricCard } from "../components/MetricCard";
@@ -108,13 +107,11 @@ export function ItemGroupsPage() {
         eyebrow="Inventory"
         title="Item Groups"
         description="Use real categories and brands as grouping surfaces until richer item-group entities are introduced."
+        backTo="/items"
         actions={
-          <>
-            <BackButton fallbackTo="/items" />
-            <Link className="button button-primary" to="/items/new">
-              Add Item
-            </Link>
-          </>
+          <Link className="button button-primary" to="/items/new">
+            Add Item
+          </Link>
         }
       />
 
@@ -143,6 +140,7 @@ export function ItemGroupsPage() {
         filters={[{ label: "All Groups", value: "all" }]}
         searchPlaceholder={`Search ${activeTab}`}
         isLoading={state.loading}
+        hideHeaderCopy
         emptyState={{
           icon: activeTab === "categories" ? "layers" : "stars",
           title: `No ${activeTab} found`,

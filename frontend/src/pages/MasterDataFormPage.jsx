@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
 
@@ -203,7 +202,7 @@ export function MasterDataFormPage({ entityKey, paramKey }) {
         eyebrow={config.eyebrow}
         title={isEditing ? `Edit ${config.singular}` : `Create ${config.singular}`}
         description={config.description}
-        actions={<BackButton fallbackTo={isEditing ? config.detailPath(recordId) : config.listPath} />}
+        backTo={isEditing ? config.detailPath(recordId) : config.listPath}
       />
 
       <form className="form-shell" onSubmit={handleSubmit}>

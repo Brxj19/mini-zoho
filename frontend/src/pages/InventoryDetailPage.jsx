@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { EmptyState } from "../components/EmptyState";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
@@ -314,9 +313,9 @@ export function InventoryDetailPage({ kind }) {
             ? "Product profile, stock distribution, and recent movement in one operational workspace."
             : "Warehouse summary, stocked items, and movement history for this location."
         }
+        backTo={kind === "product" ? "/items" : "/warehouses"}
         actions={
           <>
-            <BackButton fallbackTo={kind === "product" ? "/items" : "/warehouses"} />
             <StatusBadge value={statusValue} />
             <Link className="button button-ghost" to={kind === "product" ? `/items/${entityId}/edit` : `/warehouses/${entityId}/edit`}>
               Edit

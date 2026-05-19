@@ -199,10 +199,10 @@ export function StockTransferFormPage() {
         eyebrow="Inter-Warehouse Flow"
         title={isEditing ? "Edit Stock Transfer" : "Create Stock Transfer"}
         description="Draft, validate, and hand off stock movement between warehouses with clear quantity checks."
+        backTo={isEditing ? `/inventory/transfers/${transferId}` : "/inventory/transfers"}
         actions={
           <>
             {recordStatus ? <StatusBadge value={recordStatus} /> : null}
-            <BackButton fallbackTo={isEditing ? `/inventory/transfers/${transferId}` : "/inventory/transfers"} />
           </>
         }
       />

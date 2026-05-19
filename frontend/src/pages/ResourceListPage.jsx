@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { DataTable } from "../components/DataTable";
+import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 import { normalizeItems } from "../lib/format";
@@ -70,6 +71,7 @@ export function ResourceListPage({ resourceKey }) {
   return (
     <div className="page-stack">
       {state.error ? <div className="form-error">{state.error}</div> : null}
+      <PageHeader eyebrow="Workspace" title={config.title} description={config.description} backTo="/" />
       <DataTable
         title={config.title}
         description={config.description}
@@ -95,6 +97,7 @@ export function ResourceListPage({ resourceKey }) {
         totalCount={state.meta.total}
         pageSize={state.meta.page_size}
         serverSide
+        hideHeaderCopy
         emptyState={{
           icon: "box",
           title: `No ${config.title.toLowerCase()} yet`,

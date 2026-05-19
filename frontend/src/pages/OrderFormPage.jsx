@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
 import { formatCurrency } from "../lib/format";
@@ -181,7 +180,7 @@ export function OrderFormPage({ kind }) {
             ? "Build procurement records with vendor context, receiving milestones, and warehouse-aware line items."
             : "Create customer-facing sales orders with warehouse allocations, pricing, and fulfillment-ready lines."
         }
-        actions={<BackButton fallbackTo={isEditing ? `${isPurchase ? "/purchase-orders" : "/sales-orders"}/${recordId}` : isPurchase ? "/purchase-orders" : "/sales-orders"} />}
+        backTo={isEditing ? `${isPurchase ? "/purchase-orders" : "/sales-orders"}/${recordId}` : isPurchase ? "/purchase-orders" : "/sales-orders"}
       />
 
       <div className="commercial-summary-grid">

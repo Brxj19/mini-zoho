@@ -95,7 +95,7 @@ export function WarehouseFormPage() {
         eyebrow="Inventory Location"
         title={isEditing ? "Edit Warehouse" : "Create Warehouse"}
         description="Define location identity, contact ownership, and primary-site behavior for this warehouse."
-        actions={<BackButton fallbackTo={isEditing ? `/warehouses/${warehouseId}` : "/warehouses"} />}
+        backTo={isEditing ? `/warehouses/${warehouseId}` : "/warehouses"}
       />
 
       <form className="form-shell" onSubmit={handleSubmit}>
