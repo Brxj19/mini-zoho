@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.routers.audit_logs import router as audit_logs_router
 from app.routers.auth import router as auth_router
+from app.routers.business_workflows import router as business_workflows_router
 from app.routers.brands import router as brands_router
 from app.routers.categories import router as categories_router
 from app.routers.customers import router as customers_router
@@ -35,6 +36,7 @@ api_router.include_router(inventory_router, prefix="/inventory", tags=["inventor
 api_router.include_router(purchase_orders_router, prefix="/purchase-orders", tags=["purchase-orders"])
 api_router.include_router(sales_orders_router, prefix="/sales-orders", tags=["sales-orders"])
 api_router.include_router(stock_transfers_router, prefix="/inventory", tags=["stock-transfers"])
+api_router.include_router(business_workflows_router, tags=["business-workflows"])
 api_router.include_router(subscription_plans_router, prefix="/subscription-plans", tags=["subscription-plans"])
 api_router.include_router(health_router, prefix="/health", tags=["health"])
 api_router.include_router(tenants_router, prefix="/tenants", tags=["tenants"])

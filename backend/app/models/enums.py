@@ -78,3 +78,37 @@ class NotificationTypeEnum(str, Enum):
     PURCHASE_RECEIVE = "PURCHASE_RECEIVE"
     STOCK_ALERT = "STOCK_ALERT"
     SYSTEM = "SYSTEM"
+
+
+class PackageStatusEnum(str, Enum):
+    DRAFT = "DRAFT"
+    PACKED = "PACKED"
+    SHIPPED = "SHIPPED"
+    DELIVERED = "DELIVERED"
+    CANCELLED = "CANCELLED"
+
+
+class InvoiceStatusEnum(str, Enum):
+    DRAFT = "DRAFT"
+    SENT = "SENT"
+    PAID = "PAID"
+    VOID = "VOID"
+
+
+class SalesReturnStatusEnum(str, Enum):
+    DRAFT = "DRAFT"
+    RECEIVED = "RECEIVED"
+    REFUNDED = "REFUNDED"
+    CANCELLED = "CANCELLED"
+
+
+class PurchaseReceiveStatusEnum(str, Enum):
+    POSTED = "POSTED"
+    CANCELLED = "CANCELLED"
+
+
+class BillStatusEnum(str, Enum):
+    DRAFT = "DRAFT"
+    POSTED = "POSTED"
+    PAID = "PAID"
+    VOID = "VOID"

@@ -102,6 +102,36 @@ const detailConfigs = {
     listPath: "/sales-orders",
     editRoles: salesRoles,
   },
+  package: {
+    title: "Package Detail",
+    endpoint: (id) => `/packages/${id}`,
+    listPath: "/packages",
+    editRoles: salesRoles,
+  },
+  invoice: {
+    title: "Invoice Detail",
+    endpoint: (id) => `/invoices/${id}`,
+    listPath: "/invoices",
+    editRoles: salesRoles,
+  },
+  salesReturn: {
+    title: "Sales Return Detail",
+    endpoint: (id) => `/sales-returns/${id}`,
+    listPath: "/sales-returns",
+    editRoles: salesRoles,
+  },
+  purchaseReceive: {
+    title: "Purchase Receive Detail",
+    endpoint: (id) => `/purchase-receives/${id}`,
+    listPath: "/purchase-receives",
+    editRoles: purchaseRoles,
+  },
+  bill: {
+    title: "Bill Detail",
+    endpoint: (id) => `/bills/${id}`,
+    listPath: "/bills",
+    editRoles: purchaseRoles,
+  },
 };
 
 const workflowConfigs = {
@@ -226,6 +256,76 @@ const workflowConfigs = {
       return actions;
     },
   },
+  package: {
+    title: "Package Timeline",
+    steps: ["DRAFT", "PACKED", "SHIPPED", "DELIVERED"],
+    actionRoles: salesRoles,
+    actions: (record, id) => {
+      const actions = [];
+      if (record.status === "DRAFT") {
+        actions.push({ type: "request", label: "Mark Packed", endpoint: `/packages/${id}/pack`, successMessage: "Package marked as packed." });
+        actions.push({ type: "request", label: "Cancel Package", endpoint: `/packages/${id}/cancel`, tone: "danger", successMessage: "Package cancelled." });
+      }
+      if (record.status === "PACKED") {
+        actions.push({ type: "request", label: "Mark Shipped", endpoint: `/packages/${id}/ship`, successMessage: "Package marked as shipped." });
+        actions.push({ type: "request", label: "Cancel Package", endpoint: `/packages/${id}/cancel`, tone: "danger", successMessage: "Package cancelled." });
+      }
+      if (record.status === "SHIPPED") {
+        actions.push({ type: "request", label: "Mark Delivered", endpoint: `/packages/${id}/deliver`, successMessage: "Package delivered." });
+      }
+      return actions;
+    },
+  },
+  invoice: {
+    title: "Invoice Timeline",
+    steps: ["DRAFT", "SENT", "PAID"],
+    actionRoles: salesRoles,
+    actions: (record, id) => {
+      const actions = [];
+      if (record.status === "DRAFT") {
+        actions.push({ type: "request", label: "Send Invoice", endpoint: `/invoices/${id}/send`, successMessage: "Invoice marked as sent." });
+        actions.push({ type: "request", label: "Void Invoice", endpoint: `/invoices/${id}/void`, tone: "danger", successMessage: "Invoice voided." });
+      }
+      if (record.status === "SENT") {
+        actions.push({ type: "request", label: "Mark Paid", endpoint: `/invoices/${id}/pay`, successMessage: "Invoice marked as paid." });
+        actions.push({ type: "request", label: "Void Invoice", endpoint: `/invoices/${id}/void`, tone: "danger", successMessage: "Invoice voided." });
+      }
+      return actions;
+    },
+  },
+  salesReturn: {
+    title: "Return Timeline",
+    steps: ["DRAFT", "RECEIVED", "REFUNDED"],
+    actionRoles: salesRoles,
+    actions: (record, id) => {
+      const actions = [];
+      if (record.status === "DRAFT") {
+        actions.push({ type: "request", label: "Receive Return", endpoint: `/sales-returns/${id}/receive`, successMessage: "Returned stock received back into inventory." });
+        actions.push({ type: "request", label: "Cancel Return", endpoint: `/sales-returns/${id}/cancel`, tone: "danger", successMessage: "Sales return cancelled." });
+      }
+      if (record.status === "RECEIVED") {
+        actions.push({ type: "request", label: "Mark Refunded", endpoint: `/sales-returns/${id}/refund`, successMessage: "Sales return marked as refunded." });
+      }
+      return actions;
+    },
+  },
+  bill: {
+    title: "Bill Timeline",
+    steps: ["DRAFT", "POSTED", "PAID"],
+    actionRoles: purchaseRoles,
+    actions: (record, id) => {
+      const actions = [];
+      if (record.status === "DRAFT") {
+        actions.push({ type: "request", label: "Post Bill", endpoint: `/bills/${id}/post`, successMessage: "Bill posted." });
+        actions.push({ type: "request", label: "Void Bill", endpoint: `/bills/${id}/void`, tone: "danger", successMessage: "Bill voided." });
+      }
+      if (record.status === "POSTED") {
+        actions.push({ type: "request", label: "Mark Paid", endpoint: `/bills/${id}/pay`, successMessage: "Bill marked as paid." });
+        actions.push({ type: "request", label: "Void Bill", endpoint: `/bills/${id}/void`, tone: "danger", successMessage: "Bill voided." });
+      }
+      return actions;
+    },
+  },
 };
 
 function keyValueEntries(record) {
@@ -315,7 +415,7 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
   const stockRows = state.supplementary.stock?.warehouses ?? [];
   const transactionRows = state.supplementary.transactions?.items ?? [];
   const usage = state.supplementary.usage ?? null;
-  const showsLineItems = ["purchaseOrder", "salesOrder", "stockTransfer"].includes(detailKey);
+  const showsLineItems = ["purchaseOrder", "salesOrder", "stockTransfer", "package", "salesReturn", "purchaseReceive"].includes(detailKey);
   const canRunWorkflowActions = hasAnyRole(user, workflow?.actionRoles);
   const workflowActions = workflow && state.record && canRunWorkflowActions ? workflow.actions(state.record, entityId) : [];
   const canEdit =
