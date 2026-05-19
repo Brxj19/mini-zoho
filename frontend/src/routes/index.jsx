@@ -4,6 +4,7 @@ import { ProtectedRoute } from "../components/ProtectedRoute";
 import { AppShell } from "../layouts/AppShell";
 import { DashboardPage } from "../pages/DashboardPage";
 import { BarcodeToolsPage } from "../pages/BarcodeToolsPage";
+import { AIAssistantPage } from "../pages/AIAssistantPage";
 import { BusinessRecordFormPage } from "../pages/BusinessRecordFormPage";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
 import { ItemGroupsPage } from "../pages/ItemGroupsPage";
@@ -12,7 +13,6 @@ import { MasterDataFormPage } from "../pages/MasterDataFormPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { NotificationsPage } from "../pages/NotificationsPage";
 import { OrderFormPage } from "../pages/OrderFormPage";
-import { PlaceholderModulePage } from "../pages/PlaceholderModulePage";
 import { ProductFormPage } from "../pages/ProductFormPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
@@ -140,7 +140,7 @@ export const router = createBrowserRouter([
       { path: "tenants/:tenantId/edit", element: <TenantFormPage />, handle: withHandle("Edit Tenant", "Admin") },
       { path: "subscription", element: <SubscriptionPage />, handle: withHandle("Subscription", "Admin") },
       { path: "settings", element: <SettingsPage />, handle: withHandle("Settings", "Admin") },
-      { path: "ai-assistant", element: <PlaceholderModulePage title="AI Assistant" description="The AI assistant page is reserved until the tenant-safe GenAI layer is finalized." actionLabel="Back to dashboard" actionTo="/" />, handle: withHandle("AI Assistant", "AI") },
+      { path: "ai-assistant", element: <AIAssistantPage />, handle: withHandle("AI Assistant", "AI") },
     ],
   },
   {

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.routers.audit_logs import router as audit_logs_router
+from app.routers.ai import router as ai_router
 from app.routers.auth import router as auth_router
 from app.routers.business_workflows import router as business_workflows_router
 from app.routers.brands import router as brands_router
@@ -23,6 +24,7 @@ from app.routers.warehouses import router as warehouses_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(ai_router, tags=["ai"])
 api_router.include_router(dashboards_router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(reports_router, prefix="/reports", tags=["reports"])
 api_router.include_router(audit_logs_router, prefix="/audit-logs", tags=["audit-logs"])

@@ -1154,6 +1154,7 @@ a {
 
 .surface-placeholder,
 .surface-empty,
+.surface-note,
 .surface-error,
 .surface-success,
 .form-error {
@@ -1170,6 +1171,11 @@ a {
 .surface-empty,
 .empty-state {
   text-align: center;
+}
+
+.surface-note {
+  background: var(--color-soft);
+  color: var(--color-text);
 }
 
 .surface-error,
@@ -1209,6 +1215,28 @@ a {
   height: 14px;
   border-radius: var(--radius-sm);
   background: var(--color-soft);
+}
+
+.table-subtext {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-soft);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.integration-card {
+  gap: 14px;
 }
 
 .notification-card-read {
