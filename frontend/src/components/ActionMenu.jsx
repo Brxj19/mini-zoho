@@ -1,21 +1,23 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-import { useDropdown } from "../hooks/useDropdown";
 import { Icon } from "./Icon";
 
 export function ActionMenu({ items = [] }) {
-  const { open, ref, toggle, close } = useDropdown();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useLayoutEffect(() => {
-    if (!open || !ref.current) {
+    if (!open || !triggerRef.current) {
       return;
     }
 
     function updatePosition() {
-      const rect = ref.current.getBoundingClientRect();
+      const rect = triggerRef.current.getBoundingClientRect();
       setPosition({
         top: rect.bottom + 8,
         left: Math.max(12, rect.right - 220),
@@ -29,37 +31,61 @@ export function ActionMenu({ items = [] }) {
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open, ref]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
+    function handlePointerDown(event) {
+      const target = event.target;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    }
+
     function handleEscape(event) {
       if (event.key === "Escape") {
-        close();
+        setOpen(false);
       }
     }
 
+    window.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [close, open]);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
 
   return (
-    <div className="menu-shell" ref={ref}>
-      <button className="icon-button" type="button" onClick={toggle} aria-expanded={open}>
+    <div className="menu-shell" ref={triggerRef}>
+      <button className="icon-button" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
         <Icon name="more" size={16} />
       </button>
 
       {open ? (
         createPortal(
-          <div className="menu-popover floating-menu is-open" style={{ position: "fixed", top: position.top, left: position.left }}>
+          <div
+            ref={menuRef}
+            className="menu-popover floating-menu is-open"
+            style={{ position: "fixed", top: position.top, left: position.left }}
+          >
             {items.map((item) =>
               item.to ? (
-                <Link key={item.label} className="menu-item" to={item.to} onClick={close}>
+                <button
+                  key={item.label}
+                  className="menu-item"
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    navigate(item.to);
+                  }}
+                >
                   {item.label}
-                </Link>
+                </button>
               ) : (
                 <button
                   key={item.label}
@@ -67,7 +93,7 @@ export function ActionMenu({ items = [] }) {
                   type="button"
                   onClick={() => {
                     item.onClick?.();
-                    close();
+                    setOpen(false);
                   }}
                 >
                   {item.label}

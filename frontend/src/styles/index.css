@@ -3,11 +3,11 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --color-primary: rgb(85, 139, 243);
   --color-primary-hover: rgb(66, 123, 233);
-  --color-sidebar-bg: rgb(24, 29, 45);
-  --color-sidebar-surface: rgb(31, 37, 56);
-  --color-sidebar-text: rgba(255, 255, 255, 0.84);
-  --color-sidebar-muted: rgba(255, 255, 255, 0.54);
-  --color-sidebar-active: rgba(85, 139, 243, 0.2);
+  --color-sidebar-bg: rgb(255, 255, 255);
+  --color-sidebar-surface: rgb(248, 249, 252);
+  --color-sidebar-text: rgb(51, 58, 79);
+  --color-sidebar-muted: rgb(118, 126, 149);
+  --color-sidebar-active: rgba(85, 139, 243, 0.12);
   --color-bg: rgb(246, 247, 249);
   --color-card: rgb(255, 255, 255);
   --color-border: rgb(225, 228, 236);
@@ -73,6 +73,8 @@ a {
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   min-height: 100%;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-shell.is-sidebar-collapsed {
@@ -83,12 +85,20 @@ a {
   display: grid;
   grid-template-rows: var(--header-height) minmax(0, 1fr);
   min-width: 0;
+  min-height: 0;
 }
 
 .shell-content {
   position: relative;
-  overflow: auto;
+  overflow: hidden;
   background: var(--color-bg);
+}
+
+.content-scroll {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow: auto;
 }
 
 .content-backdrop {
@@ -99,8 +109,6 @@ a {
 }
 
 .content-inner {
-  position: relative;
-  z-index: 1;
   display: grid;
   gap: 18px;
   min-width: 0;
@@ -172,15 +180,16 @@ a {
   min-width: 0;
 }
 
+.topbar-search-shell {
+  position: relative;
+}
+
 .search-field {
   display: flex;
   align-items: center;
   gap: 10px;
   height: 42px;
   padding: 0 12px 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
 }
 
 .search-field input {
@@ -189,11 +198,41 @@ a {
   border: 0;
   outline: 0;
   background: transparent;
+}
+
+.search-field-topbar {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.search-field-topbar input {
   color: white;
 }
 
-.search-field input::placeholder {
+.search-field-topbar input::placeholder {
   color: rgba(255, 255, 255, 0.54);
+}
+
+.search-field-table {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-text);
+  box-shadow: inset 0 1px 2px rgba(12, 18, 28, 0.03);
+}
+
+.search-field-table input {
+  color: var(--color-text);
+}
+
+.search-field-table input::placeholder {
+  color: var(--color-muted);
+}
+
+.search-field-table svg {
+  color: var(--color-muted);
 }
 
 .search-hint {
@@ -342,6 +381,7 @@ a {
   border-radius: var(--radius-lg);
   background: var(--color-card);
   box-shadow: var(--shadow-card);
+  color: var(--color-text);
 }
 
 .floating-menu {
@@ -360,7 +400,7 @@ a {
 .menu-title {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-muted);
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -374,8 +414,12 @@ a {
 .menu-empty {
   display: grid;
   gap: 2px;
+  width: 100%;
   padding: 10px 12px;
+  border: 0;
   border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
   text-align: left;
 }
 
@@ -402,6 +446,10 @@ a {
   margin-bottom: 6px;
 }
 
+.menu-profile strong {
+  color: var(--color-text);
+}
+
 .menu-profile span,
 .menu-profile small {
   color: var(--color-muted);
@@ -415,6 +463,21 @@ a {
 
 .menu-item:hover {
   background: var(--color-soft);
+}
+
+.topbar-search-popover {
+  top: calc(100% + 12px);
+  left: 0;
+  right: auto;
+  width: min(620px, calc(100vw - 32px));
+}
+
+.search-result-item {
+  gap: 4px;
+}
+
+.search-result-item span {
+  font-weight: 600;
 }
 
 .notification-item.is-unread {
@@ -447,13 +510,14 @@ a {
 
 .sidebar {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   min-width: 0;
   padding: 14px 12px 12px;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid var(--color-border);
   background: var(--color-sidebar-bg);
   color: var(--color-sidebar-text);
   transition: width 180ms ease, padding 180ms ease;
+  min-height: 0;
 }
 
 .sidebar.is-collapsed {
@@ -473,15 +537,15 @@ a {
   width: 38px;
   height: 38px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.12);
-  color: white;
+  background: rgba(85, 139, 243, 0.12);
+  color: var(--color-primary);
   font-weight: 700;
 }
 
 .sidebar-brand strong {
   display: block;
   font-size: 14px;
-  color: white;
+  color: var(--color-text);
 }
 
 .sidebar-brand p {
@@ -491,14 +555,18 @@ a {
 }
 
 .sidebar-collapse-button {
-  margin-left: auto;
   color: var(--color-sidebar-muted);
+  border: 1px solid var(--color-border);
+  background: white;
 }
 
 .sidebar-groups {
   display: grid;
   align-content: start;
   gap: 10px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .sidebar-link {
@@ -515,13 +583,13 @@ a {
 
 .sidebar-link:hover,
 .sidebar-group-toggle:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-soft);
 }
 
 .sidebar-link.is-active,
 .sidebar-link-home.is-active {
   background: var(--color-sidebar-active);
-  color: white;
+  color: var(--color-primary);
   font-weight: 700;
   box-shadow: inset 3px 0 0 var(--color-primary);
 }
@@ -545,6 +613,11 @@ a {
   letter-spacing: 0.06em;
 }
 
+.sidebar-group-toggle.is-active {
+  background: rgba(85, 139, 243, 0.08);
+  color: var(--color-primary);
+}
+
 .sidebar-links-wrap {
   display: grid;
   grid-template-rows: 0fr;
@@ -564,6 +637,17 @@ a {
 
 .sidebar-brand-copy {
   min-width: 0;
+}
+
+.sidebar-collapse-spacer {
+  margin-left: auto;
+}
+
+.sidebar-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
 }
 
 .drawer {
@@ -1624,6 +1708,10 @@ a {
   min-width: 0;
 }
 
+.table-toolbar .search-field {
+  box-shadow: none;
+}
+
 .table-wrap,
 .data-table-wrap {
   overflow: auto;
@@ -1994,6 +2082,17 @@ a {
   margin: 0;
 }
 
+.auth-panel.compact-panel {
+  width: min(1280px, 100%);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.auth-panel.compact-panel .auth-copy {
+  justify-items: center;
+  text-align: center;
+  gap: 18px;
+}
+
 .inline-link {
   color: var(--color-primary);
   font-weight: 600;
@@ -2171,6 +2270,10 @@ a {
 
   .menu-popover {
     min-width: min(320px, calc(100vw - 24px));
+  }
+
+  .topbar-search-popover {
+    width: min(100vw - 24px, 520px);
   }
 
   .page-header,

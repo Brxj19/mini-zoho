@@ -36,9 +36,7 @@ export function Sidebar({ mobile = false }) {
           </div>
         )}
         {!mobile ? (
-          <button className="icon-button sidebar-collapse-button" type="button" onClick={toggleSidebar} aria-label="Toggle sidebar">
-            <Icon name={isCollapsed ? "panelLeftOpen" : "panelLeftClose"} size={15} />
-          </button>
+          <div className="sidebar-collapse-spacer" />
         ) : null}
       </div>
 
@@ -58,12 +56,13 @@ export function Sidebar({ mobile = false }) {
             return null;
           }
           const isOpen = openGroup === group.title;
+          const hasActiveItem = visibleItems.some((item) => location.pathname.startsWith(item.path));
 
           return (
             <div className="sidebar-group" key={group.title}>
               {isCollapsed && !mobile ? null : (
                 <button
-                  className="sidebar-group-toggle"
+                  className={`sidebar-group-toggle ${hasActiveItem || isOpen ? "is-active" : ""}`}
                   type="button"
                   onClick={() => setOpenGroup((current) => (current === group.title ? "" : group.title))}
                   aria-expanded={isOpen}
@@ -92,6 +91,14 @@ export function Sidebar({ mobile = false }) {
           );
         })}
       </nav>
+
+      {!mobile ? (
+        <div className="sidebar-footer">
+          <button className="icon-button sidebar-collapse-button" type="button" onClick={toggleSidebar} aria-label="Toggle sidebar">
+            <Icon name={isCollapsed ? "panelLeftOpen" : "panelLeftClose"} size={15} />
+          </button>
+        </div>
+      ) : null}
     </aside>
   );
 }

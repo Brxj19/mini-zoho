@@ -42,9 +42,11 @@ export function AppShell() {
         <Topbar />
         <div className="shell-content">
           <div className="content-backdrop" />
-          <div className="content-inner">
-            <Breadcrumbs />
-            <Outlet />
+          <div className="content-scroll">
+            <div className="content-inner">
+              <Breadcrumbs />
+              <Outlet />
+            </div>
           </div>
         </div>
       </div>
