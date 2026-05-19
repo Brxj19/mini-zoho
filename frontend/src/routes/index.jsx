@@ -3,6 +3,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { AppShell } from "../layouts/AppShell";
 import { DashboardPage } from "../pages/DashboardPage";
+import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
 import { ItemGroupsPage } from "../pages/ItemGroupsPage";
 import { LoginPage } from "../pages/LoginPage";
 import { MasterDataFormPage } from "../pages/MasterDataFormPage";
@@ -12,6 +13,7 @@ import { OrderFormPage } from "../pages/OrderFormPage";
 import { PlaceholderModulePage } from "../pages/PlaceholderModulePage";
 import { ProductFormPage } from "../pages/ProductFormPage";
 import { RegisterPage } from "../pages/RegisterPage";
+import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { ReportsPage } from "../pages/ReportsPage";
 import { ResourceDetailPage } from "../pages/ResourceDetailPage";
 import { ResourceListPage } from "../pages/ResourceListPage";
@@ -21,6 +23,8 @@ import { StockTransferFormPage } from "../pages/StockTransferFormPage";
 import { WorkflowWorkbenchPage } from "../pages/WorkflowWorkbenchPage";
 import { WarehouseFormPage } from "../pages/WarehouseFormPage";
 import { LowStockPage } from "../pages/LowStockPage";
+import { UserFormPage } from "../pages/UserFormPage";
+import { TenantFormPage } from "../pages/TenantFormPage";
 
 function withHandle(title, section, breadcrumb = title) {
   return { title, section, breadcrumb };
@@ -34,6 +38,14 @@ export const router = createBrowserRouter([
   {
     path: "/register",
     element: <RegisterPage />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
   },
   {
     path: "/",
@@ -106,7 +118,13 @@ export const router = createBrowserRouter([
       { path: "activity-logs", element: <ResourceListPage resourceKey="auditLogs" />, handle: withHandle("Activity Logs", "Analytics") },
       { path: "audit-logs", element: <ResourceListPage resourceKey="auditLogs" />, handle: withHandle("Audit Logs", "Analytics") },
       { path: "users", element: <ResourceListPage resourceKey="users" />, handle: withHandle("Users", "Admin") },
+      { path: "users/new", element: <UserFormPage />, handle: withHandle("New User", "Admin") },
+      { path: "users/:userId", element: <ResourceDetailPage detailKey="user" paramKey="userId" />, handle: withHandle("User Detail", "Admin") },
+      { path: "users/:userId/edit", element: <UserFormPage />, handle: withHandle("Edit User", "Admin") },
       { path: "tenants", element: <ResourceListPage resourceKey="tenants" />, handle: withHandle("Tenants", "Admin") },
+      { path: "tenants/new", element: <TenantFormPage />, handle: withHandle("New Tenant", "Admin") },
+      { path: "tenants/:tenantId", element: <ResourceDetailPage detailKey="tenant" paramKey="tenantId" />, handle: withHandle("Tenant Detail", "Admin") },
+      { path: "tenants/:tenantId/edit", element: <TenantFormPage />, handle: withHandle("Edit Tenant", "Admin") },
       { path: "subscription", element: <PlaceholderModulePage title="Subscription" description="Plan usage, billing, and quotas are intentionally held as a placeholder for now." actionLabel="Back to dashboard" actionTo="/" />, handle: withHandle("Subscription", "Admin") },
       { path: "settings", element: <SettingsPage />, handle: withHandle("Settings", "Admin") },
       { path: "ai-assistant", element: <PlaceholderModulePage title="AI Assistant" description="The AI assistant page is reserved until the tenant-safe GenAI layer is finalized." actionLabel="Back to dashboard" actionTo="/" />, handle: withHandle("AI Assistant", "AI") },

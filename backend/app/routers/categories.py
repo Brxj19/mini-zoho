@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.core.dependencies import CurrentUser, DbSession, get_pagination_params, require_roles
 from app.models.category import Category
 from app.models.enums import RecordStatusEnum, RoleEnum
+from app.models.product import Product
 from app.models.user import User
 from app.schemas.auth import MessageResponse
 from app.schemas.category import CategoryCreate, CategoryListResponse, CategoryResponse, CategoryUpdate
@@ -21,6 +22,7 @@ def get_service(db: DbSession) -> MasterDataService:
         entity_name="Category",
         search_columns=(Category.name, Category.description),
         unique_fields=("name",),
+        archive_dependencies=((Product, "category_id", "products"),),
     )
 
 

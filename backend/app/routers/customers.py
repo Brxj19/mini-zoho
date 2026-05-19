@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.core.dependencies import CurrentUser, DbSession, get_pagination_params, require_roles
 from app.models.customer import Customer
 from app.models.enums import RecordStatusEnum, RoleEnum
+from app.models.sales_order import SalesOrder
 from app.models.user import User
 from app.schemas.auth import MessageResponse
 from app.schemas.common import PaginationMeta
@@ -20,6 +21,7 @@ def get_service(db: DbSession) -> MasterDataService:
         model=Customer,
         entity_name="Customer",
         search_columns=(Customer.name, Customer.email, Customer.phone, Customer.gst_number),
+        archive_dependencies=((SalesOrder, "customer_id", "sales orders"),),
     )
 
 

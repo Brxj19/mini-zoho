@@ -20,6 +20,15 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordPlaceholderRequest(BaseModel):
+    token: str = Field(min_length=8, max_length=255)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class RegisterRequest(BaseModel):
     company_name: str = Field(min_length=2, max_length=255)
     name: str = Field(min_length=2, max_length=255)

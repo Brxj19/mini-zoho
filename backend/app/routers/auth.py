@@ -6,10 +6,12 @@ from app.core.dependencies import CurrentUser, DbSession
 from app.schemas.auth import (
     AuthSessionResponse,
     ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
     RefreshTokenRequest,
     RegisterRequest,
+    ResetPasswordPlaceholderRequest,
 )
 from app.schemas.tenant import TenantResponse
 from app.schemas.user import UserDetailResponse
@@ -68,3 +70,13 @@ def me(current_user: CurrentUser) -> UserDetailResponse:
 def change_password(payload: ChangePasswordRequest, current_user: CurrentUser, db: DbSession) -> MessageResponse:
     AuthService(db).change_password(current_user, payload.current_password, payload.new_password)
     return MessageResponse(detail="Password updated successfully.")
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+def forgot_password(_: ForgotPasswordRequest) -> MessageResponse:
+    return MessageResponse(detail="Password reset placeholder received. Email delivery is not implemented in this MVP.")
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password(_: ResetPasswordPlaceholderRequest) -> MessageResponse:
+    return MessageResponse(detail="Password reset placeholder accepted. Token verification is not implemented in this MVP.")

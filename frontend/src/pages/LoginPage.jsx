@@ -73,6 +73,11 @@ export function LoginPage() {
 
           {authError ? <p className="form-error">{authError}</p> : null}
 
+          <div className="auth-links">
+            <span>Forgot your password?</span>
+            <Link to="/forgot-password">Reset access</Link>
+          </div>
+
           <button className="primary-button" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Continue"}
           </button>

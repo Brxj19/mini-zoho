@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from fastapi import HTTPException, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import assert_tenant_access, resolve_tenant_scope
@@ -22,12 +23,14 @@ class MasterDataService:
         entity_name: str,
         search_columns: Sequence[Any],
         unique_fields: Sequence[str] = (),
+        archive_dependencies: Sequence[tuple[type, str, str]] = (),
     ) -> None:
         self.db = db
         self.model = model
         self.entity_name = entity_name
         self.search_columns = search_columns
         self.unique_fields = unique_fields
+        self.archive_dependencies = archive_dependencies
         self.repository = MasterDataRepository(db, model)
         self.tenant_repository = TenantRepository(db)
 
@@ -94,6 +97,9 @@ class MasterDataService:
 
     def archive_entity(self, *, current_user: User, entity_id: int) -> Any:
         entity = self.get_entity_for_user(current_user=current_user, entity_id=entity_id)
+        if getattr(entity, "status", None) == RecordStatusEnum.ARCHIVED:
+            return entity
+        self._ensure_entity_can_be_archived(entity)
         updates = {"status": RecordStatusEnum.ARCHIVED}
         self.repository.update(entity, updates)
         self.db.commit()
@@ -120,3 +126,15 @@ class MasterDataService:
     def _validate_tenant_exists(self, tenant_id: int) -> None:
         if not self.tenant_repository.get_by_id(tenant_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found.")
+
+    def _ensure_entity_can_be_archived(self, entity: Any) -> None:
+        for model, field_name, label in self.archive_dependencies:
+            field = getattr(model, field_name)
+            linked_count = self.db.scalar(
+                select(func.count(model.id)).where(model.tenant_id == entity.tenant_id, field == entity.id)
+            ) or 0
+            if linked_count:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"{self.entity_name} cannot be archived because it is linked to existing {label}.",
+                )

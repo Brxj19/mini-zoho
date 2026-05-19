@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.core.dependencies import CurrentUser, DbSession, get_pagination_params, require_roles
 from app.models.brand import Brand
 from app.models.enums import RecordStatusEnum, RoleEnum
+from app.models.product import Product
 from app.models.user import User
 from app.schemas.auth import MessageResponse
 from app.schemas.brand import BrandCreate, BrandListResponse, BrandResponse, BrandUpdate
@@ -21,6 +22,7 @@ def get_service(db: DbSession) -> MasterDataService:
         entity_name="Brand",
         search_columns=(Brand.name, Brand.description),
         unique_fields=("name",),
+        archive_dependencies=((Product, "brand_id", "products"),),
     )
 
 
