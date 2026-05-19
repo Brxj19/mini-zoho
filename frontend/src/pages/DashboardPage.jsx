@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 
 import { DashboardWidget } from "../components/DashboardWidget";
 import { EmptyState } from "../components/EmptyState";
+import { ErrorState } from "../components/common/ErrorState";
+import { LoadingState } from "../components/common/LoadingState";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
@@ -160,23 +162,7 @@ function buildTopTenantUsage(usageRows, tenantRows) {
 }
 
 function DashboardLoadingState() {
-  return (
-    <div className="page-stack">
-      <div className="metric-grid">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div className="loading-card dashboard-loading-card" key={index} />
-        ))}
-      </div>
-      <div className="dashboard-grid-primary">
-        <div className="loading-card dashboard-loading-card-tall" />
-        <div className="loading-card dashboard-loading-card-tall" />
-      </div>
-      <div className="dashboard-grid-secondary">
-        <div className="loading-card dashboard-loading-card-medium" />
-        <div className="loading-card dashboard-loading-card-medium" />
-      </div>
-    </div>
-  );
+  return <LoadingState animationKey="appLoading" message="Loading dashboard…" fullPage />;
 }
 
 export function DashboardPage() {
@@ -376,14 +362,13 @@ export function DashboardPage() {
 
   if (state.error || !dashboard) {
     return (
-      <div className="workspace-card surface-error page-stack">
-        <strong>{state.error || "Dashboard data is unavailable."}</strong>
-        <div>
-          <button className="button button-primary" type="button" onClick={retryLoad}>
-            Retry dashboard
-          </button>
-        </div>
-      </div>
+      <ErrorState
+        animationKey="emptyData"
+        title="Dashboard data is unavailable."
+        description={state.error || "We could not load the latest dashboard metrics."}
+        retryLabel="Retry dashboard"
+        onRetry={retryLoad}
+      />
     );
   }
 

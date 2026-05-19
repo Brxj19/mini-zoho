@@ -328,6 +328,16 @@ export function CommercialListPage({ kind }) {
         hideHeaderCopy
         emptyState={{
           icon: kind === "customers" ? "users" : kind === "vendors" ? "briefcase" : kind === "purchaseOrders" ? "clipboard" : kind === "bills" ? "bill" : kind === "packages" ? "package" : kind === "invoices" ? "receipt" : kind === "salesReturns" ? "undo" : kind === "purchaseReceives" ? "truck" : "cart",
+          animationKey:
+            kind === "customers"
+              ? "emptyCustomers"
+              : kind === "vendors"
+                ? "emptyVendors"
+                : kind === "salesOrders"
+                  ? "emptySalesOrders"
+                  : kind === "purchaseOrders"
+                    ? "emptyPurchaseOrders"
+                    : "emptyData",
           title: `No ${config.title.toLowerCase()} yet`,
           description: `Create the first ${config.title.slice(0, -1).toLowerCase()} to start populating this workflow queue.`,
           actionLabel: config.createLabel,

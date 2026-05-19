@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { EmptyState } from "../components/common/EmptyState";
+import { ErrorState } from "../components/common/ErrorState";
+import { LoadingState } from "../components/common/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import api from "../lib/api";
@@ -62,13 +65,22 @@ export function NotificationsPage() {
         <div className="card-header-row">
           <h3>Unread {state.unread}</h3>
         </div>
-        {state.loading ? <div className="surface-placeholder">Loading notifications…</div> : null}
-        {state.error ? <div className="surface-error">{state.error}</div> : null}
+        {state.loading ? <LoadingState animationKey="appLoading" message="Loading notifications…" compact /> : null}
+        {state.error ? (
+          <ErrorState
+            animationKey="emptyData"
+            title="Unable to load notifications"
+            description={state.error}
+            onRetry={load}
+          />
+        ) : null}
         {!state.loading && !state.error && state.items.length === 0 ? (
-          <div className="surface-empty">
-            <h3>No notifications yet</h3>
-            <p>Your workspace feed will show operational alerts here.</p>
-          </div>
+          <EmptyState
+            animationKey="emptyData"
+            title="No notifications yet"
+            description="Your workspace feed will show operational alerts here."
+            compact
+          />
         ) : null}
         {!state.loading && !state.error && state.items.length > 0 ? (
           <div className="notification-list">
