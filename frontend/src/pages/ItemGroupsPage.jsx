@@ -108,11 +108,6 @@ export function ItemGroupsPage() {
         title="Item Groups"
         description="Use real categories and brands as grouping surfaces until richer item-group entities are introduced."
         backTo="/items"
-        actions={
-          <Link className="button button-primary" to="/items/new">
-            Add Item
-          </Link>
-        }
       />
 
       <div className="metric-grid">
@@ -139,6 +134,8 @@ export function ItemGroupsPage() {
         ]}
         filters={[{ label: "All Groups", value: "all" }]}
         searchPlaceholder={`Search ${activeTab}`}
+        createLabel="+ New Item"
+        createTo="/items/new"
         isLoading={state.loading}
         hideHeaderCopy
         emptyState={{
