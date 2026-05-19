@@ -10,13 +10,18 @@ export function RecentHistoryMenu() {
 
   return (
     <div className="menu-shell" ref={ref}>
-      <button className="icon-button" type="button" onClick={toggle}>
+      <button className="icon-button topbar-icon-button" type="button" onClick={toggle} aria-label="Open recent history">
         <Icon name="clock" size={16} />
       </button>
 
       {open ? (
         <div className="menu-popover recent-history-menu is-open">
-          <div className="menu-title">Recent history</div>
+          <div className="menu-row">
+            <div>
+              <div className="menu-title">Recent history</div>
+              <div className="menu-caption">Recently visited records</div>
+            </div>
+          </div>
           {recentHistory.length ? (
             recentHistory.map((entry) => (
               <Link key={entry.path} className="menu-item" to={entry.path} onClick={close}>
