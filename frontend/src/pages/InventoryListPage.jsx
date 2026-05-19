@@ -117,9 +117,9 @@ export function InventoryListPage({ kind }) {
       try {
         if (kind === "products") {
           const [productsResponse, categoriesResponse, brandsResponse, summaryResponse, lowStockResponse] = await Promise.all([
-            api.get("/products", { params: { page_size: 200 } }),
-            api.get("/categories", { params: { page_size: 200 } }),
-            api.get("/brands", { params: { page_size: 200 } }),
+            api.get("/products", { params: { page_size: 100 } }),
+            api.get("/categories", { params: { page_size: 100 } }),
+            api.get("/brands", { params: { page_size: 100 } }),
             api.get("/reports/inventory-summary"),
             api.get("/reports/low-stock"),
           ]);
@@ -161,7 +161,7 @@ export function InventoryListPage({ kind }) {
 
         if (kind === "warehouses") {
           const [warehousesResponse, stockResponse] = await Promise.all([
-            api.get("/warehouses", { params: { page_size: 200 } }),
+            api.get("/warehouses", { params: { page_size: 100 } }),
             api.get("/reports/warehouse-stock"),
           ]);
 
@@ -214,10 +214,10 @@ export function InventoryListPage({ kind }) {
 
         if (kind === "inventoryTransactions") {
           const [transactionsResponse, productsResponse, warehousesResponse, usersResponse] = await Promise.all([
-            api.get("/inventory/transactions", { params: { page_size: 250 } }),
-            api.get("/products", { params: { page_size: 200 } }),
-            api.get("/warehouses", { params: { page_size: 200 } }),
-            api.get("/users", { params: { page_size: 200 } }),
+            api.get("/inventory/transactions", { params: { page_size: 100 } }),
+            api.get("/products", { params: { page_size: 100 } }),
+            api.get("/warehouses", { params: { page_size: 100 } }),
+            api.get("/users", { params: { page_size: 100 } }),
           ]);
 
           if (!active) return;
@@ -254,9 +254,9 @@ export function InventoryListPage({ kind }) {
 
         if (kind === "stockTransfers") {
           const [transfersResponse, warehousesResponse, usersResponse] = await Promise.all([
-            api.get("/inventory/transfers", { params: { page_size: 200 } }),
-            api.get("/warehouses", { params: { page_size: 200 } }),
-            api.get("/users", { params: { page_size: 200 } }),
+            api.get("/inventory/transfers", { params: { page_size: 100 } }),
+            api.get("/warehouses", { params: { page_size: 100 } }),
+            api.get("/users", { params: { page_size: 100 } }),
           ]);
 
           if (!active) return;

@@ -68,10 +68,10 @@ export function InventoryDetailPage({ kind }) {
             api.get(`/products/${entityId}`),
             api.get(`/products/${entityId}/stock`),
             api.get(`/products/${entityId}/transactions`, { params: { page_size: 50 } }),
-            api.get("/warehouses", { params: { page_size: 200 } }),
-            api.get("/categories", { params: { page_size: 200 } }),
-            api.get("/brands", { params: { page_size: 200 } }),
-            api.get("/vendors", { params: { page_size: 200 } }),
+            api.get("/warehouses", { params: { page_size: 100 } }),
+            api.get("/categories", { params: { page_size: 100 } }),
+            api.get("/brands", { params: { page_size: 100 } }),
+            api.get("/vendors", { params: { page_size: 100 } }),
           ]);
 
           if (!active) return;
@@ -100,7 +100,7 @@ export function InventoryDetailPage({ kind }) {
           api.get(`/warehouses/${entityId}`),
           api.get("/reports/warehouse-stock", { params: { warehouse_id: entityId } }),
           api.get("/inventory/transactions", { params: { warehouse_id: entityId, page_size: 50 } }),
-          api.get("/products", { params: { page_size: 200 } }),
+          api.get("/products", { params: { page_size: 100 } }),
         ]);
 
         if (!active) return;

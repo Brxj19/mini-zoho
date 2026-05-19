@@ -30,6 +30,45 @@ export function AuthProvider({ children }) {
     setAuthHeader(accessToken);
   }, [accessToken]);
 
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error?.config;
+        const statusCode = error?.response?.status;
+
+        if (
+          statusCode !== 401 ||
+          !refreshToken ||
+          !originalRequest ||
+          originalRequest._retry ||
+          String(originalRequest.url ?? "").includes("/auth/refresh")
+        ) {
+          return Promise.reject(error);
+        }
+
+        originalRequest._retry = true;
+
+        try {
+          const response = await api.post("/auth/refresh", { refresh_token: refreshToken });
+          persistSession(response.data);
+          originalRequest.headers = {
+            ...(originalRequest.headers ?? {}),
+            Authorization: `Bearer ${response.data.access_token}`,
+          };
+          return api(originalRequest);
+        } catch (refreshError) {
+          clearSession();
+          return Promise.reject(refreshError);
+        }
+      },
+    );
+
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
+  }, [refreshToken]);
+
   async function synchronizeSession(nextAccessToken, nextRefreshToken) {
     try {
       const profile = await loadProfile(nextAccessToken);

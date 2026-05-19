@@ -13,17 +13,20 @@ export function Breadcrumbs() {
           : match.handle.breadcrumb,
       path: match.pathname,
     }));
+  const uniqueCrumbs = crumbs.filter(
+    (crumb, index) => index === crumbs.findIndex((entry) => entry.path === crumb.path && entry.label === crumb.label),
+  );
 
-  if (crumbs.length <= 1) {
+  if (uniqueCrumbs.length <= 1) {
     return null;
   }
 
   return (
     <nav className="breadcrumbs" aria-label="Breadcrumb">
-      {crumbs.map((crumb, index) => (
-        <span key={crumb.path} className="breadcrumb-item">
+      {uniqueCrumbs.map((crumb, index) => (
+        <span key={`${crumb.path}-${crumb.label}`} className="breadcrumb-item">
           {index > 0 ? <Icon name="chevronRight" size={14} /> : null}
-          {index === crumbs.length - 1 ? <span>{crumb.label}</span> : <Link to={crumb.path}>{crumb.label}</Link>}
+          {index === uniqueCrumbs.length - 1 ? <span>{crumb.label}</span> : <Link to={crumb.path}>{crumb.label}</Link>}
         </span>
       ))}
     </nav>
