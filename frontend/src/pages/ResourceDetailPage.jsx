@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import { BackButton } from "../components/BackButton";
 import api from "../lib/api";
 import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
 import { StatusBadge } from "../components/StatusBadge";
@@ -18,6 +19,20 @@ const detailConfigs = {
   warehouse: {
     title: "Warehouse Detail",
     endpoint: (id) => `/warehouses/${id}`,
+  },
+  vendor: {
+    title: "Vendor Detail",
+    endpoint: (id) => `/vendors/${id}`,
+    editPath: (id) => `/vendors/${id}/edit`,
+  },
+  customer: {
+    title: "Customer Detail",
+    endpoint: (id) => `/customers/${id}`,
+    editPath: (id) => `/customers/${id}/edit`,
+  },
+  stockTransfer: {
+    title: "Stock Transfer Detail",
+    endpoint: (id) => `/inventory/transfers/${id}`,
   },
   purchaseOrder: {
     title: "Purchase Order Detail",
@@ -110,11 +125,14 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
           <h2>{config.title}</h2>
           <p>Key record details, line items, and related operational activity.</p>
         </div>
-        {config.editPath ? (
-          <Link className="ghost-button" to={config.editPath(entityId)}>
-            Edit
-          </Link>
-        ) : null}
+        <div className="page-header-actions">
+          <BackButton fallbackTo="/" />
+          {config.editPath ? (
+            <Link className="ghost-button" to={config.editPath(entityId)}>
+              Edit
+            </Link>
+          ) : null}
+        </div>
       </section>
 
       {state.loading ? <div className="workspace-card surface-placeholder">Loading detail…</div> : null}

@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def _request_id(request: Request) -> str | None:
@@ -38,6 +39,16 @@ def register_exception_handlers(app: FastAPI) -> None:
             content={
                 "detail": "An unexpected server error occurred.",
                 "error": str(exc) if app.debug else "internal_server_error",
+                "request_id": _request_id(request),
+            },
+        )
+
+    @app.exception_handler(SQLAlchemyError)
+    async def sqlalchemy_exception_handler(request: Request, _: SQLAlchemyError) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Database connection is unavailable. Verify MySQL is running and DATABASE_URL is correct.",
                 "request_id": _request_id(request),
             },
         )

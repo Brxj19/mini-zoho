@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { BackButton } from "../components/BackButton";
 import api from "../lib/api";
 
 const actionConfig = {
@@ -102,6 +103,7 @@ export function StockActionPage({ actionKey }) {
           <h2>{config.title}</h2>
           <p>{config.description}</p>
         </div>
+        <BackButton fallbackTo="/inventory/transactions" />
       </section>
       <form className="workspace-card form-shell" onSubmit={handleSubmit}>
         {state.loading ? <div className="surface-placeholder">Loading action form…</div> : null}

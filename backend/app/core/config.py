@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     initial_tenant_status: str = Field(default="ACTIVE", alias="INITIAL_TENANT_STATUS")
     cors_origins_raw: str = Field(
-        default="http://localhost:3000,http://127.0.0.1:3000",
+        default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
         alias="CORS_ORIGINS",
     )
     super_admin_email: str = Field(default="superadmin@example.com", alias="SUPER_ADMIN_EMAIL")

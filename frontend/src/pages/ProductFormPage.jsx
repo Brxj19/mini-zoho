@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { BackButton } from "../components/BackButton";
 import api from "../lib/api";
 
 const initialForm = {
@@ -98,6 +99,7 @@ export function ProductFormPage() {
           <h2>{isEditing ? "Edit Item" : "Create Item"}</h2>
           <p>Set up item details, pricing, and replenishment controls in one clean workflow.</p>
         </div>
+        <BackButton fallbackTo={isEditing ? `/items/${productId}` : "/items"} />
       </section>
 
       <form className="workspace-card form-shell" onSubmit={handleSubmit}>

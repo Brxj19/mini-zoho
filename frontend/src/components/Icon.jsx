@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   Activity,
   AlertTriangle,
   Bell,
@@ -46,6 +47,7 @@ import {
 } from "lucide-react";
 
 const icons = {
+  arrowLeft: ArrowLeft,
   activity: Activity,
   alert: AlertTriangle,
   avatar: UserCircle2,

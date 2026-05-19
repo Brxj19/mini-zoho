@@ -1,4 +1,44 @@
 export const resourceConfigs = {
+  categories: {
+    title: "Categories",
+    description: "Manage tenant-specific item categories for filtering, reporting, and catalog structure.",
+    endpoint: "/categories",
+    createPath: "/categories/new",
+    createLabel: "+ New Category",
+    detailPath: (id) => `/categories/${id}`,
+    searchPlaceholder: "Search categories by name or description",
+    filters: [
+      { label: "All Categories", value: "all" },
+      { label: "Active Categories", value: "ACTIVE" },
+      { label: "Archived Categories", value: "ARCHIVED" },
+    ],
+    columns: [
+      { key: "name", label: "Category" },
+      { key: "description", label: "Description" },
+      { key: "status", label: "Status", kind: "status" },
+      { key: "updated_at", label: "Updated", kind: "date" },
+    ],
+  },
+  brands: {
+    title: "Brands",
+    description: "Manage brand master data used by the product catalog and reporting filters.",
+    endpoint: "/brands",
+    createPath: "/brands/new",
+    createLabel: "+ New Brand",
+    detailPath: (id) => `/brands/${id}`,
+    searchPlaceholder: "Search brands by name or description",
+    filters: [
+      { label: "All Brands", value: "all" },
+      { label: "Active Brands", value: "ACTIVE" },
+      { label: "Archived Brands", value: "ARCHIVED" },
+    ],
+    columns: [
+      { key: "name", label: "Brand" },
+      { key: "description", label: "Description" },
+      { key: "status", label: "Status", kind: "status" },
+      { key: "updated_at", label: "Updated", kind: "date" },
+    ],
+  },
   products: {
     title: "Items",
     description: "Track products, stock posture, reorder levels, and pricing from a single dense inventory list.",
@@ -26,6 +66,8 @@ export const resourceConfigs = {
     title: "Warehouses",
     description: "Monitor active stock locations, warehouse managers, and default fulfillment sites.",
     endpoint: "/warehouses",
+    createPath: "/warehouses/new",
+    createLabel: "+ New Warehouse",
     detailPath: (id) => `/warehouses/${id}`,
     searchPlaceholder: "Search warehouse name, city, or manager",
     filters: [
@@ -46,6 +88,9 @@ export const resourceConfigs = {
     title: "Vendors",
     description: "Keep supplier records ready for procurement, receiving, and replenishment planning.",
     endpoint: "/vendors",
+    createPath: "/vendors/new",
+    createLabel: "+ New Vendor",
+    detailPath: (id) => `/vendors/${id}`,
     searchPlaceholder: "Search vendors by name, email, or GST number",
     filters: [
       { label: "All Vendors", value: "all" },
@@ -64,6 +109,9 @@ export const resourceConfigs = {
     title: "Customers",
     description: "Maintain customer contact records for sales, dispatch, and follow-up workflows.",
     endpoint: "/customers",
+    createPath: "/customers/new",
+    createLabel: "+ New Customer",
+    detailPath: (id) => `/customers/${id}`,
     searchPlaceholder: "Search customers by name, email, or GST number",
     filters: [
       { label: "All Customers", value: "all" },
@@ -106,6 +154,9 @@ export const resourceConfigs = {
     title: "Stock Transfers",
     description: "Move stock across locations while keeping transfer ownership and state visible.",
     endpoint: "/inventory/transfers",
+    createPath: "/inventory/transfers/new",
+    createLabel: "+ New Transfer",
+    detailPath: (id) => `/inventory/transfers/${id}`,
     searchPlaceholder: "Search transfer number or transfer notes",
     filters: [
       { label: "All Transfers", value: "all" },
@@ -223,12 +274,101 @@ export const resourceConfigs = {
   },
 };
 
+const purchaseOrderStatusOptions = [
+  { value: "DRAFT", label: "Draft" },
+  { value: "ISSUED", label: "Issued" },
+  { value: "PARTIALLY_RECEIVED", label: "Partially Received" },
+  { value: "RECEIVED", label: "Received" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+const salesOrderStatusOptions = [
+  { value: "DRAFT", label: "Draft" },
+  { value: "CONFIRMED", label: "Confirmed" },
+  { value: "PACKED", label: "Packed" },
+  { value: "SHIPPED", label: "Shipped" },
+  { value: "DELIVERED", label: "Delivered" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
 export const reportCatalog = [
-  { key: "inventory-summary", label: "Inventory Summary", endpoint: "/reports/inventory-summary" },
-  { key: "stock-movement", label: "Stock Movement", endpoint: "/reports/stock-movement" },
-  { key: "low-stock", label: "Low Stock", endpoint: "/reports/low-stock" },
-  { key: "warehouse-stock", label: "Warehouse Stock", endpoint: "/reports/warehouse-stock" },
-  { key: "product-valuation", label: "Product Valuation", endpoint: "/reports/product-valuation" },
-  { key: "purchase-orders", label: "Purchase Orders", endpoint: "/reports/purchase-orders" },
-  { key: "sales-orders", label: "Sales Orders", endpoint: "/reports/sales-orders" },
+  {
+    key: "inventory-summary",
+    label: "Inventory Summary",
+    endpoint: "/reports/inventory-summary",
+    filters: ["warehouse_id", "product_id", "category_id"],
+  },
+  {
+    key: "stock-movement",
+    label: "Stock Movement",
+    endpoint: "/reports/stock-movement",
+    filters: ["date_from", "date_to", "warehouse_id", "product_id", "category_id"],
+    dateMode: "datetime",
+  },
+  {
+    key: "low-stock",
+    label: "Low Stock",
+    endpoint: "/reports/low-stock",
+    filters: ["warehouse_id", "product_id", "category_id"],
+  },
+  {
+    key: "out-of-stock",
+    label: "Out Of Stock",
+    endpoint: "/reports/out-of-stock",
+    filters: ["warehouse_id", "product_id", "category_id"],
+  },
+  {
+    key: "warehouse-stock",
+    label: "Warehouse Stock",
+    endpoint: "/reports/warehouse-stock",
+    filters: ["warehouse_id", "product_id", "category_id"],
+  },
+  {
+    key: "product-valuation",
+    label: "Product Valuation",
+    endpoint: "/reports/product-valuation",
+    filters: ["warehouse_id", "product_id", "category_id"],
+  },
+  {
+    key: "purchase-orders",
+    label: "Purchase Orders",
+    endpoint: "/reports/purchase-orders",
+    filters: ["date_from", "date_to", "vendor_id", "status"],
+    statusOptions: purchaseOrderStatusOptions,
+  },
+  {
+    key: "vendor-purchase",
+    label: "Vendor Purchase",
+    endpoint: "/reports/vendor-purchase",
+    filters: ["date_from", "date_to", "vendor_id", "status"],
+    statusOptions: purchaseOrderStatusOptions,
+  },
+  {
+    key: "sales-orders",
+    label: "Sales Orders",
+    endpoint: "/reports/sales-orders",
+    filters: ["date_from", "date_to", "customer_id", "status"],
+    statusOptions: salesOrderStatusOptions,
+  },
+  {
+    key: "customer-sales",
+    label: "Customer Sales",
+    endpoint: "/reports/customer-sales",
+    filters: ["date_from", "date_to", "customer_id", "status"],
+    statusOptions: salesOrderStatusOptions,
+  },
+  {
+    key: "inventory-adjustment",
+    label: "Inventory Adjustments",
+    endpoint: "/reports/inventory-adjustment",
+    filters: ["date_from", "date_to", "warehouse_id", "product_id", "category_id"],
+    dateMode: "datetime",
+  },
+  {
+    key: "audit-logs",
+    label: "Audit Logs",
+    endpoint: "/reports/audit-logs",
+    filters: ["date_from", "date_to", "action", "entity_type"],
+    dateMode: "datetime",
+  },
 ];

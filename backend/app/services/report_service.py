@@ -4,14 +4,14 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import resolve_tenant_scope
 from app.models.audit_log import AuditLog
 from app.models.category import Category
 from app.models.customer import Customer
-from app.models.enums import PurchaseOrderStatusEnum, RecordStatusEnum, RoleEnum, SalesOrderStatusEnum
+from app.models.enums import InventoryTransactionTypeEnum, PurchaseOrderStatusEnum, RecordStatusEnum, RoleEnum, SalesOrderStatusEnum
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.product import Product
 from app.models.purchase_order import PurchaseOrder
@@ -184,6 +184,52 @@ class ReportService:
             for row in self.db.execute(statement).all()
         ]
 
+    def out_of_stock(
+        self,
+        *,
+        current_user: User,
+        tenant_id: int | None = None,
+        warehouse_id: int | None = None,
+        product_id: int | None = None,
+        category_id: int | None = None,
+    ) -> list[dict]:
+        scoped_tenant_id = self._tenant_scope(current_user, tenant_id)
+        statement = (
+            select(
+                WarehouseStock.product_id,
+                Product.name,
+                Product.sku,
+                WarehouseStock.warehouse_id,
+                Warehouse.name,
+                WarehouseStock.available_quantity,
+                func.coalesce(WarehouseStock.reorder_level, Product.reorder_level),
+            )
+            .join(Product, Product.id == WarehouseStock.product_id)
+            .join(Warehouse, Warehouse.id == WarehouseStock.warehouse_id)
+            .where(WarehouseStock.tenant_id == scoped_tenant_id)
+            .where(Product.status == RecordStatusEnum.ACTIVE, Warehouse.status == RecordStatusEnum.ACTIVE)
+            .where(WarehouseStock.available_quantity <= 0)
+            .order_by(Product.name.asc(), Warehouse.name.asc())
+        )
+        if warehouse_id is not None:
+            statement = statement.where(WarehouseStock.warehouse_id == warehouse_id)
+        if product_id is not None:
+            statement = statement.where(WarehouseStock.product_id == product_id)
+        if category_id is not None:
+            statement = statement.where(Product.category_id == category_id)
+        return [
+            {
+                "product_id": row[0],
+                "product_name": row[1],
+                "sku": row[2],
+                "warehouse_id": row[3],
+                "warehouse_name": row[4],
+                "available_quantity": row[5],
+                "reorder_level": row[6],
+            }
+            for row in self.db.execute(statement).all()
+        ]
+
     def warehouse_stock(
         self,
         *,
@@ -296,6 +342,56 @@ class ReportService:
             for row in self.db.execute(statement).all()
         ]
 
+    def vendor_purchase_summary(
+        self,
+        *,
+        current_user: User,
+        tenant_id: int | None = None,
+        vendor_id: int | None = None,
+        status_filter: PurchaseOrderStatusEnum | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> list[dict]:
+        scoped_tenant_id = self._tenant_scope(current_user, tenant_id)
+        statement = (
+            select(
+                Vendor.id,
+                Vendor.name,
+                func.count(PurchaseOrder.id),
+                func.coalesce(func.sum(PurchaseOrder.total_amount), 0),
+                func.sum(case((PurchaseOrder.status == PurchaseOrderStatusEnum.ISSUED, 1), else_=0)),
+                func.sum(case((PurchaseOrder.status == PurchaseOrderStatusEnum.PARTIALLY_RECEIVED, 1), else_=0)),
+                func.sum(case((PurchaseOrder.status == PurchaseOrderStatusEnum.RECEIVED, 1), else_=0)),
+                func.sum(case((PurchaseOrder.status == PurchaseOrderStatusEnum.CANCELLED, 1), else_=0)),
+            )
+            .select_from(PurchaseOrder)
+            .join(Vendor, Vendor.id == PurchaseOrder.vendor_id)
+            .where(PurchaseOrder.tenant_id == scoped_tenant_id)
+            .group_by(Vendor.id, Vendor.name)
+            .order_by(func.coalesce(func.sum(PurchaseOrder.total_amount), 0).desc(), Vendor.name.asc())
+        )
+        if vendor_id is not None:
+            statement = statement.where(PurchaseOrder.vendor_id == vendor_id)
+        if status_filter is not None:
+            statement = statement.where(PurchaseOrder.status == status_filter)
+        if date_from is not None:
+            statement = statement.where(PurchaseOrder.order_date >= date_from)
+        if date_to is not None:
+            statement = statement.where(PurchaseOrder.order_date <= date_to)
+        return [
+            {
+                "vendor_id": row[0],
+                "vendor_name": row[1],
+                "purchase_order_count": int(row[2] or 0),
+                "total_purchase_amount": str(row[3]),
+                "issued_orders": int(row[4] or 0),
+                "partially_received_orders": int(row[5] or 0),
+                "received_orders": int(row[6] or 0),
+                "cancelled_orders": int(row[7] or 0),
+            }
+            for row in self.db.execute(statement).all()
+        ]
+
     def sales_orders(
         self,
         *,
@@ -338,6 +434,117 @@ class ReportService:
                 "total_amount": str(row[4]),
                 "customer_id": row[5],
                 "customer_name": row[6],
+            }
+            for row in self.db.execute(statement).all()
+        ]
+
+    def customer_sales_summary(
+        self,
+        *,
+        current_user: User,
+        tenant_id: int | None = None,
+        customer_id: int | None = None,
+        status_filter: SalesOrderStatusEnum | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> list[dict]:
+        scoped_tenant_id = self._tenant_scope(current_user, tenant_id)
+        statement = (
+            select(
+                Customer.id,
+                Customer.name,
+                func.count(SalesOrder.id),
+                func.coalesce(func.sum(SalesOrder.total_amount), 0),
+                func.sum(case((SalesOrder.status == SalesOrderStatusEnum.CONFIRMED, 1), else_=0)),
+                func.sum(case((SalesOrder.status == SalesOrderStatusEnum.PACKED, 1), else_=0)),
+                func.sum(case((SalesOrder.status == SalesOrderStatusEnum.SHIPPED, 1), else_=0)),
+                func.sum(case((SalesOrder.status == SalesOrderStatusEnum.DELIVERED, 1), else_=0)),
+                func.sum(case((SalesOrder.status == SalesOrderStatusEnum.CANCELLED, 1), else_=0)),
+            )
+            .select_from(SalesOrder)
+            .join(Customer, Customer.id == SalesOrder.customer_id)
+            .where(SalesOrder.tenant_id == scoped_tenant_id)
+            .group_by(Customer.id, Customer.name)
+            .order_by(func.coalesce(func.sum(SalesOrder.total_amount), 0).desc(), Customer.name.asc())
+        )
+        if customer_id is not None:
+            statement = statement.where(SalesOrder.customer_id == customer_id)
+        if status_filter is not None:
+            statement = statement.where(SalesOrder.status == status_filter)
+        if date_from is not None:
+            statement = statement.where(SalesOrder.order_date >= date_from)
+        if date_to is not None:
+            statement = statement.where(SalesOrder.order_date <= date_to)
+        return [
+            {
+                "customer_id": row[0],
+                "customer_name": row[1],
+                "sales_order_count": int(row[2] or 0),
+                "total_sales_amount": str(row[3]),
+                "confirmed_orders": int(row[4] or 0),
+                "packed_orders": int(row[5] or 0),
+                "shipped_orders": int(row[6] or 0),
+                "delivered_orders": int(row[7] or 0),
+                "cancelled_orders": int(row[8] or 0),
+            }
+            for row in self.db.execute(statement).all()
+        ]
+
+    def inventory_adjustments(
+        self,
+        *,
+        current_user: User,
+        tenant_id: int | None = None,
+        warehouse_id: int | None = None,
+        product_id: int | None = None,
+        category_id: int | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> list[dict]:
+        scoped_tenant_id = self._tenant_scope(current_user, tenant_id)
+        statement = (
+            select(
+                InventoryTransaction.id,
+                InventoryTransaction.created_at,
+                InventoryTransaction.quantity,
+                InventoryTransaction.note,
+                Product.id,
+                Product.name,
+                Product.sku,
+                Warehouse.id,
+                Warehouse.name,
+                InventoryTransaction.reference_type,
+                InventoryTransaction.reference_id,
+            )
+            .join(Product, Product.id == InventoryTransaction.product_id)
+            .join(Warehouse, Warehouse.id == InventoryTransaction.warehouse_id)
+            .where(InventoryTransaction.tenant_id == scoped_tenant_id)
+            .where(InventoryTransaction.transaction_type == InventoryTransactionTypeEnum.ADJUSTMENT)
+            .order_by(InventoryTransaction.created_at.desc())
+        )
+        if warehouse_id is not None:
+            statement = statement.where(InventoryTransaction.warehouse_id == warehouse_id)
+        if product_id is not None:
+            statement = statement.where(InventoryTransaction.product_id == product_id)
+        if category_id is not None:
+            statement = statement.where(Product.category_id == category_id)
+        if date_from is not None:
+            statement = statement.where(InventoryTransaction.created_at >= date_from)
+        if date_to is not None:
+            statement = statement.where(InventoryTransaction.created_at <= date_to)
+        return [
+            {
+                "adjustment_id": row[0],
+                "created_at": row[1].isoformat(),
+                "quantity_delta": row[2],
+                "note": row[3],
+                "product_id": row[4],
+                "product_name": row[5],
+                "sku": row[6],
+                "warehouse_id": row[7],
+                "warehouse_name": row[8],
+                "reference_type": row[9],
+                "reference_id": row[10],
             }
             for row in self.db.execute(statement).all()
         ]

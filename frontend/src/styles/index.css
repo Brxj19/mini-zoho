@@ -264,6 +264,11 @@ a {
   box-shadow: var(--shadow-card);
 }
 
+.floating-menu {
+  min-width: 220px;
+  z-index: 120;
+}
+
 .menu-row {
   display: flex;
   align-items: center;
@@ -287,6 +292,12 @@ a {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   text-align: left;
+}
+
+.menu-item-with-icon {
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
 }
 
 .menu-item:hover {
@@ -641,6 +652,16 @@ a {
   min-width: 138px;
 }
 
+.compact-button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.back-button {
+  white-space: nowrap;
+}
+
 .primary-button,
 .button.button-primary,
 .button.button-secondary,
@@ -681,6 +702,11 @@ a {
 .button.button-secondary {
   background: rgba(85, 139, 243, 0.12);
   color: var(--color-primary);
+}
+
+.button.button-danger {
+  background: rgba(210, 79, 79, 0.12);
+  color: var(--color-danger);
 }
 
 .auth-screen {
@@ -752,6 +778,19 @@ a {
   grid-column: 1 / -1;
 }
 
+.checkbox-row {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
 .line-items-stack,
 .mini-list,
 .notes-list,
@@ -788,6 +827,63 @@ a {
 .mini-list-row strong,
 .metric-pair strong {
   font-size: 14px;
+}
+
+.workflow-card {
+  display: grid;
+  gap: 16px;
+}
+
+.workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.timeline-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.timeline-step,
+.timeline-terminal,
+.workflow-meta {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.timeline-step strong {
+  font-size: 13px;
+}
+
+.timeline-dot {
+  display: inline-flex;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.timeline-step-active {
+  border-color: rgba(85, 139, 243, 0.35);
+  background: rgba(85, 139, 243, 0.08);
+}
+
+.timeline-step-active .timeline-dot {
+  background: var(--color-primary);
+}
+
+.timeline-step-complete {
+  border-color: rgba(38, 153, 102, 0.24);
+}
+
+.timeline-step-complete .timeline-dot {
+  background: var(--color-success);
 }
 
 .metric-pair {
@@ -850,6 +946,11 @@ a {
   align-items: center;
 }
 
+.table-toolbar > select,
+.table-toolbar > .search-field {
+  width: 100%;
+}
+
 .table-wrap,
 .data-table-wrap {
   overflow: auto;
@@ -900,14 +1001,6 @@ a {
 .pagination-actions {
   display: flex;
   gap: 8px;
-}
-
-.pagination-actions button {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: white;
 }
 
 .status-badge {
@@ -972,6 +1065,28 @@ a {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
   background: rgba(85, 139, 243, 0.08);
+}
+
+.report-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+.report-filter-field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.report-filter-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
 }
 
 .surface-placeholder,
@@ -1042,6 +1157,17 @@ a {
   gap: 8px;
 }
 
+.notification-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.notification-card p {
+  margin: 0;
+}
+
 .inline-link {
   color: var(--color-primary);
   font-weight: 600;
@@ -1065,9 +1191,30 @@ a {
   width: min(460px, 100%);
 }
 
+.modal-card-wide {
+  width: min(760px, 100%);
+}
+
+.modal-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .modal-actions {
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.settings-panel-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-panel-nav .sidebar-link {
+  justify-content: flex-start;
 }
 
 .loading-screen {
@@ -1189,6 +1336,10 @@ a {
   }
 
   .table-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .report-filter-grid {
     grid-template-columns: 1fr;
   }
 

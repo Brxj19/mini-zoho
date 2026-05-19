@@ -56,8 +56,8 @@ export const navigationGroups = [
 
 export const quickCreateItems = [
   { label: "New Item", path: "/items/new", icon: "box" },
-  { label: "New Customer", path: "/customers", icon: "users" },
-  { label: "New Vendor", path: "/vendors", icon: "briefcase" },
+  { label: "New Customer", path: "/customers/new", icon: "users" },
+  { label: "New Vendor", path: "/vendors/new", icon: "briefcase" },
   { label: "New Sales Order", path: "/sales-orders/new", icon: "cart" },
   { label: "New Purchase Order", path: "/purchase-orders/new", icon: "clipboard" },
   { label: "Stock In", path: "/inventory/stock-in", icon: "packagePlus" },

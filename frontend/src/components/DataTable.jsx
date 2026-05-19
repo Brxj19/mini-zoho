@@ -67,7 +67,7 @@ export function DataTable({
     }
     if (rowLink && column.key === columns[0].key) {
       return (
-        <Link className="row-link" to={rowLink(row)}>
+        <Link className="row-link" to={rowLink(row.id)}>
           {value}
         </Link>
       );
@@ -99,7 +99,7 @@ export function DataTable({
 
       <div className="table-toolbar">
         {filters.length ? (
-          <select value={filterValue} onChange={(event) => setFilterValue(event.target.value)}>
+          <select className="field-input compact-field" value={filterValue} onChange={(event) => setFilterValue(event.target.value)}>
             {filters.map((filter) => (
               <option key={filter.value} value={filter.value}>
                 {filter.label}
@@ -117,7 +117,7 @@ export function DataTable({
           placeholder={searchPlaceholder}
         />
 
-        <select value={sortValue} onChange={(event) => setSortValue(event.target.value)}>
+        <select className="field-input compact-field" value={sortValue} onChange={(event) => setSortValue(event.target.value)}>
           {columns.map((column) => (
             <option key={column.key} value={column.key}>
               Sort by {column.label}
@@ -151,7 +151,7 @@ export function DataTable({
                     <td>
                       <ActionMenu
                         items={[
-                          ...(rowLink ? [{ label: "View details", to: rowLink(row) }] : []),
+                          ...(rowLink ? [{ label: "View details", to: rowLink(row.id) }] : []),
                           ...(createTo ? [{ label: "Create similar", to: createTo }] : []),
                         ]}
                       />
@@ -167,10 +167,10 @@ export function DataTable({
               Page {currentPage} of {totalPages}
             </span>
             <div className="pagination-actions">
-              <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))}>
+              <button className="ghost-button compact-button" type="button" onClick={() => setPage((value) => Math.max(1, value - 1))}>
                 Previous
               </button>
-              <button type="button" onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
+              <button className="ghost-button compact-button" type="button" onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
                 Next
               </button>
             </div>

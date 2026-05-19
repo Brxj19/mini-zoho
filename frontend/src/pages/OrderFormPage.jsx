@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { BackButton } from "../components/BackButton";
 import api from "../lib/api";
 import { formatCurrency } from "../lib/format";
 
@@ -165,6 +166,7 @@ export function OrderFormPage({ kind }) {
           <h2>{isEditing ? `Edit ${isPurchase ? "Purchase" : "Sales"} Order` : `Create ${isPurchase ? "Purchase" : "Sales"} Order`}</h2>
           <p>Build line items with a lightweight SaaS editor designed for daily operations.</p>
         </div>
+        <BackButton fallbackTo={isEditing ? `${isPurchase ? "/purchase-orders" : "/sales-orders"}/${recordId}` : isPurchase ? "/purchase-orders" : "/sales-orders"} />
       </section>
 
       <form className="workspace-card form-shell" onSubmit={handleSubmit}>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { BackButton } from "../components/BackButton";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { StatusBadge } from "../components/StatusBadge";
 import api from "../lib/api";
@@ -51,9 +52,12 @@ export function NotificationsPage() {
           <h2>Workspace Notifications</h2>
           <p>Stay on top of low stock, receiving events, and order-status movement.</p>
         </div>
-        <button className="ghost-button" type="button" onClick={() => setState((current) => ({ ...current, confirming: true }))}>
-          Mark All Read
-        </button>
+        <div className="page-header-actions">
+          <BackButton fallbackTo="/" />
+          <button className="ghost-button" type="button" onClick={() => setState((current) => ({ ...current, confirming: true }))}>
+            Mark All Read
+          </button>
+        </div>
       </section>
 
       <section className="workspace-card">

@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 
+import { BackButton } from "../components/BackButton";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
 import { settingsNavigation } from "../lib/navigation";
@@ -16,6 +17,7 @@ export function SettingsPage() {
         eyebrow="Admin"
         title="Settings"
         description="Workspace profile, operational preferences, and account-level controls."
+        actions={<BackButton fallbackTo="/" />}
       />
 
       <div className="detail-grid">
@@ -23,7 +25,7 @@ export function SettingsPage() {
           <div className="widget-header">
             <h2>Configuration Areas</h2>
           </div>
-          <div className="mini-list">
+          <div className="settings-panel-nav">
             {settingsNavigation.map((item) => (
               <button
                 key={item.key}
