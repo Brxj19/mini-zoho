@@ -12,6 +12,7 @@ const initialForm = {
   address: "",
   gst_number: "",
   business_type: "",
+  subscription_plan_id: "",
   status: "ACTIVE",
   admin_name: "",
   admin_email: "",
@@ -25,31 +26,53 @@ export function TenantFormPage() {
   const isEditing = Boolean(tenantId);
   const isSuperAdmin = actor?.role === "SUPER_ADMIN";
   const [form, setForm] = useState(initialForm);
+  const [plans, setPlans] = useState([]);
   const [originalStatus, setOriginalStatus] = useState("ACTIVE");
   const [state, setState] = useState({ loading: true, saving: false, error: "" });
 
   useEffect(() => {
-    if (!isEditing) {
-      setState({ loading: false, saving: false, error: "" });
-      return;
+    let active = true;
+    const requests = [];
+    if (isEditing) {
+      requests.push(api.get(`/tenants/${tenantId}`));
+    }
+    if (isSuperAdmin) {
+      requests.push(api.get("/subscription-plans", { params: { page_size: 50 } }));
     }
 
-    let active = true;
-    api
-      .get(`/tenants/${tenantId}`)
-      .then(({ data }) => {
+    if (!requests.length) {
+      setState({ loading: false, saving: false, error: "" });
+      return () => {
+        active = false;
+      };
+    }
+
+    Promise.all(requests)
+      .then((responses) => {
         if (!active) return;
-        setForm({
-          ...initialForm,
-          company_name: data.company_name ?? "",
-          contact_email: data.contact_email ?? "",
-          phone: data.phone ?? "",
-          address: data.address ?? "",
-          gst_number: data.gst_number ?? "",
-          business_type: data.business_type ?? "",
-          status: data.status ?? "ACTIVE",
-        });
-        setOriginalStatus(data.status ?? "ACTIVE");
+        const tenantResponse = isEditing ? responses[0] : null;
+        const planResponse = isSuperAdmin ? responses[responses.length - 1] : null;
+
+        if (tenantResponse) {
+          const data = tenantResponse.data;
+          setForm({
+            ...initialForm,
+            company_name: data.company_name ?? "",
+            contact_email: data.contact_email ?? "",
+            phone: data.phone ?? "",
+            address: data.address ?? "",
+            gst_number: data.gst_number ?? "",
+            business_type: data.business_type ?? "",
+            subscription_plan_id: data.subscription_plan_id ? String(data.subscription_plan_id) : "",
+            status: data.status ?? "ACTIVE",
+          });
+          setOriginalStatus(data.status ?? "ACTIVE");
+        }
+
+        if (planResponse) {
+          setPlans(planResponse.data.items ?? []);
+        }
+
         setState({ loading: false, saving: false, error: "" });
       })
       .catch((error) => {
@@ -64,7 +87,7 @@ export function TenantFormPage() {
     return () => {
       active = false;
     };
-  }, [isEditing, tenantId]);
+  }, [isEditing, isSuperAdmin, tenantId]);
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -83,6 +106,7 @@ export function TenantFormPage() {
           address: form.address || null,
           gst_number: form.gst_number || null,
           business_type: form.business_type || null,
+          subscription_plan_id: isSuperAdmin && form.subscription_plan_id ? Number(form.subscription_plan_id) : undefined,
         });
 
         if (isSuperAdmin && originalStatus !== form.status) {
@@ -100,6 +124,7 @@ export function TenantFormPage() {
         address: form.address || null,
         gst_number: form.gst_number || null,
         business_type: form.business_type || null,
+        subscription_plan_id: isSuperAdmin && form.subscription_plan_id ? Number(form.subscription_plan_id) : null,
         admin_name: form.admin_name || null,
         admin_email: form.admin_email || null,
         admin_password: form.admin_password || null,
@@ -152,6 +177,19 @@ export function TenantFormPage() {
                 GST number
                 <input className="field-input" value={form.gst_number} onChange={(event) => update("gst_number", event.target.value)} />
               </label>
+              {isSuperAdmin ? (
+                <label>
+                  Subscription plan
+                  <select className="field-input" value={form.subscription_plan_id} onChange={(event) => update("subscription_plan_id", event.target.value)}>
+                    <option value="">Default Starter</option>
+                    {plans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               {isEditing && isSuperAdmin ? (
                 <label>
                   Status

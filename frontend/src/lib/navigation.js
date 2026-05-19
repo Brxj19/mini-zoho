@@ -46,7 +46,7 @@ export const navigationGroups = [
     items: [
       { label: "Users", path: "/users", icon: "userCog", roles: ["SUPER_ADMIN", "TENANT_ADMIN"] },
       { label: "Tenants", path: "/tenants", icon: "building", superAdminOnly: true },
-      { label: "Subscription", path: "/subscription", icon: "sparkles", placeholder: true },
+      { label: "Subscription", path: "/subscription", icon: "sparkles" },
       { label: "Settings", path: "/settings", icon: "settings" },
     ],
   },

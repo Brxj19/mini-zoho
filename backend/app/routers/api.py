@@ -14,6 +14,7 @@ from app.routers.products import router as products_router
 from app.routers.reports import router as reports_router
 from app.routers.sales_orders import router as sales_orders_router
 from app.routers.stock_transfers import router as stock_transfers_router
+from app.routers.subscription_plans import router as subscription_plans_router
 from app.routers.tenants import router as tenants_router
 from app.routers.users import router as users_router
 from app.routers.vendors import router as vendors_router
@@ -34,6 +35,7 @@ api_router.include_router(inventory_router, prefix="/inventory", tags=["inventor
 api_router.include_router(purchase_orders_router, prefix="/purchase-orders", tags=["purchase-orders"])
 api_router.include_router(sales_orders_router, prefix="/sales-orders", tags=["sales-orders"])
 api_router.include_router(stock_transfers_router, prefix="/inventory", tags=["stock-transfers"])
+api_router.include_router(subscription_plans_router, prefix="/subscription-plans", tags=["subscription-plans"])
 api_router.include_router(health_router, prefix="/health", tags=["health"])
 api_router.include_router(tenants_router, prefix="/tenants", tags=["tenants"])
 api_router.include_router(users_router, prefix="/users", tags=["users"])

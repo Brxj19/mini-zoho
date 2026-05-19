@@ -45,6 +45,7 @@ class AuthService:
             gst_number=payload.gst_number,
             business_type=payload.business_type,
             status=TenantStatusEnum(settings.initial_tenant_status.upper()),
+            subscription_plan_id=1,
         )
 
         user = User(

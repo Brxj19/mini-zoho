@@ -15,6 +15,7 @@ from app.models.vendor import Vendor
 from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.services.governance_service import GovernanceService
 
 
 class ProductService:
@@ -22,6 +23,7 @@ class ProductService:
         self.db = db
         self.repository = ProductRepository(db)
         self.tenant_repository = TenantRepository(db)
+        self.governance_service = GovernanceService(db)
         self.category_repository = MasterDataRepository(db, Category)
         self.brand_repository = MasterDataRepository(db, Brand)
         self.vendor_repository = MasterDataRepository(db, Vendor)
@@ -68,6 +70,7 @@ class ProductService:
         self._validate_tenant_exists(scoped_tenant_id)
         data = payload.model_dump(exclude_none=True)
         data["tenant_id"] = scoped_tenant_id
+        self.governance_service.assert_limit(tenant_id=scoped_tenant_id, metric_key="products")
         self._validate_unique_fields(tenant_id=scoped_tenant_id, data=data)
         self._validate_master_data_refs(tenant_id=scoped_tenant_id, data=data)
         product = Product(**data)

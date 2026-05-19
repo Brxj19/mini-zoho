@@ -564,6 +564,10 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
                     <span>Total orders</span>
                     <strong>{usage.total_orders}</strong>
                   </div>
+                  <div className="kv-item">
+                    <span>Assigned plan</span>
+                    <strong>{usage.plan_name ?? "Unassigned"}</strong>
+                  </div>
                 </div>
               </article>
             ) : null}

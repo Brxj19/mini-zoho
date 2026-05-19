@@ -61,6 +61,12 @@ export function SettingsPage() {
               <strong>{user?.role?.replaceAll("_", " ") ?? "—"}</strong>
             </div>
           </div>
+          {activeSection.key === "subscription" ? (
+            <p>
+              Subscription governance now has a dedicated workspace. Open the subscription module to manage plans,
+              quotas, and tenant usage.
+            </p>
+          ) : null}
           <p>
             This section is structured for future module-specific settings. The shell and navigation are now in
             place so backend-backed settings can slot in without another redesign.

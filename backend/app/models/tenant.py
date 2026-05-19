@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Enum, Integer, String, Text
+from sqlalchemy import Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -23,6 +23,7 @@ class Tenant(TimestampMixin, Base):
         default=TenantStatusEnum.ACTIVE,
         index=True,
     )
-    subscription_plan_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    subscription_plan_id: Mapped[int | None] = mapped_column(ForeignKey("subscription_plans.id"), nullable=True)
 
     users = relationship("User", back_populates="tenant")
+    subscription_plan = relationship("SubscriptionPlan")

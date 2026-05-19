@@ -23,6 +23,7 @@ from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.purchase_order_repository import PurchaseOrderItemRepository, PurchaseOrderRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.services.governance_service import GovernanceService
 from app.services.notification_service import NotificationService
 
 
@@ -36,6 +37,7 @@ class PurchaseOrderService:
         self.transaction_repository = InventoryTransactionRepository(db)
         self.audit_repository = AuditLogRepository(db)
         self.tenant_repository = TenantRepository(db)
+        self.governance_service = GovernanceService(db)
         self.vendor_repository = MasterDataRepository(db, Vendor)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
         self.notification_service = NotificationService(db)
@@ -78,6 +80,7 @@ class PurchaseOrderService:
         scoped_tenant_id = resolve_tenant_scope(current_user, tenant_id, require_for_super_admin=True)
         self._validate_tenant_exists(scoped_tenant_id)
         self._ensure_unique_po_number(tenant_id=scoped_tenant_id, po_number=payload.po_number)
+        self.governance_service.assert_limit(tenant_id=scoped_tenant_id, metric_key="monthly_purchase_orders")
         self._validate_vendor(tenant_id=scoped_tenant_id, vendor_id=payload.vendor_id)
         items_data = self._validate_items(tenant_id=scoped_tenant_id, items=payload.items)
         totals = self._build_order_totals(items_data)

@@ -12,6 +12,7 @@ from app.models.sales_order import SalesOrder
 from app.models.sales_order_item import SalesOrderItem
 from app.models.stock_transfer import StockTransfer
 from app.models.stock_transfer_item import StockTransferItem
+from app.models.subscription_plan import SubscriptionPlan
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.models.vendor import Vendor
@@ -40,4 +41,5 @@ __all__ = [
     "Notification",
     "StockTransfer",
     "StockTransferItem",
+    "SubscriptionPlan",
 ]

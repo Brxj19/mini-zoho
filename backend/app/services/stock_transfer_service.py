@@ -21,6 +21,7 @@ from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.stock_transfer_repository import StockTransferItemRepository, StockTransferRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.services.governance_service import GovernanceService
 from app.services.notification_service import NotificationService
 
 
@@ -34,6 +35,7 @@ class StockTransferService:
         self.transaction_repository = InventoryTransactionRepository(db)
         self.audit_repository = AuditLogRepository(db)
         self.tenant_repository = TenantRepository(db)
+        self.governance_service = GovernanceService(db)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
         self.notification_service = NotificationService(db)
 
@@ -72,6 +74,7 @@ class StockTransferService:
     def create_transfer(self, *, current_user: User, payload, tenant_id: int | None = None) -> tuple[StockTransfer, list[StockTransferItem]]:
         scoped_tenant_id = resolve_tenant_scope(current_user, tenant_id, require_for_super_admin=True)
         self._validate_tenant_exists(scoped_tenant_id)
+        self.governance_service.assert_limit(tenant_id=scoped_tenant_id, metric_key="monthly_stock_transfers")
         self._validate_warehouses(
             tenant_id=scoped_tenant_id,
             source_warehouse_id=payload.source_warehouse_id,

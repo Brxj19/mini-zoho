@@ -9,6 +9,7 @@ from app.schemas.common import PaginationMeta
 from app.schemas.tenant import (
     TenantCreate,
     TenantListResponse,
+    TenantPlanAssignment,
     TenantResponse,
     TenantStatusUpdate,
     TenantUpdate,
@@ -66,6 +67,19 @@ def update_tenant(tenant_id: int, payload: TenantUpdate, db: DbSession, current_
     service = TenantService(db)
     tenant = service.get_tenant_or_404(tenant_id)
     updated_tenant = service.update_tenant(tenant, payload)
+    return TenantResponse.model_validate(updated_tenant)
+
+
+@router.patch("/{tenant_id}/plan", response_model=TenantResponse)
+def assign_tenant_plan(
+    tenant_id: int,
+    payload: TenantPlanAssignment,
+    db: DbSession,
+    _: User = Depends(require_roles(RoleEnum.SUPER_ADMIN)),
+) -> TenantResponse:
+    service = TenantService(db)
+    tenant = service.get_tenant_or_404(tenant_id)
+    updated_tenant = service.update_tenant(tenant, TenantUpdate(subscription_plan_id=payload.subscription_plan_id))
     return TenantResponse.model_validate(updated_tenant)
 
 

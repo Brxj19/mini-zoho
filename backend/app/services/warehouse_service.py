@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.enums import RecordStatusEnum
 from app.models.user import User
 from app.models.warehouse import Warehouse
+from app.services.governance_service import GovernanceService
 from app.services.master_data_service import MasterDataService
 
 
@@ -28,11 +29,13 @@ class WarehouseService(MasterDataService):
             ),
             unique_fields=("code",),
         )
+        self.governance_service = GovernanceService(db)
 
     def create_entity(self, *, current_user: User, payload: Any, tenant_id: int | None = None) -> Warehouse:
         scoped_tenant_id = self._resolve_and_validate_tenant(current_user, tenant_id)
         data = payload.model_dump(exclude_none=True)
         data["tenant_id"] = scoped_tenant_id
+        self.governance_service.assert_limit(tenant_id=scoped_tenant_id, metric_key="warehouses")
         self._ensure_unique_fields(tenant_id=scoped_tenant_id, payload=data)
         if data.get("is_default"):
             self._clear_default_warehouse(scoped_tenant_id)

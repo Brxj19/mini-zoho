@@ -20,6 +20,7 @@ import { ResourceListPage } from "../pages/ResourceListPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { StockActionPage } from "../pages/StockActionPage";
 import { StockTransferFormPage } from "../pages/StockTransferFormPage";
+import { SubscriptionPage } from "../pages/SubscriptionPage";
 import { WorkflowWorkbenchPage } from "../pages/WorkflowWorkbenchPage";
 import { WarehouseFormPage } from "../pages/WarehouseFormPage";
 import { LowStockPage } from "../pages/LowStockPage";
@@ -125,7 +126,7 @@ export const router = createBrowserRouter([
       { path: "tenants/new", element: <TenantFormPage />, handle: withHandle("New Tenant", "Admin") },
       { path: "tenants/:tenantId", element: <ResourceDetailPage detailKey="tenant" paramKey="tenantId" />, handle: withHandle("Tenant Detail", "Admin") },
       { path: "tenants/:tenantId/edit", element: <TenantFormPage />, handle: withHandle("Edit Tenant", "Admin") },
-      { path: "subscription", element: <PlaceholderModulePage title="Subscription" description="Plan usage, billing, and quotas are intentionally held as a placeholder for now." actionLabel="Back to dashboard" actionTo="/" />, handle: withHandle("Subscription", "Admin") },
+      { path: "subscription", element: <SubscriptionPage />, handle: withHandle("Subscription", "Admin") },
       { path: "settings", element: <SettingsPage />, handle: withHandle("Settings", "Admin") },
       { path: "ai-assistant", element: <PlaceholderModulePage title="AI Assistant" description="The AI assistant page is reserved until the tenant-safe GenAI layer is finalized." actionLabel="Back to dashboard" actionTo="/" />, handle: withHandle("AI Assistant", "AI") },
     ],

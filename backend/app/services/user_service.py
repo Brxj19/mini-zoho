@@ -8,6 +8,7 @@ from app.models.enums import RoleEnum, UserStatusEnum
 from app.models.user import User
 from app.repositories.tenant_repository import TenantRepository
 from app.repositories.user_repository import UserRepository
+from app.services.governance_service import GovernanceService
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -16,6 +17,7 @@ class UserService:
         self.db = db
         self.user_repository = UserRepository(db)
         self.tenant_repository = TenantRepository(db)
+        self.governance_service = GovernanceService(db)
 
     def get_user_or_404(self, user_id: int) -> User:
         user = self.user_repository.get_by_id(user_id)
@@ -41,6 +43,9 @@ class UserService:
             tenant_id = None
         elif tenant_id is not None and not self.tenant_repository.get_by_id(tenant_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found.")
+
+        if tenant_id is not None:
+            self.governance_service.assert_limit(tenant_id=tenant_id, metric_key="users")
 
         user = User(
             tenant_id=tenant_id,
