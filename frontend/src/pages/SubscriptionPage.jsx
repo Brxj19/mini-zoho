@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { BackButton } from "../components/BackButton";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
@@ -198,7 +197,7 @@ export function SubscriptionPage() {
         eyebrow="SaaS Governance"
         title="Subscription And Usage"
         description="Track tenant plan limits, feature access, and operational usage across the workspace."
-        actions={<BackButton fallbackTo="/" />}
+        backTo="/"
       />
 
       {state.success ? <div className="surface-success">{state.success}</div> : null}

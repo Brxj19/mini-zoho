@@ -36,6 +36,8 @@ export function DataTable({
   totalCount,
   pageSize = PAGE_SIZE,
   serverSide = false,
+  filterRow,
+  hideHeaderCopy = false,
 }) {
   const [query, setQuery] = useState("");
   const [filterValue, setFilterValue] = useState(filters[0]?.value ?? "all");
@@ -53,6 +55,10 @@ export function DataTable({
       .filter((row) => {
         if (serverSide || effectiveFilterValue === "all") {
           return true;
+        }
+
+        if (filterRow) {
+          return filterRow(row, effectiveFilterValue);
         }
 
         return String(row.status ?? row.type ?? row.transaction_type ?? "").toLowerCase() === effectiveFilterValue.toLowerCase();
@@ -120,13 +126,19 @@ export function DataTable({
   }
 
   return (
-    <section className="table-shell">
+    <section className="table-shell" aria-busy={isLoading ? "true" : "false"}>
       <header className="table-header">
-        <div>
-          <h2>{title}</h2>
-          {description ? <p>{description}</p> : null}
-          {sourceNote ? <span className="helper-note">{sourceNote}</span> : null}
-        </div>
+        {!hideHeaderCopy ? (
+          <div>
+            <h2>{title}</h2>
+            {description ? <p>{description}</p> : null}
+            {sourceNote ? <span className="helper-note">{sourceNote}</span> : null}
+          </div>
+        ) : (
+          <div>
+            {sourceNote ? <span className="helper-note">{sourceNote}</span> : null}
+          </div>
+        )}
 
         <div className="table-header-actions">
           {createLabel && createTo ? (

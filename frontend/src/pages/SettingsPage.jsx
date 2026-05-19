@@ -1,6 +1,5 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
 import { settingsNavigation } from "../lib/navigation";
@@ -17,7 +16,7 @@ export function SettingsPage() {
         eyebrow="Admin"
         title="Settings"
         description="Workspace profile, operational preferences, and account-level controls."
-        actions={<BackButton fallbackTo="/" />}
+        backTo="/"
       />
 
       <div className="detail-grid">
@@ -43,34 +42,63 @@ export function SettingsPage() {
           <div className="widget-header">
             <h2>{activeSection.label}</h2>
           </div>
-          <div className="kv-grid">
-            <div className="kv-item">
-              <span>Organization</span>
-              <strong>{tenant?.company_name ?? "Platform"}</strong>
+          {activeSection.key === "organization" ? (
+            <>
+              <div className="kv-grid">
+                <div className="kv-item">
+                  <span>Organization</span>
+                  <strong>{tenant?.company_name ?? "Platform"}</strong>
+                </div>
+                <div className="kv-item">
+                  <span>Contact Email</span>
+                  <strong>{tenant?.contact_email ?? user?.email ?? "—"}</strong>
+                </div>
+                <div className="kv-item">
+                  <span>Current User</span>
+                  <strong>{user?.name ?? "—"}</strong>
+                </div>
+                <div className="kv-item">
+                  <span>Role</span>
+                  <strong>{user?.role?.replaceAll("_", " ") ?? "—"}</strong>
+                </div>
+              </div>
+              <p>
+                This section is structured for future module-specific settings. The shell and navigation are now in
+                place so backend-backed settings can slot in without another redesign.
+              </p>
+            </>
+          ) : activeSection.key === "users" ? (
+            <div className="placeholder-shell">
+              <p>
+                Users and roles are managed in the admin workspace. This panel is a placeholder for a future permissions
+                and role governance experience.
+              </p>
+              <p>
+                In the next phase, this section will include role definitions, default access rules, and tenant-level
+                membership controls.
+              </p>
+              <Link className="button button-primary" to="/users">
+                Open Users
+              </Link>
             </div>
-            <div className="kv-item">
-              <span>Contact Email</span>
-              <strong>{tenant?.contact_email ?? user?.email ?? "—"}</strong>
-            </div>
-            <div className="kv-item">
-              <span>Current User</span>
-              <strong>{user?.name ?? "—"}</strong>
-            </div>
-            <div className="kv-item">
-              <span>Role</span>
-              <strong>{user?.role?.replaceAll("_", " ") ?? "—"}</strong>
-            </div>
-          </div>
-          {activeSection.key === "subscription" ? (
-            <p>
-              Subscription governance now has a dedicated workspace. Open the subscription module to manage plans,
-              quotas, and tenant usage.
-            </p>
-          ) : null}
-          <p>
-            This section is structured for future module-specific settings. The shell and navigation are now in
-            place so backend-backed settings can slot in without another redesign.
-          </p>
+          ) : activeSection.key === "subscription" ? (
+            <>
+              <p>
+                Subscription governance now has a dedicated workspace. Open the subscription module to manage plans,
+                quotas, and tenant usage.
+              </p>
+              <Link className="button button-primary" to="/subscription">
+                Open Subscription
+              </Link>
+            </>
+          ) : (
+            <>
+              <p>
+                This section is structured for future module-specific settings. The shell and navigation are now in
+                place so backend-backed settings can slot in without another redesign.
+              </p>
+            </>
+          )}
         </section>
       </div>
     </div>

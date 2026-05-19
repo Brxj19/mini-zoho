@@ -11,6 +11,7 @@ export function AppShell() {
   const location = useLocation();
   const matches = useMatches();
   const addRecentHistory = useUiStore((state) => state.addRecentHistory);
+  const isSidebarCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const isMobileSidebarOpen = useUiStore((state) => state.isMobileSidebarOpen);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
 
@@ -31,7 +32,7 @@ export function AppShell() {
   }, [addRecentHistory, location.pathname, location.search, matches]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isSidebarCollapsed ? "is-sidebar-collapsed" : ""}`}>
       <Sidebar />
       <Drawer open={isMobileSidebarOpen} onClose={closeMobileSidebar}>
         <Sidebar mobile />

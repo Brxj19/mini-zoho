@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
+import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 
@@ -127,14 +127,12 @@ export function UserFormPage() {
 
   return (
     <div className="view-stack">
-      <section className="page-intro">
-        <div>
-          <p className="page-kicker">Admin Workspace</p>
-          <h2>{isEditing ? "Edit User" : "Create User"}</h2>
-          <p>Manage user identity, workspace role, status, and tenant access from one form.</p>
-        </div>
-        <BackButton fallbackTo={isEditing ? `/users/${userId}` : "/users"} />
-      </section>
+      <PageHeader
+        eyebrow="Admin Workspace"
+        title={isEditing ? "Edit User" : "Create User"}
+        description="Manage user identity, workspace role, status, and tenant access from one form."
+        backTo={isEditing ? `/users/${userId}` : "/users"}
+      />
 
       <form className="workspace-card form-shell" onSubmit={handleSubmit}>
         {state.loading ? <div className="surface-placeholder">Loading user form…</div> : null}

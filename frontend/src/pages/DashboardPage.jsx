@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { DashboardWidget } from "../components/DashboardWidget";
 import { EmptyState } from "../components/EmptyState";
@@ -8,10 +9,11 @@ import { StatusBadge } from "../components/StatusBadge";
 import { Tabs } from "../components/Tabs";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
-import { formatCurrency, formatDateTime, formatNumber, titleCase } from "../lib/format";
+import { formatCurrency, formatDate, formatDateTime, formatNumber, titleCase } from "../lib/format";
 
 const periodOptions = [
   { label: "This Month", value: "this_month" },
+  { label: "This Quarter", value: "this_quarter" },
   { label: "Previous Month", value: "previous_month" },
   { label: "This Year", value: "this_year" },
 ];
@@ -22,92 +24,277 @@ const homeTabs = [
   { key: "recent-activities", label: "Recent Activities" },
 ];
 
-const checklist = [
-  "Update organization profile and users",
-  "Add or import your items",
-  "Create warehouses and default stock positions",
-  "Issue a purchase order",
-  "Create and confirm a sales order",
-  "Review low-stock and movement reports",
+const tenantChecklist = [
+  "Update organization profile and workspace preferences",
+  "Create or import your first item catalog",
+  "Configure warehouses and opening stock",
+  "Add vendors and customers",
+  "Create purchase and sales orders",
+  "Review low stock, reports, and notifications",
 ];
+
+const superAdminChecklist = [
+  "Review new tenant registrations and activation status",
+  "Assign subscription plans and monitor usage",
+  "Audit platform activity and notifications",
+  "Inspect top tenants by catalog and order volume",
+  "Review system-wide reports and plan distribution",
+  "Coordinate support and governance workflows",
+];
+
+function PeriodSelect({ value, onChange }) {
+  return (
+    <select className="field-input compact-field" value={value} onChange={(event) => onChange(event.target.value)}>
+      {periodOptions.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function getPeriodRange(period) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  let start = new Date(currentYear, currentMonth, 1);
+  let end = new Date(currentYear, currentMonth + 1, 0);
+
+  if (period === "previous_month") {
+    start = new Date(currentYear, currentMonth - 1, 1);
+    end = new Date(currentYear, currentMonth, 0);
+  }
+
+  if (period === "this_quarter") {
+    const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
+    start = new Date(currentYear, quarterStartMonth, 1);
+    end = new Date(currentYear, quarterStartMonth + 3, 0);
+  }
+
+  if (period === "this_year") {
+    start = new Date(currentYear, 0, 1);
+    end = new Date(currentYear, 11, 31);
+  }
+
+  const startDate = start.toISOString().slice(0, 10);
+  const endDate = end.toISOString().slice(0, 10);
+
+  return {
+    dateFrom: startDate,
+    dateTo: endDate,
+    dateTimeFrom: `${startDate}T00:00:00`,
+    dateTimeTo: `${endDate}T23:59:59`,
+  };
+}
+
+function getCountByStatus(rows, field, statuses) {
+  return rows.filter((row) => statuses.includes(row[field])).length;
+}
+
+function sumNumeric(rows, selector) {
+  return rows.reduce((total, row) => total + Number(selector(row) ?? 0), 0);
+}
+
+function buildTopSellingItems(movementRows) {
+  const aggregate = new Map();
+
+  movementRows
+    .filter((row) => row.transaction_type === "SALES_DEDUCT")
+    .forEach((row) => {
+      const current = aggregate.get(row.product_id) ?? {
+        product_id: row.product_id,
+        product_name: row.product_name,
+        sku: row.sku,
+        quantity: 0,
+      };
+      current.quantity += Math.abs(Number(row.quantity ?? 0));
+      aggregate.set(row.product_id, current);
+    });
+
+  return Array.from(aggregate.values())
+    .sort((left, right) => right.quantity - left.quantity)
+    .slice(0, 5);
+}
+
+function buildPlanDistribution(tenantRows, planRows) {
+  const distribution = new Map();
+  const planNameById = new Map(planRows.map((plan) => [plan.id, plan.name]));
+
+  tenantRows.forEach((tenant) => {
+    const planName =
+      tenant.subscription_plan?.name ??
+      planNameById.get(tenant.subscription_plan_id) ??
+      "Unassigned";
+    distribution.set(planName, (distribution.get(planName) ?? 0) + 1);
+  });
+
+  return Array.from(distribution.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((left, right) => right.count - left.count);
+}
+
+function buildTopTenantUsage(usageRows, tenantRows) {
+  const tenantMap = new Map(tenantRows.map((tenant) => [tenant.id, tenant]));
+  return usageRows
+    .map((usage) => {
+      const tenant = tenantMap.get(usage.tenant_id);
+      return {
+        tenant_id: usage.tenant_id,
+        company_name: tenant?.company_name ?? `Tenant #${usage.tenant_id}`,
+        plan_name: usage.plan_name ?? tenant?.subscription_plan?.name ?? "Unassigned",
+        total_orders: usage.total_orders ?? 0,
+        total_products: usage.total_products ?? 0,
+        total_users: usage.total_users ?? 0,
+        total_warehouses: usage.total_warehouses ?? 0,
+      };
+    })
+    .sort((left, right) => {
+      if (right.total_orders !== left.total_orders) {
+        return right.total_orders - left.total_orders;
+      }
+      return right.total_products - left.total_products;
+    })
+    .slice(0, 6);
+}
+
+function DashboardLoadingState() {
+  return (
+    <div className="page-stack">
+      <div className="metric-grid">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div className="loading-card dashboard-loading-card" key={index} />
+        ))}
+      </div>
+      <div className="dashboard-grid-primary">
+        <div className="loading-card dashboard-loading-card-tall" />
+        <div className="loading-card dashboard-loading-card-tall" />
+      </div>
+      <div className="dashboard-grid-secondary">
+        <div className="loading-card dashboard-loading-card-medium" />
+        <div className="loading-card dashboard-loading-card-medium" />
+      </div>
+    </div>
+  );
+}
 
 export function DashboardPage() {
   const { user, tenant } = useAuth();
   const [homeTab, setHomeTab] = useState("dashboard");
   const [period, setPeriod] = useState("this_month");
+  const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState({
     loading: true,
     error: "",
     dashboard: null,
     inventoryRows: [],
+    lowStockRows: [],
+    outOfStockRows: [],
     salesRows: [],
     purchaseRows: [],
+    movementRows: [],
     notifications: [],
+    tenantRows: [],
+    tenantUsageRows: [],
+    planRows: [],
   });
 
   useEffect(() => {
     let active = true;
 
     async function loadDashboard() {
-      const dashboardEndpoint = user?.role === "SUPER_ADMIN" ? "/dashboard/super-admin" : "/dashboard/tenant";
+      const range = getPeriodRange(period);
       setState((current) => ({ ...current, loading: true, error: "" }));
 
       try {
-        const requests =
-          user?.role === "SUPER_ADMIN"
-            ? [
-                api.get(dashboardEndpoint),
-                api.get("/notifications", { params: { page_size: 6 } }),
-              ]
-            : [
-                api.get(dashboardEndpoint),
-                api.get("/reports/inventory-summary"),
-                api.get("/reports/sales-orders"),
-                api.get("/reports/purchase-orders"),
-                api.get("/notifications", { params: { page_size: 6 } }),
-              ];
-
-        const responses = await Promise.all(requests);
-        if (!active) {
-          return;
-        }
-
         if (user?.role === "SUPER_ADMIN") {
-          const [dashboardResponse, notificationResponse] = responses;
+          const [dashboardResponse, notificationResponse, tenantsResponse, plansResponse] = await Promise.all([
+            api.get("/dashboard/super-admin"),
+            api.get("/notifications", { params: { page_size: 8 } }),
+            api.get("/tenants", { params: { page_size: 100 } }),
+            api.get("/subscription-plans", { params: { page_size: 100 } }),
+          ]);
+
+          const tenantRows = tenantsResponse.data.items ?? [];
+          const usageResponses = await Promise.all(
+            tenantRows.map((tenantItem) => api.get(`/tenants/${tenantItem.id}/usage`)),
+          );
+
+          if (!active) {
+            return;
+          }
+
           setState({
             loading: false,
             error: "",
             dashboard: dashboardResponse.data,
             inventoryRows: [],
+            lowStockRows: [],
+            outOfStockRows: [],
             salesRows: [],
             purchaseRows: [],
+            movementRows: [],
             notifications: notificationResponse.data.items ?? [],
+            tenantRows,
+            tenantUsageRows: usageResponses.map((response) => response.data),
+            planRows: plansResponse.data.items ?? [],
           });
           return;
         }
 
-        const [dashboardResponse, inventoryResponse, salesResponse, purchaseResponse, notificationResponse] = responses;
+        const [dashboardResponse, inventoryResponse, lowStockResponse, outOfStockResponse, salesResponse, purchaseResponse, movementResponse, notificationResponse] =
+          await Promise.all([
+            api.get("/dashboard/tenant"),
+            api.get("/reports/inventory-summary"),
+            api.get("/reports/low-stock"),
+            api.get("/reports/out-of-stock"),
+            api.get("/reports/sales-orders", { params: { date_from: range.dateFrom, date_to: range.dateTo } }),
+            api.get("/reports/purchase-orders", { params: { date_from: range.dateFrom, date_to: range.dateTo } }),
+            api.get("/reports/stock-movement", {
+              params: { date_from: range.dateTimeFrom, date_to: range.dateTimeTo },
+            }),
+            api.get("/notifications", { params: { page_size: 8 } }),
+          ]);
+
+        if (!active) {
+          return;
+        }
+
         setState({
           loading: false,
           error: "",
           dashboard: dashboardResponse.data,
           inventoryRows: inventoryResponse.data.rows ?? [],
+          lowStockRows: lowStockResponse.data.rows ?? [],
+          outOfStockRows: outOfStockResponse.data.rows ?? [],
           salesRows: salesResponse.data.rows ?? [],
           purchaseRows: purchaseResponse.data.rows ?? [],
+          movementRows: movementResponse.data.rows ?? [],
           notifications: notificationResponse.data.items ?? [],
+          tenantRows: [],
+          tenantUsageRows: [],
+          planRows: [],
         });
       } catch (error) {
         if (!active) {
           return;
         }
+
         setState({
           loading: false,
           error: error?.response?.data?.detail ?? "Unable to load the dashboard right now.",
           dashboard: null,
           inventoryRows: [],
+          lowStockRows: [],
+          outOfStockRows: [],
           salesRows: [],
           purchaseRows: [],
+          movementRows: [],
           notifications: [],
+          tenantRows: [],
+          tenantUsageRows: [],
+          planRows: [],
         });
       }
     }
@@ -116,47 +303,114 @@ export function DashboardPage() {
     return () => {
       active = false;
     };
-  }, [period, user?.role]);
+  }, [period, reloadToken, user?.role]);
 
-  const inventoryTop = useMemo(() => state.inventoryRows.slice(0, 5), [state.inventoryRows]);
   const dashboard = state.dashboard;
+  const topStockedItems = useMemo(
+    () =>
+      [...state.inventoryRows]
+        .sort((left, right) => Number(right.total_quantity ?? 0) - Number(left.total_quantity ?? 0))
+        .slice(0, 5),
+    [state.inventoryRows],
+  );
+  const topSellingItems = useMemo(() => buildTopSellingItems(state.movementRows), [state.movementRows]);
+  const quantityInHand = useMemo(
+    () => sumNumeric(state.inventoryRows, (row) => row.total_quantity),
+    [state.inventoryRows],
+  );
+  const quantityAvailable = useMemo(
+    () => sumNumeric(state.inventoryRows, (row) => row.available_quantity),
+    [state.inventoryRows],
+  );
+  const totalReserved = useMemo(
+    () => sumNumeric(state.inventoryRows, (row) => row.reserved_quantity),
+    [state.inventoryRows],
+  );
+  const salesActivity = useMemo(
+    () => ({
+      packed: getCountByStatus(state.salesRows, "status", ["CONFIRMED"]),
+      shipped: getCountByStatus(state.salesRows, "status", ["PACKED"]),
+      delivered: getCountByStatus(state.salesRows, "status", ["SHIPPED"]),
+      invoiced: getCountByStatus(state.salesRows, "status", ["DELIVERED"]),
+    }),
+    [state.salesRows],
+  );
+  const purchaseActivity = useMemo(
+    () => ({
+      toReceive: getCountByStatus(state.purchaseRows, "status", ["ISSUED"]),
+      partial: getCountByStatus(state.purchaseRows, "status", ["PARTIALLY_RECEIVED"]),
+      received: getCountByStatus(state.purchaseRows, "status", ["RECEIVED"]),
+      cancelled: getCountByStatus(state.purchaseRows, "status", ["CANCELLED"]),
+    }),
+    [state.purchaseRows],
+  );
+  const superAdminDerived = useMemo(() => {
+    const tenantRows = state.tenantRows;
+    const usageRows = state.tenantUsageRows;
+    const planRows = state.planRows;
+    const activeTenants = dashboard?.active_tenants ?? 0;
+    const totalTenants = dashboard?.total_tenants ?? 0;
+    const suspendedTenants = Math.max(totalTenants - activeTenants, 0);
+    const createdInLast30Days = tenantRows.filter((item) => {
+      const createdAt = new Date(item.created_at);
+      return Date.now() - createdAt.getTime() <= 30 * 24 * 60 * 60 * 1000;
+    }).length;
+
+    return {
+      suspendedTenants,
+      createdInLast30Days,
+      avgUsersPerTenant: totalTenants ? (dashboard?.total_users ?? 0) / totalTenants : 0,
+      avgProductsPerTenant: totalTenants ? (dashboard?.total_products ?? 0) / totalTenants : 0,
+      planDistribution: buildPlanDistribution(tenantRows, planRows),
+      topTenantUsage: buildTopTenantUsage(usageRows, tenantRows),
+    };
+  }, [dashboard, state.planRows, state.tenantRows, state.tenantUsageRows]);
+
+  function retryLoad() {
+    setReloadToken((current) => current + 1);
+  }
 
   if (state.loading) {
-    return <div className="workspace-card surface-placeholder">Loading dashboard…</div>;
+    return <DashboardLoadingState />;
   }
 
   if (state.error || !dashboard) {
-    return <div className="workspace-card surface-error">{state.error || "Dashboard data is unavailable."}</div>;
+    return (
+      <div className="workspace-card surface-error page-stack">
+        <strong>{state.error || "Dashboard data is unavailable."}</strong>
+        <div>
+          <button className="button button-primary" type="button" onClick={retryLoad}>
+            Retry dashboard
+          </button>
+        </div>
+      </div>
+    );
   }
+
+  const commonHeader = (
+    <>
+      <PageHeader
+        eyebrow="Home"
+        title={`Hello, ${user?.name?.split(" ")[0] ?? "Team"}`}
+        description={
+          user?.role === "SUPER_ADMIN"
+            ? "Platform-wide control of tenants, plans, and operational health across Northstar Inventory."
+            : `${tenant?.company_name ?? "Northstar Inventory"} is ready for products, warehouses, orders, and live inventory work.`
+        }
+        actions={<PeriodSelect value={period} onChange={setPeriod} />}
+      />
+      <Tabs items={homeTabs} activeKey={homeTab} onChange={setHomeTab} />
+    </>
+  );
 
   if (homeTab === "getting-started") {
     return (
       <div className="page-stack">
-        <PageHeader
-          eyebrow="Home"
-          title={`Hello, ${user?.name?.split(" ")[0] ?? "Team"}`}
-          description={`${tenant?.company_name ?? "Northstar Inventory"} is ready for catalog, warehouse, and order operations.`}
-          actions={
-            <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
-              {periodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          }
-        />
-        <div className="home-tabs">
-          {homeTabs.map((tab) => (
-            <button key={tab.key} className={`home-tab ${homeTab === tab.key ? "is-active" : ""}`} type="button" onClick={() => setHomeTab(tab.key)}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {commonHeader}
         <div className="detail-grid">
           <DashboardWidget title="Getting Started Checklist" className="widget-span-2">
             <div className="checklist-grid">
-              {checklist.map((item, index) => (
+              {(user?.role === "SUPER_ADMIN" ? superAdminChecklist : tenantChecklist).map((item, index) => (
                 <div key={item} className="checklist-item">
                   <span>{index + 1}</span>
                   <strong>{item}</strong>
@@ -164,13 +418,34 @@ export function DashboardPage() {
               ))}
             </div>
           </DashboardWidget>
+
           <DashboardWidget title="Workspace Context">
             <div className="detail-overview-grid compact">
-              <div><span>Company</span><strong>{tenant?.company_name ?? "Platform"}</strong></div>
-              <div><span>Contact</span><strong>{tenant?.contact_email ?? user?.email ?? "—"}</strong></div>
-              <div><span>Role</span><strong>{titleCase(user?.role)}</strong></div>
-              <div><span>Unread alerts</span><strong>{state.notifications.filter((item) => !item.is_read).length}</strong></div>
+              <div>
+                <span>Workspace</span>
+                <strong>{tenant?.company_name ?? "Northstar Platform"}</strong>
+              </div>
+              <div>
+                <span>Role</span>
+                <strong>{titleCase(user?.role)}</strong>
+              </div>
+              <div>
+                <span>Unread alerts</span>
+                <strong>{state.notifications.filter((item) => !item.is_read).length}</strong>
+              </div>
+              <div>
+                <span>Selected period</span>
+                <strong>{periodOptions.find((item) => item.value === period)?.label ?? "This Month"}</strong>
+              </div>
             </div>
+          </DashboardWidget>
+
+          <DashboardWidget title="Helpful next step">
+            <p className="surface-note">
+              {user?.role === "SUPER_ADMIN"
+                ? "Review plan usage and recent tenant activity before making governance changes."
+                : "Complete setup, then create or import items so the rest of the dashboard starts filling with live operational data."}
+            </p>
           </DashboardWidget>
         </div>
       </div>
@@ -180,28 +455,533 @@ export function DashboardPage() {
   if (homeTab === "recent-activities") {
     return (
       <div className="page-stack">
-        <PageHeader
-          eyebrow="Home"
-          title="Recent Activities"
-          description="A compact feed of order, inventory, and admin events in your current workspace."
-          actions={
-            <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
-              {periodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          }
-        />
-        <div className="home-tabs">
-          {homeTabs.map((tab) => (
-            <button key={tab.key} className={`home-tab ${homeTab === tab.key ? "is-active" : ""}`} type="button" onClick={() => setHomeTab(tab.key)}>
-              {tab.label}
-            </button>
-          ))}
+        {commonHeader}
+        <div className="detail-grid">
+          <DashboardWidget title="Recent Activities" className="widget-span-2">
+            {dashboard.recent_activities?.length ? (
+              <div className="mini-list">
+                {dashboard.recent_activities.map((activity) => (
+                  <div className="mini-list-row" key={activity.id}>
+                    <div>
+                      <strong>{titleCase(activity.action)}</strong>
+                      <span>{activity.entity_type ? titleCase(activity.entity_type) : "System event"}</span>
+                    </div>
+                    <div className="metric-pair">
+                      <strong>#{activity.entity_id ?? "—"}</strong>
+                      <span>{formatDateTime(activity.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="activity"
+                title="No recent activity yet"
+                description="Activity will start appearing here as transactions, approvals, and admin actions accumulate."
+              />
+            )}
+          </DashboardWidget>
+
+          <DashboardWidget title="Notifications">
+            {state.notifications.length ? (
+              <div className="mini-list">
+                {state.notifications.map((notification) => (
+                  <div className="mini-list-row" key={notification.id}>
+                    <div>
+                      <strong>{notification.title}</strong>
+                      <span>{notification.message}</span>
+                    </div>
+                    <div className="metric-pair">
+                      <StatusBadge value={notification.type} />
+                      <span>{formatDateTime(notification.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="bell"
+                title="No notifications yet"
+                description="System and workflow alerts will show up here once activity begins."
+              />
+            )}
+          </DashboardWidget>
         </div>
-        <DashboardWidget title="Recent Activities">
+      </div>
+    );
+  }
+
+  if (user?.role === "SUPER_ADMIN") {
+    return (
+      <div className="page-stack">
+        {commonHeader}
+
+        <div className="metric-grid">
+          <MetricCard label="Total Tenants" value={formatNumber(dashboard.total_tenants)} delta="Active workspaces" tone="neutral" />
+          <MetricCard label="Active Tenants" value={formatNumber(dashboard.active_tenants)} delta={`${formatNumber(superAdminDerived.suspendedTenants)} suspended or inactive`} tone="positive" />
+          <MetricCard label="Total Users" value={formatNumber(dashboard.total_users)} delta={`${formatNumber(superAdminDerived.avgUsersPerTenant.toFixed(1))} avg users / tenant`} tone="info" />
+          <MetricCard label="Total Orders" value={formatNumber((dashboard.total_sales_orders ?? 0) + (dashboard.total_purchase_orders ?? 0))} delta={`${formatNumber(superAdminDerived.createdInLast30Days)} tenants added in 30 days`} tone="warning" />
+        </div>
+
+        <div className="dashboard-grid-primary">
+          <DashboardWidget
+            title="Top Tenants By Usage"
+            actions={
+              <Link className="button button-ghost compact-button" to="/tenants">
+                View tenants
+              </Link>
+            }
+          >
+            {superAdminDerived.topTenantUsage.length ? (
+              <div className="mini-list">
+                {superAdminDerived.topTenantUsage.map((usage) => (
+                  <div className="mini-list-row" key={usage.tenant_id}>
+                    <div>
+                      <strong>{usage.company_name}</strong>
+                      <span>{usage.plan_name}</span>
+                    </div>
+                    <div className="metric-pair">
+                      <strong>{formatNumber(usage.total_orders)} orders</strong>
+                      <span>
+                        {formatNumber(usage.total_products)} items · {formatNumber(usage.total_users)} users
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="building"
+                title="No tenant usage yet"
+                description="Top tenants will appear here once workspaces begin creating products and orders."
+              />
+            )}
+          </DashboardWidget>
+
+          <DashboardWidget
+            title="Plan Distribution"
+            actions={
+              <Link className="button button-ghost compact-button" to="/subscription">
+                Manage plans
+              </Link>
+            }
+          >
+            {superAdminDerived.planDistribution.length ? (
+              <div className="dashboard-progress-stack">
+                {superAdminDerived.planDistribution.map((plan) => {
+                  const percentage = dashboard.total_tenants
+                    ? Math.round((plan.count / dashboard.total_tenants) * 100)
+                    : 0;
+                  return (
+                    <div className="dashboard-progress-row" key={plan.label}>
+                      <div className="dashboard-progress-labels">
+                        <strong>{plan.label}</strong>
+                        <span>{formatNumber(plan.count)} tenants</span>
+                      </div>
+                      <div className="usage-bar">
+                        <span className="usage-bar-fill" style={{ width: `${percentage}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState
+                icon="sparkles"
+                title="No plans assigned yet"
+                description="As tenants are assigned to plans, the distribution view will show the split here."
+              />
+            )}
+          </DashboardWidget>
+        </div>
+
+        <div className="dashboard-grid-secondary">
+          <DashboardWidget title="Platform Health">
+            <div className="dashboard-stat-grid">
+              <div className="dashboard-stat-card">
+                <span>Sales Orders</span>
+                <strong>{formatNumber(dashboard.total_sales_orders)}</strong>
+                <p>Tracked across all tenants</p>
+              </div>
+              <div className="dashboard-stat-card">
+                <span>Purchase Orders</span>
+                <strong>{formatNumber(dashboard.total_purchase_orders)}</strong>
+                <p>Inbound workflows across the platform</p>
+              </div>
+              <div className="dashboard-stat-card">
+                <span>Products</span>
+                <strong>{formatNumber(dashboard.total_products)}</strong>
+                <p>{formatNumber(superAdminDerived.avgProductsPerTenant.toFixed(1))} avg products / tenant</p>
+              </div>
+              <div className="dashboard-stat-card">
+                <span>Activation Ratio</span>
+                <strong>
+                  {dashboard.total_tenants
+                    ? `${Math.round((dashboard.active_tenants / dashboard.total_tenants) * 100)}%`
+                    : "0%"}
+                </strong>
+                <p>Tenants currently active</p>
+              </div>
+            </div>
+          </DashboardWidget>
+
+          <DashboardWidget title="Notifications">
+            {state.notifications.length ? (
+              <div className="mini-list">
+                {state.notifications.map((notification) => (
+                  <div className="mini-list-row" key={notification.id}>
+                    <div>
+                      <strong>{notification.title}</strong>
+                      <span>{notification.message}</span>
+                    </div>
+                    <StatusBadge value={notification.type} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="bell"
+                title="No platform notifications"
+                description="System alerts and governance signals will surface here."
+              />
+            )}
+          </DashboardWidget>
+        </div>
+
+        <div className="detail-grid">
+          <DashboardWidget title="Recent Tenant Activity" className="widget-span-2">
+            {dashboard.recent_tenants?.length ? (
+              <div className="mini-list">
+                {dashboard.recent_tenants.map((tenantItem) => (
+                  <div className="mini-list-row" key={tenantItem.id}>
+                    <div>
+                      <strong>{tenantItem.company_name}</strong>
+                      <span>{tenantItem.contact_email}</span>
+                    </div>
+                    <div className="metric-pair">
+                      <StatusBadge value={tenantItem.status} />
+                      <span>{formatDateTime(tenantItem.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="building"
+                title="No tenant registrations yet"
+                description="New workspaces will appear here as organizations start signing up."
+              />
+            )}
+          </DashboardWidget>
+
+          <DashboardWidget title="Recent System Audit Logs">
+            {dashboard.recent_activities?.length ? (
+              <div className="mini-list">
+                {dashboard.recent_activities.slice(0, 6).map((activity) => (
+                  <div className="mini-list-row" key={activity.id}>
+                    <div>
+                      <strong>{titleCase(activity.action)}</strong>
+                      <span>{activity.entity_type ? titleCase(activity.entity_type) : "System event"}</span>
+                    </div>
+                    <div className="metric-pair">
+                      <strong>#{activity.entity_id ?? "—"}</strong>
+                      <span>{formatDateTime(activity.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon="shield"
+                title="No audit logs yet"
+                description="Audit events will appear here once admins and tenants start using the platform."
+              />
+            )}
+          </DashboardWidget>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-stack">
+      {commonHeader}
+
+      <div className="metric-grid">
+        <MetricCard label="Items" value={formatNumber(dashboard.total_products)} delta="Active catalog rows" tone="neutral" />
+        <MetricCard label="Sales Orders" value={formatNumber(dashboard.total_sales_orders)} delta={`${formatNumber(salesActivity.packed)} ready for packing`} tone="positive" />
+        <MetricCard label="Purchase Orders" value={formatNumber(dashboard.total_purchase_orders)} delta={`${formatNumber(purchaseActivity.toReceive)} still to receive`} tone="info" />
+        <MetricCard label="Inventory Value" value={formatCurrency(dashboard.inventory_value)} delta={`${formatNumber(state.lowStockRows.length)} low stock alerts`} tone="warning" />
+      </div>
+
+      <div className="dashboard-grid-primary">
+        <DashboardWidget
+          title="Sales Activity"
+          actions={<PeriodSelect value={period} onChange={setPeriod} />}
+        >
+          <div className="dashboard-stat-grid">
+            <div className="dashboard-stat-card">
+              <span>To Be Packed</span>
+              <strong>{formatNumber(salesActivity.packed)}</strong>
+              <p>Confirmed orders awaiting packaging</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>To Be Shipped</span>
+              <strong>{formatNumber(salesActivity.shipped)}</strong>
+              <p>Packed orders awaiting shipment</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>To Be Delivered</span>
+              <strong>{formatNumber(salesActivity.delivered)}</strong>
+              <p>Shipped orders in transit</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>To Be Invoiced</span>
+              <strong>{formatNumber(salesActivity.invoiced)}</strong>
+              <p>Delivered orders ready for invoicing</p>
+            </div>
+          </div>
+        </DashboardWidget>
+
+        <DashboardWidget title="Pending Actions">
+          <div className="queue-section">
+            <h4>Sales</h4>
+            <div className="queue-row">
+              <span>To Be Packed</span>
+              <strong>{formatNumber(salesActivity.packed)}</strong>
+            </div>
+            <div className="queue-row">
+              <span>To Be Shipped</span>
+              <strong>{formatNumber(salesActivity.shipped)}</strong>
+            </div>
+            <div className="queue-row">
+              <span>To Be Delivered</span>
+              <strong>{formatNumber(salesActivity.delivered)}</strong>
+            </div>
+          </div>
+          <div className="queue-section">
+            <h4>Purchases</h4>
+            <div className="queue-row">
+              <span>To Be Received</span>
+              <strong>{formatNumber(purchaseActivity.toReceive)}</strong>
+            </div>
+            <div className="queue-row">
+              <span>Receive In Progress</span>
+              <strong>{formatNumber(purchaseActivity.partial)}</strong>
+            </div>
+          </div>
+          <div className="queue-section">
+            <h4>Inventory</h4>
+            <div className="queue-row">
+              <span>Low Stock Items</span>
+              <strong>{formatNumber(state.lowStockRows.length)}</strong>
+            </div>
+            <div className="queue-row">
+              <span>Out Of Stock Items</span>
+              <strong>{formatNumber(state.outOfStockRows.length)}</strong>
+            </div>
+          </div>
+        </DashboardWidget>
+      </div>
+
+      <div className="dashboard-grid-secondary">
+        <DashboardWidget title="Inventory Summary">
+          <div className="dashboard-stat-grid">
+            <div className="dashboard-stat-card">
+              <span>Quantity In Hand</span>
+              <strong>{formatNumber(quantityInHand)}</strong>
+              <p>Total physical stock across warehouses</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>Available Stock</span>
+              <strong>{formatNumber(quantityAvailable)}</strong>
+              <p>Ready for allocation or sale</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>Reserved Stock</span>
+              <strong>{formatNumber(totalReserved)}</strong>
+              <p>Allocated against live sales orders</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>Warehouses</span>
+              <strong>{formatNumber(dashboard.total_warehouses)}</strong>
+              <p>Active storage and fulfillment locations</p>
+            </div>
+          </div>
+        </DashboardWidget>
+
+        <DashboardWidget title="Product Details">
+          <div className="dashboard-stat-grid">
+            <div className="dashboard-stat-card">
+              <span>All Items</span>
+              <strong>{formatNumber(dashboard.total_products)}</strong>
+              <p>Products currently in the catalog</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>Low Stock Items</span>
+              <strong>{formatNumber(state.lowStockRows.length)}</strong>
+              <p>At or below reorder level</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>Out Of Stock</span>
+              <strong>{formatNumber(state.outOfStockRows.length)}</strong>
+              <p>No available quantity remaining</p>
+            </div>
+            <div className="dashboard-stat-card">
+              <span>Customers / Vendors</span>
+              <strong>{formatNumber(dashboard.total_customers + dashboard.total_vendors)}</strong>
+              <p>{formatNumber(dashboard.total_customers)} customers · {formatNumber(dashboard.total_vendors)} vendors</p>
+            </div>
+          </div>
+        </DashboardWidget>
+      </div>
+
+      <div className="dashboard-grid-primary">
+        <DashboardWidget
+          title="Top Selling Items"
+          actions={
+            <Link className="button button-ghost compact-button" to="/reports?report=customer-sales">
+              Open sales reports
+            </Link>
+          }
+        >
+          {topSellingItems.length ? (
+            <div className="dashboard-progress-stack">
+              {topSellingItems.map((item) => {
+                const maxQuantity = topSellingItems[0]?.quantity || 1;
+                const width = Math.max(12, Math.round((item.quantity / maxQuantity) * 100));
+                return (
+                  <div className="dashboard-progress-row" key={item.product_id}>
+                    <div className="dashboard-progress-labels">
+                      <strong>{item.product_name}</strong>
+                      <span>{item.sku}</span>
+                    </div>
+                    <div className="usage-bar">
+                      <span className="usage-bar-fill" style={{ width: `${width}%` }} />
+                    </div>
+                    <div className="metric-pair">
+                      <strong>{formatNumber(item.quantity)}</strong>
+                      <span>units sold</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              icon="cart"
+              title="No top selling items yet"
+              description="Sales-driven product movement will appear here once orders are delivered."
+            />
+          )}
+        </DashboardWidget>
+
+        <DashboardWidget title="Top Stocked Items" actions={<PeriodSelect value={period} onChange={setPeriod} />}>
+          {topStockedItems.length ? (
+            <div className="mini-list">
+              {topStockedItems.map((item) => (
+                <div className="mini-list-row" key={item.product_id}>
+                  <div>
+                    <strong>{item.product_name}</strong>
+                    <span>{item.sku}</span>
+                  </div>
+                  <div className="metric-pair">
+                    <strong>{formatNumber(item.total_quantity)}</strong>
+                    <span>{formatCurrency(item.inventory_value)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon="box"
+              title="No stocked items yet"
+              description="Warehouse-backed product quantities will populate here once stock is recorded."
+            />
+          )}
+        </DashboardWidget>
+      </div>
+
+      <div className="dashboard-grid-secondary">
+        <DashboardWidget title="Sales Order Summary" actions={<PeriodSelect value={period} onChange={setPeriod} />}>
+          {state.salesRows.length ? (
+            <div className="dashboard-progress-stack">
+              {[
+                { label: "Draft", count: getCountByStatus(state.salesRows, "status", ["DRAFT"]) },
+                { label: "Confirmed", count: getCountByStatus(state.salesRows, "status", ["CONFIRMED"]) },
+                { label: "Packed", count: getCountByStatus(state.salesRows, "status", ["PACKED"]) },
+                { label: "Shipped", count: getCountByStatus(state.salesRows, "status", ["SHIPPED"]) },
+                { label: "Delivered", count: getCountByStatus(state.salesRows, "status", ["DELIVERED"]) },
+              ].map((item) => {
+                const width = state.salesRows.length ? Math.max(10, Math.round((item.count / state.salesRows.length) * 100)) : 0;
+                return (
+                  <div className="dashboard-progress-row" key={item.label}>
+                    <div className="dashboard-progress-labels">
+                      <strong>{item.label}</strong>
+                      <span>{periodOptions.find((entry) => entry.value === period)?.label}</span>
+                    </div>
+                    <div className="usage-bar">
+                      <span className="usage-bar-fill" style={{ width: `${width}%` }} />
+                    </div>
+                    <div className="metric-pair">
+                      <strong>{formatNumber(item.count)}</strong>
+                      <span>orders</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              icon="cart"
+              title="No sales orders in this period"
+              description="Once sales orders are created, their status distribution will appear here."
+            />
+          )}
+        </DashboardWidget>
+
+        <DashboardWidget title="Purchase Order Summary" actions={<PeriodSelect value={period} onChange={setPeriod} />}>
+          {state.purchaseRows.length ? (
+            <div className="dashboard-progress-stack">
+              {[
+                { label: "Draft", count: getCountByStatus(state.purchaseRows, "status", ["DRAFT"]) },
+                { label: "Issued", count: getCountByStatus(state.purchaseRows, "status", ["ISSUED"]) },
+                { label: "Partially Received", count: getCountByStatus(state.purchaseRows, "status", ["PARTIALLY_RECEIVED"]) },
+                { label: "Received", count: getCountByStatus(state.purchaseRows, "status", ["RECEIVED"]) },
+                { label: "Cancelled", count: getCountByStatus(state.purchaseRows, "status", ["CANCELLED"]) },
+              ].map((item) => {
+                const width = state.purchaseRows.length
+                  ? Math.max(10, Math.round((item.count / state.purchaseRows.length) * 100))
+                  : 0;
+                return (
+                  <div className="dashboard-progress-row" key={item.label}>
+                    <div className="dashboard-progress-labels">
+                      <strong>{item.label}</strong>
+                      <span>{periodOptions.find((entry) => entry.value === period)?.label}</span>
+                    </div>
+                    <div className="usage-bar">
+                      <span className="usage-bar-fill" style={{ width: `${width}%` }} />
+                    </div>
+                    <div className="metric-pair">
+                      <strong>{formatNumber(item.count)}</strong>
+                      <span>orders</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              icon="briefcase"
+              title="No purchase orders in this period"
+              description="Purchase order status activity will appear here once inbound procurement starts."
+            />
+          )}
+        </DashboardWidget>
+      </div>
+
+      <div className="detail-grid">
+        <DashboardWidget title="Recent Activities" className="widget-span-2">
           {dashboard.recent_activities?.length ? (
             <div className="mini-list">
               {dashboard.recent_activities.map((activity) => (
@@ -218,249 +998,11 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon="activity" title="No recent activity yet" description="The activity feed will populate as your team starts using the workspace." />
-          )}
-        </DashboardWidget>
-      </div>
-    );
-  }
-
-  if (user?.role === "SUPER_ADMIN") {
-    return (
-      <div className="page-stack">
-        <PageHeader
-          eyebrow="Home"
-          title={`Hello, ${user?.name?.split(" ")[0] ?? "Admin"}`}
-          description="Platform-wide tenant, user, and order visibility for the Northstar Inventory control plane."
-          actions={
-            <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
-              {periodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          }
-        />
-        <div className="home-tabs">
-          {homeTabs.map((tab) => (
-            <button key={tab.key} className={`home-tab ${homeTab === tab.key ? "is-active" : ""}`} type="button" onClick={() => setHomeTab(tab.key)}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        <div className="metric-grid">
-          <MetricCard label="Total Tenants" value={formatNumber(dashboard.total_tenants)} delta="Platform workspaces" tone="neutral" />
-          <MetricCard label="Active Tenants" value={formatNumber(dashboard.active_tenants)} delta="Healthy accounts" tone="positive" />
-          <MetricCard label="Total Users" value={formatNumber(dashboard.total_users)} delta="Across all tenants" tone="info" />
-          <MetricCard label="Total Products" value={formatNumber(dashboard.total_products)} delta={`${formatNumber(dashboard.total_sales_orders)} sales orders tracked`} tone="warning" />
-        </div>
-        <div className="detail-grid">
-          <DashboardWidget title="Recent Tenant Activity" className="widget-span-2">
-            <div className="mini-list">
-              {dashboard.recent_tenants?.map((tenantItem) => (
-                <div className="mini-list-row" key={tenantItem.id}>
-                  <div>
-                    <strong>{tenantItem.company_name}</strong>
-                    <span>{tenantItem.contact_email}</span>
-                  </div>
-                  <div className="metric-pair">
-                    <StatusBadge value={tenantItem.status} />
-                    <span>{formatDateTime(tenantItem.created_at)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DashboardWidget>
-          <DashboardWidget title="Notifications">
-            {state.notifications.length ? (
-              <div className="mini-list">
-                {state.notifications.map((notification) => (
-                  <div className="mini-list-row" key={notification.id}>
-                    <div>
-                      <strong>{notification.title}</strong>
-                      <span>{notification.message}</span>
-                    </div>
-                    <StatusBadge value={notification.type} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState icon="bell" title="No platform notifications" description="System notifications will appear here as tenant events accumulate." />
-            )}
-          </DashboardWidget>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page-stack">
-      <PageHeader
-        eyebrow="Home"
-        title={`Hello, ${user?.name?.split(" ")[0] ?? "Team"}`}
-        description={`${tenant?.company_name ?? "Northstar Inventory"} is ready for product, order, and warehouse operations.`}
-        actions={
-          <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
-            {periodOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        }
-      />
-
-      <div className="home-tabs">
-        {homeTabs.map((tab) => (
-          <button key={tab.key} className={`home-tab ${homeTab === tab.key ? "is-active" : ""}`} type="button" onClick={() => setHomeTab(tab.key)}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="metric-grid">
-        <MetricCard label="Items" value={formatNumber(dashboard.total_products)} delta="Active catalog rows" tone="neutral" />
-        <MetricCard label="Warehouses" value={formatNumber(dashboard.total_warehouses)} delta="Fulfillment locations" tone="info" />
-        <MetricCard label="Sales Orders" value={formatNumber(dashboard.total_sales_orders)} delta="Current order pipeline" tone="positive" />
-        <MetricCard label="Inventory Value" value={formatCurrency(dashboard.inventory_value)} delta={`${formatNumber(dashboard.low_stock_items)} low stock alerts`} tone="warning" />
-      </div>
-
-      <div className="dashboard-grid-primary">
-        <DashboardWidget
-          title="Top Stocked Items"
-          actions={
-            <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
-              {periodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          }
-        >
-          {inventoryTop.length ? (
-            <div className="mini-list">
-              {inventoryTop.map((item, index) => (
-                <div className="mini-list-row" key={`${item.product_id}-${index}`}>
-                  <div>
-                    <strong>{item.product_name}</strong>
-                    <span>{item.sku}</span>
-                  </div>
-                  <div className="metric-pair">
-                    <strong>{formatNumber(item.total_quantity)}</strong>
-                    <span>{formatCurrency(item.inventory_value)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState icon="box" title="No stocked items yet" description="Your top stocked items will appear here once warehouse stock is recorded." />
-          )}
-        </DashboardWidget>
-
-        <DashboardWidget title="Pending Actions">
-          <div className="queue-section">
-            <h4>Sales</h4>
-            <div className="queue-row"><span>To Be Packed</span><strong>{state.salesRows.filter((row) => row.status === "CONFIRMED").length}</strong></div>
-            <div className="queue-row"><span>To Be Shipped</span><strong>{state.salesRows.filter((row) => row.status === "PACKED").length}</strong></div>
-            <div className="queue-row"><span>To Be Delivered</span><strong>{state.salesRows.filter((row) => row.status === "SHIPPED").length}</strong></div>
-            <div className="queue-row"><span>To Be Invoiced</span><strong>{state.salesRows.filter((row) => ["CONFIRMED", "PACKED"].includes(row.status)).length}</strong></div>
-          </div>
-          <div className="queue-section">
-            <h4>Purchases</h4>
-            <div className="queue-row"><span>To Be Received</span><strong>{state.purchaseRows.filter((row) => row.status === "ISSUED").length}</strong></div>
-            <div className="queue-row"><span>Receive In Progress</span><strong>{state.purchaseRows.filter((row) => row.status === "PARTIALLY_RECEIVED").length}</strong></div>
-          </div>
-          <div className="queue-section">
-            <h4>Inventory</h4>
-            <div className="queue-row"><span>Below Reorder Level</span><strong>{formatNumber(dashboard.low_stock_items)}</strong></div>
-          </div>
-        </DashboardWidget>
-      </div>
-
-      <div className="dashboard-grid-secondary">
-        <DashboardWidget
-          title="Sales Order Summary"
-          actions={
-            <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
-              {periodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          }
-        >
-          {state.salesRows.length ? (
-            <div className="mini-list">
-              {state.salesRows.slice(0, 5).map((row, index) => (
-                <div className="mini-list-row" key={`${row.so_number}-${index}`}>
-                  <div>
-                    <strong>{row.so_number}</strong>
-                    <span>{row.customer_name ?? `Customer #${row.customer_id}`}</span>
-                  </div>
-                  <div className="metric-pair">
-                    <StatusBadge value={row.status} />
-                    <span>{formatCurrency(row.total_amount)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState icon="cart" title="No sales orders yet" description="Your live sales pipeline will appear here as orders are created." />
-          )}
-        </DashboardWidget>
-
-        <DashboardWidget
-          title="Purchase Order Summary"
-          actions={
-            <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
-              {periodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          }
-        >
-          {state.purchaseRows.length ? (
-            <div className="mini-list">
-              {state.purchaseRows.slice(0, 5).map((row, index) => (
-                <div className="mini-list-row" key={`${row.po_number}-${index}`}>
-                  <div>
-                    <strong>{row.po_number}</strong>
-                    <span>{row.vendor_name ?? `Vendor #${row.vendor_id}`}</span>
-                  </div>
-                  <div className="metric-pair">
-                    <StatusBadge value={row.status} />
-                    <span>{formatCurrency(row.total_amount)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState icon="briefcase" title="No purchase orders yet" description="Inbound procurement activity will show here as soon as POs are issued." />
-          )}
-        </DashboardWidget>
-      </div>
-
-      <div className="detail-grid">
-        <DashboardWidget title="Recent Activities" className="widget-span-2">
-          {dashboard.recent_activities?.length ? (
-            <div className="mini-list">
-              {dashboard.recent_activities.map((activity) => (
-                <div className="mini-list-row" key={activity.id}>
-                  <div>
-                    <strong>{titleCase(activity.action)}</strong>
-                    <span>{activity.entity_type ? titleCase(activity.entity_type) : "System event"}</span>
-                  </div>
-                  <span>{formatDateTime(activity.created_at)}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState icon="activity" title="No recent activity yet" description="Audit activity will appear here once your team starts transacting." />
+            <EmptyState
+              icon="activity"
+              title="No recent activity yet"
+              description="Audit activity will appear here once your team starts transacting."
+            />
           )}
         </DashboardWidget>
 
@@ -473,12 +1015,19 @@ export function DashboardPage() {
                     <strong>{notification.title}</strong>
                     <span>{notification.message}</span>
                   </div>
-                  <StatusBadge value={notification.type} />
+                  <div className="metric-pair">
+                    <StatusBadge value={notification.type} />
+                    <span>{formatDate(notification.created_at)}</span>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyState icon="bell" title="No notifications yet" description="Warehouse, order, and stock alerts will appear here." />
+            <EmptyState
+              icon="bell"
+              title="No notifications yet"
+              description="Warehouse, order, and low-stock alerts will appear here."
+            />
           )}
         </DashboardWidget>
       </div>

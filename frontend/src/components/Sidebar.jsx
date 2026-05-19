@@ -1,24 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
-import { homeNavigation, navigationGroups } from "../lib/navigation";
+import { getNavigationGroups, homeNavigation } from "../lib/navigation";
 import { useAuth } from "../contexts/AuthContext";
-import { hasAnyRole } from "../lib/permissions";
 import { useUiStore } from "../stores/uiStore";
 import { Icon } from "./Icon";
 
 export function Sidebar({ mobile = false }) {
   const location = useLocation();
   const { user } = useAuth();
-  const role = user?.role;
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  const navigationGroups = useMemo(() => getNavigationGroups(user?.role), [user?.role]);
   const initialGroup = useMemo(
     () =>
       navigationGroups.find((group) => group.items.some((item) => location.pathname.startsWith(item.path)))?.title ??
       navigationGroups[0].title,
-    [location.pathname],
+    [location.pathname, navigationGroups],
   );
   const [openGroup, setOpenGroup] = useState(initialGroup);
 
@@ -31,14 +30,14 @@ export function Sidebar({ mobile = false }) {
       <div className="sidebar-brand">
         <div className="brand-symbol">N</div>
         {isCollapsed && !mobile ? null : (
-          <div>
+          <div className="sidebar-brand-copy">
             <strong>Northstar Inventory</strong>
-            <p>Retail operations command center</p>
+            <p>{user?.role === "SUPER_ADMIN" ? "Platform operations" : "Inventory operations"}</p>
           </div>
         )}
         {!mobile ? (
-          <button className="icon-button sidebar-collapse-button" type="button" onClick={toggleSidebar}>
-            <Icon name={isCollapsed ? "chevronRight" : "chevronDown"} size={14} />
+          <button className="icon-button sidebar-collapse-button" type="button" onClick={toggleSidebar} aria-label="Toggle sidebar">
+            <Icon name={isCollapsed ? "panelLeftOpen" : "panelLeftClose"} size={15} />
           </button>
         ) : null}
       </div>
@@ -54,9 +53,7 @@ export function Sidebar({ mobile = false }) {
         </NavLink>
 
         {navigationGroups.map((group) => {
-          const visibleItems = group.items.filter(
-            (item) => (!item.superAdminOnly || role === "SUPER_ADMIN") && hasAnyRole(user, item.roles),
-          );
+          const visibleItems = group.items;
           if (!visibleItems.length) {
             return null;
           }
@@ -69,6 +66,7 @@ export function Sidebar({ mobile = false }) {
                   className="sidebar-group-toggle"
                   type="button"
                   onClick={() => setOpenGroup((current) => (current === group.title ? "" : group.title))}
+                  aria-expanded={isOpen}
                 >
                   <span>{group.title}</span>
                   <Icon name={isOpen ? "chevronDown" : "chevronRight"} size={14} />

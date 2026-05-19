@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { DataTable } from "../components/DataTable";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
@@ -265,9 +264,9 @@ export function WorkflowWorkbenchPage({ pageKey }) {
         eyebrow={config.eyebrow}
         title={config.title}
         description={config.description}
+        backTo={config.sourcePath}
         actions={
           <>
-            <BackButton fallbackTo={config.sourcePath} />
             <select className="field-input compact-field" value={period} onChange={(event) => setPeriod(event.target.value)}>
               {periodOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -302,6 +301,7 @@ export function WorkflowWorkbenchPage({ pageKey }) {
         isLoading={state.loading}
         error={state.error}
         onRetry={() => setReloadKey((value) => value + 1)}
+        hideHeaderCopy
         emptyState={{
           icon: config.domain === "sales" ? "cart" : "clipboard",
           title: `No ${config.title.toLowerCase()} records in this period`,

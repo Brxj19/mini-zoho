@@ -6,7 +6,7 @@ export function EmptyState({ title, description, actionLabel, actionTo, onAction
   const actionClassName = actionTone === "ghost" ? "button button-ghost" : "button button-primary";
 
   return (
-    <div className="empty-state">
+    <div className="empty-state" role="status" aria-live="polite">
       <div className="empty-state-icon">
         <Icon name={icon} size={22} />
       </div>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { BackButton } from "../components/BackButton";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import api from "../lib/api";
@@ -74,7 +73,7 @@ export function BarcodeToolsPage() {
         eyebrow="Advanced Inventory"
         title="Barcode And Tracking Tools"
         description="Generate barcodes, search products instantly, and inspect the latest tracked batches and serials."
-        actions={<BackButton fallbackTo="/items" />}
+        backTo="/items"
       />
 
       {state.error ? <div className="surface-error">{state.error}</div> : null}

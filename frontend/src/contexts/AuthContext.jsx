@@ -30,6 +30,45 @@ export function AuthProvider({ children }) {
     setAuthHeader(accessToken);
   }, [accessToken]);
 
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error?.config;
+        const statusCode = error?.response?.status;
+
+        if (
+          statusCode !== 401 ||
+          !refreshToken ||
+          !originalRequest ||
+          originalRequest._retry ||
+          String(originalRequest.url ?? "").includes("/auth/refresh")
+        ) {
+          return Promise.reject(error);
+        }
+
+        originalRequest._retry = true;
+
+        try {
+          const response = await api.post("/auth/refresh", { refresh_token: refreshToken });
+          persistSession(response.data);
+          originalRequest.headers = {
+            ...(originalRequest.headers ?? {}),
+            Authorization: `Bearer ${response.data.access_token}`,
+          };
+          return api(originalRequest);
+        } catch (refreshError) {
+          clearSession();
+          return Promise.reject(refreshError);
+        }
+      },
+    );
+
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
+  }, [refreshToken]);
+
   async function synchronizeSession(nextAccessToken, nextRefreshToken) {
     try {
       const profile = await loadProfile(nextAccessToken);
@@ -97,6 +136,17 @@ export function AuthProvider({ children }) {
     return response.data;
   }
 
+  async function refreshProfile() {
+    if (!accessToken) {
+      return null;
+    }
+
+    const profile = await loadProfile(accessToken);
+    setUser(profile);
+    setTenant(profile.tenant ?? profile.user?.tenant ?? null);
+    return profile;
+  }
+
   async function logout() {
     try {
       if (accessToken) {
@@ -130,20 +180,27 @@ export function AuthProvider({ children }) {
     clearAuthError,
     async login(credentials) {
       try {
-        await login(credentials);
+        return await login(credentials);
       } catch (error) {
         throw new Error(setErrorFromResponse(error, "Unable to sign in."));
       }
     },
     async register(payload) {
       try {
-        await register(payload);
+        return await register(payload);
       } catch (error) {
         throw new Error(setErrorFromResponse(error, "Unable to create your workspace."));
       }
     },
     async logout() {
       await logout();
+    },
+    async refreshProfile() {
+      try {
+        return await refreshProfile();
+      } catch (error) {
+        throw new Error(setErrorFromResponse(error, "Unable to refresh your workspace profile."));
+      }
     },
   };
 

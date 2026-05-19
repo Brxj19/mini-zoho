@@ -19,6 +19,7 @@ Phase 1 through Phase 9 are implemented:
 - Report APIs with CSV export for major inventory and order reports
 - Audit log listing APIs and in-app notifications
 - A full React SaaS shell with compact rail navigation, themed dashboard, operational lists, forms, detail views, reports, and notifications
+- Ongoing UI/UX redesign work with standardized headers, in-shell list actions, lighter back navigation, and responsive table/layout polish
 - MySQL service wired through Docker Compose
 - Alembic migrations for tenants, users, master data tables, inventory core tables, stock transfers, purchase orders, sales orders, and notifications
 - Environment variable examples for frontend and backend

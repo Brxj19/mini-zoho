@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import api from "../lib/api";
-import { BackButton } from "../components/BackButton";
 import { PageHeader } from "../components/PageHeader";
 import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
 import { reportCatalog } from "../lib/uiConfig";
@@ -302,9 +301,9 @@ export function ReportsPage() {
         eyebrow="Analytics"
         title="Reports"
         description="Run inventory, warehouse, purchase, sales, and audit reports from one reporting surface."
+        backTo="/"
         actions={
           <>
-            <BackButton fallbackTo="/" />
             {activeReport.key === "low-stock" ? (
               <Link className="ghost-button" to="/inventory/low-stock">
                 Open Low Stock Queue

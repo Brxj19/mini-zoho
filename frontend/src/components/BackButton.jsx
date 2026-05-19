@@ -14,7 +14,7 @@ export function BackButton({ fallbackTo = "/", label = "Back" }) {
   }
 
   return (
-    <button className="ghost-button back-button" type="button" onClick={handleBack}>
+    <button className="back-button" type="button" onClick={handleBack}>
       <Icon name="arrowLeft" size={16} />
       <span>{label}</span>
     </button>
