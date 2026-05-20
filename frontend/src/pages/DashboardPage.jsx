@@ -8,7 +8,6 @@ import { LoadingState } from "../components/common/LoadingState";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { Tabs } from "../components/Tabs";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 import { formatCurrency, formatDate, formatDateTime, formatNumber, titleCase } from "../lib/format";
@@ -118,6 +117,19 @@ function buildTopSellingItems(movementRows) {
   return Array.from(aggregate.values())
     .sort((left, right) => right.quantity - left.quantity)
     .slice(0, 5);
+}
+
+function buildProductMix(dashboard, lowStockRows, outOfStockRows) {
+  const totalProducts = Number(dashboard?.total_products ?? 0);
+  const lowStockCount = lowStockRows.length;
+  const outOfStockCount = outOfStockRows.length;
+  const healthyCount = Math.max(totalProducts - lowStockCount - outOfStockCount, 0);
+
+  return [
+    { label: "Healthy items", count: healthyCount, color: "#7ec8f6" },
+    { label: "Low stock", count: lowStockCount, color: "#f5b54c" },
+    { label: "Out of stock", count: outOfStockCount, color: "#d5c4f8" },
+  ].filter((segment) => segment.count > 0);
 }
 
 function buildPlanDistribution(tenantRows, planRows) {
@@ -372,135 +384,191 @@ export function DashboardPage() {
     );
   }
 
-  const commonHeader = (
-    <>
-      <PageHeader
-        eyebrow="Home"
-        title={`Hello, ${user?.name?.split(" ")[0] ?? "Team"}`}
-        description={
-          user?.role === "SUPER_ADMIN"
-            ? "Platform-wide control of tenants, plans, and operational health across Northstar Inventory."
-            : `${tenant?.company_name ?? "Northstar Inventory"} is ready for products, warehouses, orders, and live inventory work.`
+  const activeTab = homeTabs.find((item) => item.key === homeTab) ?? homeTabs[0];
+  const productMix = buildProductMix(dashboard, state.lowStockRows, state.outOfStockRows);
+  const totalMix = productMix.reduce((total, segment) => total + segment.count, 0);
+  const donutStyle =
+    totalMix > 0
+      ? {
+          background: `conic-gradient(${productMix
+            .map((segment, index) => {
+              const start = productMix
+                .slice(0, index)
+                .reduce((running, current) => running + (current.count / totalMix) * 360, 0);
+              const end = start + (segment.count / totalMix) * 360;
+              return `${segment.color} ${start}deg ${end}deg`;
+            })
+            .join(", ")})`,
         }
-        actions={<PeriodSelect value={period} onChange={setPeriod} />}
-      />
-      <Tabs items={homeTabs} activeKey={homeTab} onChange={setHomeTab} />
-    </>
+      : undefined;
+
+  const dashboardShell = (content, actions = null) => (
+    <div className="insights-layout">
+      <aside className="insights-side-nav">
+        <div className="insights-side-header">
+          <p>Insights</p>
+          <span>{tenant?.company_name ?? "Northstar Inventory"}</span>
+        </div>
+        <nav className="insights-side-links" aria-label="Home workspace">
+          {homeTabs.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`insights-side-link ${homeTab === item.key ? "is-active" : ""}`}
+              onClick={() => setHomeTab(item.key)}
+            >
+              <span className="insights-side-link-accent" />
+              <div>
+                <strong>{item.label}</strong>
+                <small>
+                  {item.key === "dashboard"
+                    ? "Live metrics and signals"
+                    : item.key === "getting-started"
+                      ? "Set up and operate faster"
+                      : "Operational activity feed"}
+                </small>
+              </div>
+            </button>
+          ))}
+        </nav>
+      </aside>
+      <div className="insights-main">
+        <PageHeader
+          eyebrow="Insights"
+          title={activeTab.label}
+          description={
+            homeTab === "dashboard"
+              ? user?.role === "SUPER_ADMIN"
+                ? "Platform-wide control of tenants, plans, growth, and operational health across Northstar Inventory."
+                : `${tenant?.company_name ?? "Northstar Inventory"} is ready for products, warehouses, stock movement, and order operations.`
+              : homeTab === "getting-started"
+                ? "Use this guided setup lane to configure the workspace and reach a healthy operational baseline."
+                : "Track recent admin, stock, sales, and purchasing activity from one place."
+          }
+          actions={
+            <div className="header-action-cluster">
+              {actions}
+              <button type="button" className="button button-ghost compact-button">
+                Filters
+              </button>
+              <Link className="button button-primary compact-button" to="/reports">
+                Add report
+              </Link>
+            </div>
+          }
+        />
+        {content}
+      </div>
+    </div>
   );
 
   if (homeTab === "getting-started") {
-    return (
-      <div className="page-stack">
-        {commonHeader}
-        <div className="detail-grid">
-          <DashboardWidget title="Getting Started Checklist" className="widget-span-2">
-            <div className="checklist-grid">
-              {(user?.role === "SUPER_ADMIN" ? superAdminChecklist : tenantChecklist).map((item, index) => (
-                <div key={item} className="checklist-item">
-                  <span>{index + 1}</span>
-                  <strong>{item}</strong>
-                </div>
-              ))}
-            </div>
-          </DashboardWidget>
+    return dashboardShell(
+      <div className="detail-grid">
+        <DashboardWidget title="Getting Started Checklist" className="widget-span-2">
+          <div className="checklist-grid">
+            {(user?.role === "SUPER_ADMIN" ? superAdminChecklist : tenantChecklist).map((item, index) => (
+              <div key={item} className="checklist-item">
+                <span>{index + 1}</span>
+                <strong>{item}</strong>
+              </div>
+            ))}
+          </div>
+        </DashboardWidget>
 
-          <DashboardWidget title="Workspace Context">
-            <div className="detail-overview-grid compact">
-              <div>
-                <span>Workspace</span>
-                <strong>{tenant?.company_name ?? "Northstar Platform"}</strong>
-              </div>
-              <div>
-                <span>Role</span>
-                <strong>{titleCase(user?.role)}</strong>
-              </div>
-              <div>
-                <span>Unread alerts</span>
-                <strong>{state.notifications.filter((item) => !item.is_read).length}</strong>
-              </div>
-              <div>
-                <span>Selected period</span>
-                <strong>{periodOptions.find((item) => item.value === period)?.label ?? "This Month"}</strong>
-              </div>
+        <DashboardWidget title="Workspace Context">
+          <div className="detail-overview-grid compact">
+            <div>
+              <span>Workspace</span>
+              <strong>{tenant?.company_name ?? "Northstar Platform"}</strong>
             </div>
-          </DashboardWidget>
+            <div>
+              <span>Role</span>
+              <strong>{titleCase(user?.role)}</strong>
+            </div>
+            <div>
+              <span>Unread alerts</span>
+              <strong>{state.notifications.filter((item) => !item.is_read).length}</strong>
+            </div>
+            <div>
+              <span>Selected period</span>
+              <strong>{periodOptions.find((item) => item.value === period)?.label ?? "This Month"}</strong>
+            </div>
+          </div>
+        </DashboardWidget>
 
-          <DashboardWidget title="Helpful next step">
-            <p className="surface-note">
-              {user?.role === "SUPER_ADMIN"
-                ? "Review plan usage and recent tenant activity before making governance changes."
-                : "Complete setup, then create or import items so the rest of the dashboard starts filling with live operational data."}
-            </p>
-          </DashboardWidget>
-        </div>
-      </div>
+        <DashboardWidget title="Helpful next step">
+          <p className="surface-note">
+            {user?.role === "SUPER_ADMIN"
+              ? "Review plan usage and recent tenant activity before making governance changes."
+              : "Complete setup, then create or import items so the rest of the dashboard starts filling with live operational data."}
+          </p>
+        </DashboardWidget>
+      </div>,
+      <PeriodSelect value={period} onChange={setPeriod} />,
     );
   }
 
   if (homeTab === "recent-activities") {
-    return (
-      <div className="page-stack">
-        {commonHeader}
-        <div className="detail-grid">
-          <DashboardWidget title="Recent Activities" className="widget-span-2">
-            {dashboard.recent_activities?.length ? (
-              <div className="mini-list">
-                {dashboard.recent_activities.map((activity) => (
-                  <div className="mini-list-row" key={activity.id}>
-                    <div>
-                      <strong>{titleCase(activity.action)}</strong>
-                      <span>{activity.entity_type ? titleCase(activity.entity_type) : "System event"}</span>
-                    </div>
-                    <div className="metric-pair">
-                      <strong>#{activity.entity_id ?? "—"}</strong>
-                      <span>{formatDateTime(activity.created_at)}</span>
-                    </div>
+    return dashboardShell(
+      <div className="detail-grid">
+        <DashboardWidget title="Recent Activities" className="widget-span-2">
+          {dashboard.recent_activities?.length ? (
+            <div className="mini-list">
+              {dashboard.recent_activities.map((activity) => (
+                <div className="mini-list-row" key={activity.id}>
+                  <div>
+                    <strong>{titleCase(activity.action)}</strong>
+                    <span>{activity.entity_type ? titleCase(activity.entity_type) : "System event"}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon="activity"
-                title="No recent activity yet"
-                description="Activity will start appearing here as transactions, approvals, and admin actions accumulate."
-              />
-            )}
-          </DashboardWidget>
+                  <div className="metric-pair">
+                    <strong>#{activity.entity_id ?? "—"}</strong>
+                    <span>{formatDateTime(activity.created_at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon="activity"
+              title="No recent activity yet"
+              description="Activity will start appearing here as transactions, approvals, and admin actions accumulate."
+            />
+          )}
+        </DashboardWidget>
 
-          <DashboardWidget title="Notifications">
-            {state.notifications.length ? (
-              <div className="mini-list">
-                {state.notifications.map((notification) => (
-                  <div className="mini-list-row" key={notification.id}>
-                    <div>
-                      <strong>{notification.title}</strong>
-                      <span>{notification.message}</span>
-                    </div>
-                    <div className="metric-pair">
-                      <StatusBadge value={notification.type} />
-                      <span>{formatDateTime(notification.created_at)}</span>
-                    </div>
+        <DashboardWidget title="Notifications">
+          {state.notifications.length ? (
+            <div className="mini-list">
+              {state.notifications.map((notification) => (
+                <div className="mini-list-row" key={notification.id}>
+                  <div>
+                    <strong>{notification.title}</strong>
+                    <span>{notification.message}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon="bell"
-                title="No notifications yet"
-                description="System and workflow alerts will show up here once activity begins."
-              />
-            )}
-          </DashboardWidget>
-        </div>
-      </div>
+                  <div className="metric-pair">
+                    <StatusBadge value={notification.type} />
+                    <span>{formatDateTime(notification.created_at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon="bell"
+              title="No notifications yet"
+              description="System and workflow alerts will show up here once activity begins."
+            />
+          )}
+        </DashboardWidget>
+      </div>,
+      <PeriodSelect value={period} onChange={setPeriod} />,
     );
   }
 
   if (user?.role === "SUPER_ADMIN") {
-    return (
+    return dashboardShell(
       <div className="page-stack">
-        {commonHeader}
-
         <div className="metric-grid">
           <MetricCard label="Total Tenants" value={formatNumber(dashboard.total_tenants)} delta="Active workspaces" tone="neutral" />
           <MetricCard label="Active Tenants" value={formatNumber(dashboard.active_tenants)} delta={`${formatNumber(superAdminDerived.suspendedTenants)} suspended or inactive`} tone="positive" />
@@ -609,28 +677,6 @@ export function DashboardPage() {
               </div>
             </div>
           </DashboardWidget>
-
-          <DashboardWidget title="Notifications">
-            {state.notifications.length ? (
-              <div className="mini-list">
-                {state.notifications.map((notification) => (
-                  <div className="mini-list-row" key={notification.id}>
-                    <div>
-                      <strong>{notification.title}</strong>
-                      <span>{notification.message}</span>
-                    </div>
-                    <StatusBadge value={notification.type} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon="bell"
-                title="No platform notifications"
-                description="System alerts and governance signals will surface here."
-              />
-            )}
-          </DashboardWidget>
         </div>
 
         <div className="detail-grid">
@@ -684,14 +730,13 @@ export function DashboardPage() {
             )}
           </DashboardWidget>
         </div>
-      </div>
+      </div>,
+      <PeriodSelect value={period} onChange={setPeriod} />,
     );
   }
 
-  return (
+  return dashboardShell(
     <div className="page-stack">
-      {commonHeader}
-
       <div className="metric-grid">
         <MetricCard label="Items" value={formatNumber(dashboard.total_products)} delta="Active catalog rows" tone="neutral" />
         <MetricCard label="Sales Orders" value={formatNumber(dashboard.total_sales_orders)} delta={`${formatNumber(salesActivity.packed)} ready for packing`} tone="positive" />
@@ -699,11 +744,68 @@ export function DashboardPage() {
         <MetricCard label="Inventory Value" value={formatCurrency(dashboard.inventory_value)} delta={`${formatNumber(state.lowStockRows.length)} low stock alerts`} tone="warning" />
       </div>
 
-      <div className="dashboard-grid-primary">
+      <div className="insights-dashboard-grid">
         <DashboardWidget
-          title="Sales Activity"
+          title="Inventory Balance Report"
           actions={<PeriodSelect value={period} onChange={setPeriod} />}
         >
+          {topStockedItems.length ? (
+            <div className="insights-bar-chart">
+              {topStockedItems.slice(0, 4).map((item) => {
+                const maxQuantity = topStockedItems[0]?.total_quantity || 1;
+                const barHeight = Math.max(18, Math.round((Number(item.total_quantity ?? 0) / maxQuantity) * 180));
+                return (
+                  <div className="insights-bar-group" key={item.product_id}>
+                    <div className="insights-bar-stack">
+                      <span className="insights-bar-label">{formatNumber(item.total_quantity)}</span>
+                      <div className="insights-bar" style={{ height: `${barHeight}px` }} />
+                    </div>
+                    <strong>{item.product_name}</strong>
+                    <span>{item.sku}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              icon="box"
+              title="No stock balance yet"
+              description="Warehouse-backed stock bars will appear here as catalog quantities accumulate."
+            />
+          )}
+        </DashboardWidget>
+
+        <DashboardWidget title="Catalog Mix" actions={<PeriodSelect value={period} onChange={setPeriod} />}>
+          {productMix.length ? (
+            <div className="insights-donut-block">
+              <div className="insights-donut" style={donutStyle}>
+                <div className="insights-donut-core">
+                  <strong>{formatNumber(dashboard.total_products)}</strong>
+                  <span>All items</span>
+                </div>
+              </div>
+              <div className="insights-donut-legend">
+                {productMix.map((segment) => (
+                  <div className="insights-legend-row" key={segment.label}>
+                    <span className="insights-legend-dot" style={{ background: segment.color }} />
+                    <div>
+                      <strong>{segment.label}</strong>
+                      <span>{formatNumber(segment.count)} items</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              icon="sparkles"
+              title="No product mix yet"
+              description="Add catalog items and reorder thresholds to unlock this insight."
+            />
+          )}
+        </DashboardWidget>
+
+        <DashboardWidget title="Sales Activity">
           <div className="dashboard-stat-grid">
             <div className="dashboard-stat-card">
               <span>To Be Packed</span>
@@ -965,57 +1067,7 @@ export function DashboardPage() {
         </DashboardWidget>
       </div>
 
-      <div className="detail-grid">
-        <DashboardWidget title="Recent Activities" className="widget-span-2">
-          {dashboard.recent_activities?.length ? (
-            <div className="mini-list">
-              {dashboard.recent_activities.map((activity) => (
-                <div className="mini-list-row" key={activity.id}>
-                  <div>
-                    <strong>{titleCase(activity.action)}</strong>
-                    <span>{activity.entity_type ? titleCase(activity.entity_type) : "System event"}</span>
-                  </div>
-                  <div className="metric-pair">
-                    <strong>#{activity.entity_id ?? "—"}</strong>
-                    <span>{formatDateTime(activity.created_at)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon="activity"
-              title="No recent activity yet"
-              description="Audit activity will appear here once your team starts transacting."
-            />
-          )}
-        </DashboardWidget>
-
-        <DashboardWidget title="Notifications">
-          {state.notifications.length ? (
-            <div className="mini-list">
-              {state.notifications.map((notification) => (
-                <div className="mini-list-row" key={notification.id}>
-                  <div>
-                    <strong>{notification.title}</strong>
-                    <span>{notification.message}</span>
-                  </div>
-                  <div className="metric-pair">
-                    <StatusBadge value={notification.type} />
-                    <span>{formatDate(notification.created_at)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon="bell"
-              title="No notifications yet"
-              description="Warehouse, order, and low-stock alerts will appear here."
-            />
-          )}
-        </DashboardWidget>
-      </div>
-    </div>
+    </div>,
+    <PeriodSelect value={period} onChange={setPeriod} />,
   );
 }
