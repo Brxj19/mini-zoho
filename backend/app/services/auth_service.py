@@ -70,7 +70,8 @@ class AuthService:
         return user, tenant
 
     def authenticate(self, email: str, password: str) -> User:
-        user = self.user_repository.get_by_email(email)
+        normalized_email = email.strip().lower()
+        user = self.user_repository.get_by_email(normalized_email)
         if not user or not verify_password(password, user.password_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.")
 
