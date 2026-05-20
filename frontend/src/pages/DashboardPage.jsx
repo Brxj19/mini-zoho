@@ -11,6 +11,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 import { formatCurrency, formatDate, formatDateTime, formatNumber, titleCase } from "../lib/format";
+import { ONBOARDING_STATUS_COMPLETED, ONBOARDING_STATUS_PENDING, ONBOARDING_STATUS_SKIPPED, getOnboardingStatus } from "../lib/onboarding";
 
 const periodOptions = [
   { label: "This Month", value: "this_month" },
@@ -21,7 +22,7 @@ const periodOptions = [
 
 const homeTabs = [
   { key: "dashboard", label: "Dashboard" },
-  { key: "getting-started", label: "Getting Started" },
+  { key: "getting-started", label: "Getting Started", requiresOnboarding: true },
   { key: "recent-activities", label: "Recent Activities" },
 ];
 
@@ -199,6 +200,16 @@ export function DashboardPage() {
   });
 
   useEffect(() => {
+    if (!tenant?.id || user?.role === "SUPER_ADMIN") {
+      return;
+    }
+
+    if (getOnboardingStatus(tenant.id) === ONBOARDING_STATUS_SKIPPED) {
+      setHomeTab("getting-started");
+    }
+  }, [tenant?.id, user?.role]);
+
+  useEffect(() => {
     let active = true;
 
     async function loadDashboard() {
@@ -304,6 +315,32 @@ export function DashboardPage() {
   }, [period, reloadToken, user?.role]);
 
   const dashboard = state.dashboard;
+  const onboardingStatus = tenant?.id ? getOnboardingStatus(tenant.id) : ONBOARDING_STATUS_COMPLETED;
+  const shouldShowGetStartedReminder =
+    user?.role !== "SUPER_ADMIN" &&
+    (onboardingStatus === ONBOARDING_STATUS_PENDING || onboardingStatus === ONBOARDING_STATUS_SKIPPED);
+  const visibleHomeTabs = useMemo(
+    () =>
+      homeTabs.filter((tab) => {
+        if (!tab.requiresOnboarding) {
+          return true;
+        }
+
+        return shouldShowGetStartedReminder;
+      }),
+    [shouldShowGetStartedReminder],
+  );
+  const getStartedSecondaryLink =
+    user?.role === "TENANT_ADMIN"
+      ? { to: "/settings", label: "Review settings" }
+      : { to: "/items", label: "Open items" };
+
+  useEffect(() => {
+    if (!visibleHomeTabs.some((tab) => tab.key === homeTab)) {
+      setHomeTab("dashboard");
+    }
+  }, [homeTab, visibleHomeTabs]);
+
   const topStockedItems = useMemo(
     () =>
       [...state.inventoryRows]
@@ -384,7 +421,7 @@ export function DashboardPage() {
     );
   }
 
-  const activeTab = homeTabs.find((item) => item.key === homeTab) ?? homeTabs[0];
+  const activeTab = visibleHomeTabs.find((item) => item.key === homeTab) ?? visibleHomeTabs[0];
   const productMix = buildProductMix(dashboard, state.lowStockRows, state.outOfStockRows);
   const totalMix = productMix.reduce((total, segment) => total + segment.count, 0);
   const donutStyle =
@@ -410,7 +447,7 @@ export function DashboardPage() {
           <span>{tenant?.company_name ?? "Northstar Inventory"}</span>
         </div>
         <nav className="insights-side-links" aria-label="Home workspace">
-          {homeTabs.map((item) => (
+          {visibleHomeTabs.map((item) => (
             <button
               key={item.key}
               type="button"
@@ -465,6 +502,34 @@ export function DashboardPage() {
   if (homeTab === "getting-started") {
     return dashboardShell(
       <div className="detail-grid">
+        {shouldShowGetStartedReminder ? (
+          <DashboardWidget title="Workspace setup reminder" className="widget-span-2">
+            <div className="get-started-dashboard-banner">
+              <div className="get-started-dashboard-banner-copy">
+                <p className="eyebrow">Home → Get Started</p>
+                <h3>
+                  {onboardingStatus === ONBOARDING_STATUS_SKIPPED
+                    ? "Resume onboarding when you're ready."
+                    : "Finish onboarding before you start transacting."}
+                </h3>
+                <p>
+                  {onboardingStatus === ONBOARDING_STATUS_SKIPPED
+                    ? "Your team can keep working, but completing setup will finalize your workspace profile and remove this reminder."
+                    : "Set up your workspace profile and operating defaults first so the rest of Northstar starts from a clean baseline."}
+                </p>
+              </div>
+              <div className="get-started-dashboard-banner-actions">
+                <Link className="button button-primary" to={onboardingStatus === ONBOARDING_STATUS_SKIPPED ? "/onboarding?resume=1" : "/onboarding"}>
+                  {onboardingStatus === ONBOARDING_STATUS_SKIPPED ? "Resume onboarding" : "Open onboarding"}
+                </Link>
+                <Link className="button button-ghost" to={getStartedSecondaryLink.to}>
+                  {getStartedSecondaryLink.label}
+                </Link>
+              </div>
+            </div>
+          </DashboardWidget>
+        ) : null}
+
         <DashboardWidget title="Getting Started Checklist" className="widget-span-2">
           <div className="checklist-grid">
             {(user?.role === "SUPER_ADMIN" ? superAdminChecklist : tenantChecklist).map((item, index) => (
@@ -501,7 +566,9 @@ export function DashboardPage() {
           <p className="surface-note">
             {user?.role === "SUPER_ADMIN"
               ? "Review plan usage and recent tenant activity before making governance changes."
-              : "Complete setup, then create or import items so the rest of the dashboard starts filling with live operational data."}
+              : shouldShowGetStartedReminder
+                ? "Finish setup first, then create or import items so the rest of the dashboard starts filling with live operational data."
+                : "Your setup is complete. Start with items, warehouses, vendors, and customers to light up the rest of the dashboard."}
           </p>
         </DashboardWidget>
       </div>,

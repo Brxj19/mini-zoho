@@ -5,6 +5,7 @@ import { BackButton } from "../components/BackButton";
 import { MetricCard } from "../components/MetricCard";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge } from "../components/StatusBadge";
+import { ProgressSteps } from "../components/Timeline";
 import api from "../lib/api";
 import { formatNumber } from "../lib/format";
 
@@ -351,12 +352,17 @@ export function StockTransferFormPage() {
                 <p>Every transfer starts as draft, then moves to in transit, and is only completed after stock is posted at both ends.</p>
               </div>
               <div className="timeline-strip">
-                {["DRAFT", "IN_TRANSIT", "COMPLETED"].map((step) => (
-                  <div className={`timeline-step ${recordStatus === step || (!recordStatus && step === "DRAFT") ? "timeline-step-active" : ""}`} key={step}>
-                    <span className="timeline-dot" />
-                    <strong>{step.replaceAll("_", " ")}</strong>
-                  </div>
-                ))}
+                <ProgressSteps
+                  items={["DRAFT", "IN_TRANSIT", "COMPLETED"].map((step, index, steps) => {
+                    const normalizedStatus = recordStatus || "DRAFT";
+                    const activeIndex = steps.indexOf(normalizedStatus);
+                    return {
+                      key: step,
+                      label: step.replaceAll("_", " "),
+                      state: step === normalizedStatus ? "active" : index < activeIndex ? "complete" : "pending",
+                    };
+                  })}
+                />
               </div>
             </section>
 

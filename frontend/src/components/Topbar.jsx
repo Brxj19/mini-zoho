@@ -154,7 +154,7 @@ export function Topbar() {
         <button className="icon-button mobile-only" type="button" onClick={openMobileSidebar}>
           <Icon name="menu" size={18} />
         </button>
-        <button className="topbar-brand-lockup" type="button" onClick={() => navigate("/")}>
+        <button className="topbar-brand-lockup" type="button" onClick={() => navigate("/dashboard")}>
           <span className="brand-symbol topbar-brand-symbol">N</span>
           <span className="topbar-brand-copy">
             <strong>Northstar Inventory</strong>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.enums import OtpChannelEnum, OtpPurposeEnum
 
@@ -31,7 +31,15 @@ class ChangePasswordRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(min_length=3, max_length=255)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if "@" not in normalized:
+            raise ValueError("Enter a valid email address.")
+        return normalized
 
 
 class ResetPasswordPlaceholderRequest(BaseModel):
@@ -42,13 +50,23 @@ class ResetPasswordPlaceholderRequest(BaseModel):
 class RegisterRequest(BaseModel):
     company_name: str = Field(min_length=2, max_length=255)
     name: str = Field(min_length=2, max_length=255)
-    email: EmailStr
+    email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=8, max_length=128)
-    contact_email: EmailStr | None = None
+    contact_email: str | None = Field(default=None, min_length=3, max_length=255)
     phone: str | None = Field(default=None, max_length=32)
     address: str | None = None
     gst_number: str | None = Field(default=None, max_length=64)
     business_type: str | None = Field(default=None, max_length=128)
+
+    @field_validator("email", "contact_email")
+    @classmethod
+    def normalize_optional_email(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if "@" not in normalized:
+            raise ValueError("Enter a valid email address.")
+        return normalized
 
 
 class AuthSessionResponse(BaseModel):

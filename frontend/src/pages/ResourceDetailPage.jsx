@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { Tabs } from "../components/Tabs";
+import { ProgressSteps } from "../components/Timeline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../lib/api";
 import { formatCurrency, formatDate, formatDateTime, titleCase } from "../lib/format";
@@ -772,17 +773,18 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
               </div>
 
               <div className="timeline-strip">
-                {workflow.steps.map((step) => (
-                  <div className={`timeline-step timeline-step-${workflowStepState(step, state.record.status, workflow.steps)}`} key={step}>
-                    <span className="timeline-dot" />
-                    <strong>{step.replaceAll("_", " ")}</strong>
-                  </div>
-                ))}
-                {state.record.status === "CANCELLED" ? (
-                  <div className="timeline-terminal">
-                    <StatusBadge value="CANCELLED" />
-                  </div>
-                ) : null}
+                <ProgressSteps
+                  items={workflow.steps.map((step) => ({
+                    key: step,
+                    label: step.replaceAll("_", " "),
+                    state: workflowStepState(step, state.record.status, workflow.steps),
+                  }))}
+                  terminal={
+                    state.record.status === "CANCELLED"
+                      ? { badge: <StatusBadge value="CANCELLED" /> }
+                      : null
+                  }
+                />
               </div>
 
               {workflowActions.length ? (

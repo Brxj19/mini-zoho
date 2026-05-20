@@ -1,31 +1,77 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
-import { LottieAnimation } from "../components/common/LottieAnimation";
+import { AuthShowcase } from "../components/AuthShowcase";
+import { BackButton } from "../components/BackButton";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../contexts/AuthContext";
+import { ONBOARDING_STATUS_PENDING, getOnboardingStatus, setOnboardingStatus } from "../lib/onboarding";
+
+const passwordChecks = [
+  { id: "length", label: "At least 8 characters" },
+  { id: "letter", label: "Contains a letter" },
+  { id: "number", label: "Contains a number" },
+];
+
+function evaluatePassword(password) {
+  return {
+    length: password.length >= 8,
+    letter: /[A-Za-z]/.test(password),
+    number: /\d/.test(password),
+  };
+}
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register, authError, clearAuthError, isAuthenticated, isLoading } = useAuth();
+  const { register, authError, clearAuthError, isAuthenticated, isLoading, tenant, user } = useAuth();
   const [form, setForm] = useState({
     company_name: "",
     name: "",
     email: "",
     password: "",
-    phone: "",
-    business_type: "",
-    country: "India",
+    confirmPassword: "",
     agree_to_terms: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState("");
+  const [localError, setLocalError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const passwordState = useMemo(() => evaluatePassword(form.password), [form.password]);
+  const passwordsMatch = form.confirmPassword.length > 0 && form.password === form.confirmPassword;
+  const companyHelper =
+    focusedField === "company_name"
+      ? "Use the organization name your team will recognize in the workspace."
+      : "\u00A0";
+  const nameHelper =
+    focusedField === "name"
+      ? "This becomes the primary admin name for the new workspace."
+      : "\u00A0";
+  const emailHelper =
+    focusedField === "email"
+      ? "We’ll use this email for sign in, workspace notices, and onboarding communication."
+      : "\u00A0";
+  const passwordHelper =
+    focusedField === "password" || form.password
+      ? "Use at least 8 characters with letters and numbers for a stronger workspace password."
+      : "\u00A0";
+  const confirmPasswordHelper =
+    focusedField === "confirmPassword" || form.confirmPassword
+      ? passwordsMatch
+        ? "Passwords match."
+        : "Re-enter the same password to confirm your workspace login."
+      : "\u00A0";
+
   if (!isLoading && isAuthenticated) {
-    return <Navigate to="/" replace />;
+    const tenantId = tenant?.id;
+    const shouldGoToOnboarding = tenantId && user?.role !== "SUPER_ADMIN" && getOnboardingStatus(tenantId) === ONBOARDING_STATUS_PENDING;
+    return <Navigate to={shouldGoToOnboarding ? "/onboarding" : "/dashboard"} replace />;
   }
 
   const updateField = (field) => (event) => {
     clearAuthError();
+    setLocalError("");
     setForm((current) => ({
       ...current,
       [field]: event.target.type === "checkbox" ? event.target.checked : event.target.value,
@@ -34,168 +80,193 @@ export function RegisterPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.agree_to_terms) {
-      clearAuthError();
+    clearAuthError();
+    setLocalError("");
+
+    if (form.password !== form.confirmPassword) {
+      setLocalError("Passwords do not match.");
       return;
     }
+
+    const isPasswordValid = Object.values(passwordState).every(Boolean);
+    if (!isPasswordValid) {
+      setLocalError("Create a stronger password before continuing.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await register({
-        ...form,
-        phone: form.phone || null,
-        business_type: form.business_type || null,
+      const session = await register({
+        company_name: form.company_name,
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        agree_to_terms: form.agree_to_terms,
+        phone: null,
+        business_type: null,
         address: null,
         contact_email: form.email,
       });
+      if (session?.tenant?.id) {
+        setOnboardingStatus(session.tenant.id, ONBOARDING_STATUS_PENDING);
+      }
       navigate("/onboarding", { replace: true });
     } catch {
-      // Error state is already handled in the auth context.
+      // The auth provider owns the request error message state.
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="auth-screen">
-      <section className="auth-panel auth-panel-wide">
-        <div className="auth-copy auth-copy-rich">
-          <div className="auth-brand">
-            <span className="auth-brand-mark">
-              <Icon name="sparkles" size={16} />
-            </span>
-            <span>Northstar Inventory</span>
-          </div>
-          <p className="eyebrow">Create Organization</p>
-          <LottieAnimation
-            animationKey="onboarding"
-            size={360}
-            className="lottie-animation--large"
-            ariaLabel="Organization signup illustration"
-            decorative={false}
-          />
-          <h1>Launch a fresh inventory workspace with your first tenant admin already in place.</h1>
-          <p>
-            Registration creates your tenant and signs you in immediately so you can finish workspace setup,
-            define warehouses, and start moving products without a second setup tool.
-          </p>
+    <div className="public-screen auth-split-screen">
+      <section className="auth-split-shell auth-split-shell-signup">
+        <AuthShowcase
+          eyebrow="Start your workspace"
+          title="Create your inventory workspace in minutes."
+          description="Set up your organization once, then move into onboarding, stock setup, vendors, customers, and daily operations without clutter."
+          secondaryCtaLabel="Sign in"
+          secondaryCtaTo="/login"
+          badge="Tenant-ready setup"
+        />
 
-          <div className="auth-feature-stack">
-            <div className="auth-highlight-card">
-              <h3>Included from day one</h3>
-              <ul className="auth-bullet-list">
-                <li>Multi-warehouse stock visibility</li>
-                <li>Purchasing, sales, and transfer workflows</li>
-                <li>Tenant-safe roles, reports, and notifications</li>
-              </ul>
-            </div>
-            <div className="auth-highlight-card">
-              <h3>Best fit</h3>
-              <p>Retail, wholesale, distribution, and growing operations teams that need an admin-first SaaS setup.</p>
+        <form className="auth-split-card auth-split-card-signup" onSubmit={handleSubmit}>
+          <div className="auth-split-card-top">
+            <BackButton fallbackTo="/" label="Back to home" />
+            <div className="auth-split-card-top-links">
+              <span className="auth-split-domain">northstar.local/trial</span>
+              <Link to="/login" className="auth-showcase-link">
+                Sign in
+              </Link>
             </div>
           </div>
 
-          <div className="auth-links">
-            <span>Already have an account?</span>
-            <Link to="/login">Sign in</Link>
-          </div>
-        </div>
-
-        <form className="auth-form auth-card auth-card-wide" onSubmit={handleSubmit}>
-          <div className="auth-card-header">
-            <p className="eyebrow">Workspace signup</p>
-            <h2>Create your organization</h2>
-            <p>We’ll create your tenant and make you the first admin.</p>
-          </div>
-
-          <div className="form-section">
-            <div className="form-section-heading">
-              <h3>Company and admin details</h3>
-              <p>These values create your initial tenant and user account.</p>
+          <div className="auth-modern-card-header">
+            <div>
+              <p className="eyebrow">Free trial</p>
+              <h2>Create account</h2>
             </div>
+          </div>
 
-            <div className="form-grid">
-              <label>
-                Company name
-                <input type="text" value={form.company_name} onChange={updateField("company_name")} required />
-              </label>
+          <div className="auth-modern-form-grid">
+            <label className="auth-modern-field auth-modern-field-full">
+              <span>Company name</span>
+              <input
+                type="text"
+                value={form.company_name}
+                onChange={updateField("company_name")}
+                onFocus={() => setFocusedField("company_name")}
+                onBlur={() => setFocusedField("")}
+                required
+                placeholder="Northstar Retail"
+              />
+              <small className="auth-modern-helper">{companyHelper}</small>
+            </label>
 
-              <label>
-                Admin name
-                <input type="text" value={form.name} onChange={updateField("name")} required />
-              </label>
+            <label className="auth-modern-field">
+              <span>Admin name</span>
+              <input
+                type="text"
+                value={form.name}
+                onChange={updateField("name")}
+                onFocus={() => setFocusedField("name")}
+                onBlur={() => setFocusedField("")}
+                required
+                placeholder="Aakash Sharma"
+              />
+              <small className="auth-modern-helper">{nameHelper}</small>
+            </label>
 
-              <label>
-                Work email
-                <input type="email" value={form.email} onChange={updateField("email")} required />
-              </label>
+            <label className="auth-modern-field">
+              <span>Work email</span>
+              <input
+                type="email"
+                value={form.email}
+                onChange={updateField("email")}
+                onFocus={() => setFocusedField("email")}
+                onBlur={() => setFocusedField("")}
+                required
+                autoComplete="email"
+                placeholder="you@company.com"
+              />
+              <small className="auth-modern-helper">{emailHelper}</small>
+            </label>
 
-              <label>
-                Password
+            <label className="auth-modern-field">
+              <span>Password</span>
+              <div className="auth-modern-password-field">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={updateField("password")}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField("")}
                   minLength={8}
                   required
+                  autoComplete="new-password"
+                  placeholder="Create password"
                 />
-              </label>
+                <button type="button" className="auth-modern-text-button" onClick={() => setShowPassword((value) => !value)}>
+                  <Icon name={showPassword ? "eyeOff" : "eye"} size={15} />
+                </button>
+              </div>
+              <small className="auth-modern-helper">{passwordHelper}</small>
+            </label>
 
-              <label>
-                Phone
-                <input type="text" value={form.phone} onChange={updateField("phone")} placeholder="+91 98765 43210" />
-              </label>
-
-              <label>
-                Country
-                <select value={form.country} onChange={updateField("country")}>
-                  <option value="India">India</option>
-                  <option value="United Arab Emirates">United Arab Emirates</option>
-                  <option value="Singapore">Singapore</option>
-                  <option value="United States">United States</option>
-                </select>
-              </label>
-
-              <label className="field-span-full">
-                Business type
+            <label className="auth-modern-field">
+              <span>Confirm password</span>
+              <div className="auth-modern-password-field">
                 <input
-                  type="text"
-                  value={form.business_type}
-                  onChange={updateField("business_type")}
-                  placeholder="Retail, distribution, manufacturing..."
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={form.confirmPassword}
+                  onChange={updateField("confirmPassword")}
+                  onFocus={() => setFocusedField("confirmPassword")}
+                  onBlur={() => setFocusedField("")}
+                  minLength={8}
+                  required
+                  autoComplete="new-password"
+                  placeholder="Confirm password"
                 />
-              </label>
-            </div>
-          </div>
-
-          <div className="form-section">
-            <div className="form-section-heading">
-              <h3>Before you continue</h3>
-              <p>You’ll be signed in immediately and taken to organization setup next.</p>
-            </div>
-
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={form.agree_to_terms}
-                onChange={updateField("agree_to_terms")}
-                required
-              />
-              <span>I agree to continue with the workspace creation and initial admin setup.</span>
+                <button type="button" className="auth-modern-text-button" onClick={() => setShowConfirmPassword((value) => !value)}>
+                  <Icon name={showConfirmPassword ? "eyeOff" : "eye"} size={15} />
+                </button>
+              </div>
+              <small className={`auth-modern-helper ${passwordsMatch && form.confirmPassword ? "is-success" : ""}`}>
+                {confirmPasswordHelper}
+              </small>
             </label>
           </div>
 
+          <div className="auth-modern-password-checks">
+            {passwordChecks.map((item) => (
+              <div className={`auth-modern-password-check ${passwordState[item.id] ? "is-complete" : ""}`} key={item.id}>
+                <Icon name={passwordState[item.id] ? "shield" : "sparkles"} size={14} />
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <label className="checkbox-row auth-modern-checkbox">
+            <input
+              type="checkbox"
+              checked={form.agree_to_terms}
+              onChange={updateField("agree_to_terms")}
+              required
+            />
+            <span>I agree to the terms, privacy policy, and workspace provisioning rules.</span>
+          </label>
+
+          {localError ? <p className="form-error">{localError}</p> : null}
           {authError ? <p className="form-error">{authError}</p> : null}
 
-          <div className="auth-card-footer">
-            <button className="primary-button" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating organization..." : "Create organization"}
-            </button>
-          </div>
+          <button className="primary-button auth-modern-submit" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating account..." : "Create workspace"}
+          </button>
 
-          <div className="auth-links auth-links-centered">
-            <span>Already have access?</span>
-            <Link to="/login">Go to sign in</Link>
-          </div>
+          <p className="auth-modern-footer">
+            Already have access?
+            <Link to="/login">Sign in</Link>
+          </p>
         </form>
       </section>
     </div>
