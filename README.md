@@ -241,6 +241,15 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+Import the connected CSV seed archive:
+
+```bash
+cd backend
+python -m app.cli.seed_from_csv --zip-path ../mini_zoho_connected_seed_csvs.zip --truncate-existing
+```
+
+The importer preserves explicit IDs, hashes `users.csv` passwords from `seed_password`, validates connected foreign keys, and checks `inventory_balance_audit.csv` after import. See [docs/CSV_SEED_IMPORT.md](docs/CSV_SEED_IMPORT.md) for the full workflow.
+
 If you run the backend directly from your host machine instead of Docker, make sure `DATABASE_URL` uses a host your machine can reach, such as `127.0.0.1` or `localhost`. The default Compose-oriented value uses `mysql` as the hostname because that name resolves inside the Docker network.
 If you already created the virtualenv before dependency updates, rerun `pip install -r requirements.txt` so the pinned backend hashing dependencies are refreshed.
 
