@@ -32,15 +32,28 @@ import { InventoryDetailPage } from "../pages/InventoryDetailPage";
 import { InventoryListPage } from "../pages/InventoryListPage";
 import { UserFormPage } from "../pages/UserFormPage";
 import { TenantFormPage } from "../pages/TenantFormPage";
+import { useAuth } from "../contexts/AuthContext";
 
 function withHandle(title, section, breadcrumb = title) {
   return { title, section, breadcrumb };
 }
 
+function HomeEntry() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return null;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <LandingPage />;
+}
+
 export const router = createBrowserRouter([
   {
+    path: "/",
+    element: <HomeEntry />,
+  },
+  {
     path: "/landing",
-    element: <LandingPage />,
+    element: <Navigate to="/" replace />,
   },
   {
     path: "/login",
@@ -75,7 +88,8 @@ export const router = createBrowserRouter([
     ),
     handle: withHandle("Home", "Main", "Home"),
     children: [
-      { index: true, element: <DashboardPage />, handle: withHandle("Dashboard", "Main", "Dashboard") },
+      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { path: "dashboard", element: <DashboardPage />, handle: withHandle("Dashboard", "Main", "Dashboard") },
       { path: "notifications", element: <NotificationsPage />, handle: withHandle("Notifications", "Main") },
 
       { path: "categories", element: <ResourceListPage resourceKey="categories" />, handle: withHandle("Categories", "Inventory") },

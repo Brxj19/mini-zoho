@@ -1,4 +1,4 @@
-export const homeNavigation = { label: "Home", path: "/", icon: "home" };
+export const homeNavigation = { label: "Home", path: "/dashboard", icon: "home" };
 
 const tenantNavigationGroups = [
   {

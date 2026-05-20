@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
+import { AuthShowcase } from "../components/AuthShowcase";
+import { BackButton } from "../components/BackButton";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -10,68 +12,71 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function getPostLoginDestination(session) {
     const tenantId = session?.tenant?.id;
     const role = session?.user?.role;
     if (!tenantId || role === "SUPER_ADMIN") {
-      return "/";
+      return "/dashboard";
     }
 
     const onboardingComplete = window.localStorage.getItem(`northstar.inventory.onboarding.complete.${tenantId}`);
-    return onboardingComplete === "true" ? "/" : "/onboarding";
+    return onboardingComplete === "true" ? "/dashboard" : "/onboarding";
   }
 
   if (!isLoading && isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
     clearAuthError();
+
     try {
       const session = await login({ email, password });
       navigate(getPostLoginDestination(session), { replace: true });
     } catch {
-      // Error state is already handled in the auth context.
+      // The auth provider owns the error message state.
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="auth-screen auth-screen-compact">
-      <section className="auth-panel auth-panel-compact">
-        <div className="auth-copy auth-copy-compact">
-          <div className="auth-brand">
-            <span className="auth-brand-mark">
-              <Icon name="sparkles" size={16} />
-            </span>
-            <span>Northstar Inventory</span>
-          </div>
-          <p className="eyebrow">Inventory operations platform</p>
-          <h1>Sign in to manage stock, orders, and warehouses.</h1>
-          <p>Secure access for teams that need fast inventory control and tenant-safe workflow management.</p>
-          <div className="auth-hero-actions">
-            <Link to="/register" className="secondary-button">
-              Start free trial
-            </Link>
-            <Link to="/landing" className="ghost-button">
-              Learn more
-            </Link>
-          </div>
-        </div>
+    <div className="public-screen auth-split-screen">
+      <section className="auth-split-shell">
+        <AuthShowcase
+          eyebrow="Operations workspace"
+          title="Sign in and keep inventory work moving."
+          description="Get back to stock visibility, warehouse movement, purchasing, and sales execution from one clean control surface."
+          secondaryCtaLabel="Create account"
+          secondaryCtaTo="/register"
+        />
 
-        <form className="auth-form auth-card auth-card-compact" onSubmit={handleSubmit}>
-          <div className="auth-card-header">
-            <p className="eyebrow">Welcome back</p>
-            <h2>Sign in</h2>
+        <form className="auth-split-card" onSubmit={handleSubmit}>
+          <div className="auth-split-card-top">
+            <BackButton fallbackTo="/" label="Back to home" />
+            <div className="auth-split-card-top-links">
+              <span className="auth-split-domain">northstar.local/workspace</span>
+              <Link to="/register" className="auth-showcase-link">
+                Create account
+              </Link>
+            </div>
           </div>
 
-          <label>
-            Work email
+          <div className="auth-modern-card-header">
+            <div>
+              <p className="eyebrow">Welcome back</p>
+              <h2>Sign in</h2>
+            </div>
+          </div>
+
+          <label className="auth-modern-field">
+            <span>Work email</span>
             <input
               type="email"
               value={email}
@@ -79,26 +84,40 @@ export function LoginPage() {
                 clearAuthError();
                 setEmail(event.target.value);
               }}
+              onFocus={() => setFocusedField("email")}
+              onBlur={() => setFocusedField("")}
               required
+              autoComplete="email"
               placeholder="you@company.com"
             />
+            {focusedField === "email" ? <small className="auth-modern-helper">Use the workspace email assigned to you or your tenant admin account.</small> : null}
           </label>
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => {
-                clearAuthError();
-                setPassword(event.target.value);
-              }}
-              required
-              placeholder="Enter password"
-            />
+          <label className="auth-modern-field">
+            <span>Password</span>
+            <div className="auth-modern-password-field">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => {
+                  clearAuthError();
+                  setPassword(event.target.value);
+                }}
+                onFocus={() => setFocusedField("password")}
+                onBlur={() => setFocusedField("")}
+                required
+                autoComplete="current-password"
+                placeholder="Enter password"
+              />
+              <button type="button" className="auth-modern-text-button" onClick={() => setShowPassword((value) => !value)}>
+                <Icon name={showPassword ? "eyeOff" : "eye"} size={15} />
+                <span>{showPassword ? "Hide" : "Show"}</span>
+              </button>
+            </div>
+            {focusedField === "password" ? <small className="auth-modern-helper">Passwords are case-sensitive. Use the one configured for your workspace account.</small> : null}
           </label>
 
-          <div className="auth-form-meta">
+          <div className="auth-modern-form-row">
             <label className="checkbox-row">
               <input
                 type="checkbox"
@@ -107,19 +126,21 @@ export function LoginPage() {
               />
               <span>Remember me</span>
             </label>
-            <Link to="/forgot-password">Forgot password?</Link>
+            <Link to="/forgot-password" className="auth-modern-inline-link">
+              Forgot password?
+            </Link>
           </div>
 
           {authError ? <p className="form-error">{authError}</p> : null}
 
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
+          <button className="primary-button auth-modern-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
 
-          <div className="auth-links auth-links-centered">
-            <span>New to Northstar?</span>
-            <Link to="/register">Create your organization</Link>
-          </div>
+          <p className="auth-modern-footer">
+            New to Northstar?
+            <Link to="/register">Start free trial</Link>
+          </p>
         </form>
       </section>
     </div>

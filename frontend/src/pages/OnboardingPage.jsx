@@ -70,7 +70,7 @@ export function OnboardingPage() {
   }
 
   if (!isLoading && (!tenant || user?.role === "SUPER_ADMIN")) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   function updateField(field, value) {
@@ -107,7 +107,7 @@ export function OnboardingPage() {
       await refreshProfile();
 
       setState({ saving: false, error: "", success: "Workspace details saved successfully." });
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (error) {
       setState({
         saving: false,
@@ -121,7 +121,7 @@ export function OnboardingPage() {
     if (completionKey) {
       window.localStorage.setItem(completionKey, "true");
     }
-    navigate("/", { replace: true });
+    navigate("/dashboard", { replace: true });
   }
 
   return (
