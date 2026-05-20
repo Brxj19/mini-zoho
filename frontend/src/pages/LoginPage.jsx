@@ -16,6 +16,12 @@ export function LoginPage() {
   const [focusedField, setFocusedField] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const emailHelper = focusedField === "email" ? "Use the workspace email assigned to you or your tenant admin account." : "\u00A0";
+  const passwordHelper =
+    focusedField === "password"
+      ? "Passwords are case-sensitive. Use the one configured for your workspace account."
+      : "\u00A0";
+
   function getPostLoginDestination(session) {
     const tenantId = session?.tenant?.id;
     const role = session?.user?.role;
@@ -90,7 +96,7 @@ export function LoginPage() {
               autoComplete="email"
               placeholder="you@company.com"
             />
-            {focusedField === "email" ? <small className="auth-modern-helper">Use the workspace email assigned to you or your tenant admin account.</small> : null}
+            <small className="auth-modern-helper">{emailHelper}</small>
           </label>
 
           <label className="auth-modern-field">
@@ -111,10 +117,9 @@ export function LoginPage() {
               />
               <button type="button" className="auth-modern-text-button" onClick={() => setShowPassword((value) => !value)}>
                 <Icon name={showPassword ? "eyeOff" : "eye"} size={15} />
-                <span>{showPassword ? "Hide" : "Show"}</span>
               </button>
             </div>
-            {focusedField === "password" ? <small className="auth-modern-helper">Passwords are case-sensitive. Use the one configured for your workspace account.</small> : null}
+            <small className="auth-modern-helper">{passwordHelper}</small>
           </label>
 
           <div className="auth-modern-form-row">

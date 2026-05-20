@@ -87,7 +87,6 @@ export const router = createBrowserRouter([
     ),
     handle: withHandle("Home", "Main", "Home"),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "dashboard", element: <DashboardPage />, handle: withHandle("Dashboard", "Main", "Dashboard") },
       { path: "notifications", element: <NotificationsPage />, handle: withHandle("Notifications", "Main") },
 

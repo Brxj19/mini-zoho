@@ -1707,14 +1707,17 @@ a {
 
 .marketing-stage {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   display: grid;
   justify-items: center;
   gap: 26px;
+  width: calc(100% + 44px);
   min-height: 760px;
+  margin-left: -22px;
+  margin-right: -22px;
   padding: 112px 48px 42px;
-  border-radius: 28px;
-  border: 1px solid rgba(220, 227, 236, 0.96);
+  border-radius: 0;
+  border: 0;
   background:
     radial-gradient(circle, rgba(192, 199, 210, 0.18) 1px, transparent 1.8px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 249, 252, 0.98));
@@ -2271,6 +2274,7 @@ a {
 .auth-modern-field-full {
   display: grid;
   gap: 8px;
+  align-content: start;
   font-size: 13px;
   font-weight: 600;
 }
@@ -2307,11 +2311,13 @@ a {
   top: 50%;
   right: 12px;
   transform: translateY(-50%);
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
   border: 0;
   background: transparent;
   color: #4f46e5;
-  font-size: 12px;
-  font-weight: 700;
   cursor: pointer;
 }
 
@@ -2767,6 +2773,8 @@ a {
 }
 
 .auth-modern-helper {
+  display: block;
+  min-height: 18px;
   margin-top: -2px;
   color: #667085;
   font-size: 12px;
@@ -2865,6 +2873,10 @@ a {
   .auth-modern-card {
     padding: 18px;
     border-radius: 24px;
+  }
+
+  .marketing-stage {
+    border-radius: 0;
   }
 
   .marketing-shell {

@@ -39,6 +39,28 @@ export function RegisterPage() {
 
   const passwordState = useMemo(() => evaluatePassword(form.password), [form.password]);
   const passwordsMatch = form.confirmPassword.length > 0 && form.password === form.confirmPassword;
+  const companyHelper =
+    focusedField === "company_name"
+      ? "Use the organization name your team will recognize in the workspace."
+      : "\u00A0";
+  const nameHelper =
+    focusedField === "name"
+      ? "This becomes the primary admin name for the new workspace."
+      : "\u00A0";
+  const emailHelper =
+    focusedField === "email"
+      ? "We’ll use this email for sign in, workspace notices, and onboarding communication."
+      : "\u00A0";
+  const passwordHelper =
+    focusedField === "password" || form.password
+      ? "Use at least 8 characters with letters and numbers for a stronger workspace password."
+      : "\u00A0";
+  const confirmPasswordHelper =
+    focusedField === "confirmPassword" || form.confirmPassword
+      ? passwordsMatch
+        ? "Passwords match."
+        : "Re-enter the same password to confirm your workspace login."
+      : "\u00A0";
 
   if (!isLoading && isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -132,7 +154,7 @@ export function RegisterPage() {
                 required
                 placeholder="Northstar Retail"
               />
-              {focusedField === "company_name" ? <small className="auth-modern-helper">Use the organization name your team will recognize in the workspace.</small> : null}
+              <small className="auth-modern-helper">{companyHelper}</small>
             </label>
 
             <label className="auth-modern-field">
@@ -146,7 +168,7 @@ export function RegisterPage() {
                 required
                 placeholder="Aakash Sharma"
               />
-              {focusedField === "name" ? <small className="auth-modern-helper">This becomes the primary admin name for the new workspace.</small> : null}
+              <small className="auth-modern-helper">{nameHelper}</small>
             </label>
 
             <label className="auth-modern-field">
@@ -161,7 +183,7 @@ export function RegisterPage() {
                 autoComplete="email"
                 placeholder="you@company.com"
               />
-              {focusedField === "email" ? <small className="auth-modern-helper">We’ll use this email for sign in, workspace notices, and onboarding communication.</small> : null}
+              <small className="auth-modern-helper">{emailHelper}</small>
             </label>
 
             <label className="auth-modern-field">
@@ -180,14 +202,9 @@ export function RegisterPage() {
                 />
                 <button type="button" className="auth-modern-text-button" onClick={() => setShowPassword((value) => !value)}>
                   <Icon name={showPassword ? "eyeOff" : "eye"} size={15} />
-                  <span>{showPassword ? "Hide" : "Show"}</span>
                 </button>
               </div>
-              {(focusedField === "password" || form.password) ? (
-                <small className="auth-modern-helper">
-                  Use at least 8 characters with letters and numbers for a stronger workspace password.
-                </small>
-              ) : null}
+              <small className="auth-modern-helper">{passwordHelper}</small>
             </label>
 
             <label className="auth-modern-field">
@@ -206,14 +223,11 @@ export function RegisterPage() {
                 />
                 <button type="button" className="auth-modern-text-button" onClick={() => setShowConfirmPassword((value) => !value)}>
                   <Icon name={showConfirmPassword ? "eyeOff" : "eye"} size={15} />
-                  <span>{showConfirmPassword ? "Hide" : "Show"}</span>
                 </button>
               </div>
-              {(focusedField === "confirmPassword" || form.confirmPassword) ? (
-                <small className={`auth-modern-helper ${passwordsMatch ? "is-success" : ""}`}>
-                  {passwordsMatch ? "Passwords match." : "Re-enter the same password to confirm your workspace login."}
-                </small>
-              ) : null}
+              <small className={`auth-modern-helper ${passwordsMatch && form.confirmPassword ? "is-success" : ""}`}>
+                {confirmPasswordHelper}
+              </small>
             </label>
           </div>
 
