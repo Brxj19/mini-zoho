@@ -5,6 +5,7 @@ import { AuthShowcase } from "../components/AuthShowcase";
 import { BackButton } from "../components/BackButton";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../contexts/AuthContext";
+import { ONBOARDING_STATUS_PENDING, getOnboardingStatus, setOnboardingStatus } from "../lib/onboarding";
 
 const passwordChecks = [
   { id: "length", label: "At least 8 characters" },
@@ -22,7 +23,7 @@ function evaluatePassword(password) {
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register, authError, clearAuthError, isAuthenticated, isLoading } = useAuth();
+  const { register, authError, clearAuthError, isAuthenticated, isLoading, tenant, user } = useAuth();
   const [form, setForm] = useState({
     company_name: "",
     name: "",
@@ -63,7 +64,9 @@ export function RegisterPage() {
       : "\u00A0";
 
   if (!isLoading && isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    const tenantId = tenant?.id;
+    const shouldGoToOnboarding = tenantId && user?.role !== "SUPER_ADMIN" && getOnboardingStatus(tenantId) === ONBOARDING_STATUS_PENDING;
+    return <Navigate to={shouldGoToOnboarding ? "/onboarding" : "/dashboard"} replace />;
   }
 
   const updateField = (field) => (event) => {
@@ -93,7 +96,7 @@ export function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      await register({
+      const session = await register({
         company_name: form.company_name,
         name: form.name,
         email: form.email,
@@ -104,6 +107,9 @@ export function RegisterPage() {
         address: null,
         contact_email: form.email,
       });
+      if (session?.tenant?.id) {
+        setOnboardingStatus(session.tenant.id, ONBOARDING_STATUS_PENDING);
+      }
       navigate("/onboarding", { replace: true });
     } catch {
       // The auth provider owns the request error message state.

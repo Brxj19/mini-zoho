@@ -5,6 +5,7 @@ import { AuthShowcase } from "../components/AuthShowcase";
 import { BackButton } from "../components/BackButton";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../contexts/AuthContext";
+import { ONBOARDING_STATUS_PENDING, getOnboardingStatus } from "../lib/onboarding";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -29,8 +30,7 @@ export function LoginPage() {
       return "/dashboard";
     }
 
-    const onboardingComplete = window.localStorage.getItem(`northstar.inventory.onboarding.complete.${tenantId}`);
-    return onboardingComplete === "true" ? "/dashboard" : "/onboarding";
+    return getOnboardingStatus(tenantId) === ONBOARDING_STATUS_PENDING ? "/onboarding" : "/dashboard";
   }
 
   if (!isLoading && isAuthenticated) {
