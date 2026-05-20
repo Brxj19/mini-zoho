@@ -9,21 +9,19 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import resolve_tenant_scope
 from app.models.audit_log import AuditLog
 from app.models.customer import Customer
-from app.models.enums import InventoryTransactionTypeEnum, RecordStatusEnum, RoleEnum, SalesOrderStatusEnum
-from app.models.inventory_transaction import InventoryTransaction
+from app.models.enums import RecordStatusEnum, RoleEnum, SalesOrderStatusEnum
 from app.models.product import Product
 from app.models.sales_order import SalesOrder
 from app.models.sales_order_item import SalesOrderItem
 from app.models.user import User
 from app.models.warehouse import Warehouse
-from app.models.warehouse_stock import WarehouseStock
 from app.repositories.audit_log_repository import AuditLogRepository
-from app.repositories.inventory_repository import InventoryTransactionRepository, WarehouseStockRepository
 from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.sales_order_repository import SalesOrderItemRepository, SalesOrderRepository
 from app.repositories.tenant_repository import TenantRepository
 from app.services.governance_service import GovernanceService
+from app.services.inventory_engine import InventoryEngine
 from app.services.notification_service import NotificationService
 
 
@@ -33,14 +31,13 @@ class SalesOrderService:
         self.sales_order_repository = SalesOrderRepository(db)
         self.item_repository = SalesOrderItemRepository(db)
         self.product_repository = ProductRepository(db)
-        self.stock_repository = WarehouseStockRepository(db)
-        self.transaction_repository = InventoryTransactionRepository(db)
         self.audit_repository = AuditLogRepository(db)
         self.tenant_repository = TenantRepository(db)
         self.governance_service = GovernanceService(db)
         self.customer_repository = MasterDataRepository(db, Customer)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
         self.notification_service = NotificationService(db)
+        self.inventory_engine = InventoryEngine(db)
 
     def list_sales_orders(
         self,
@@ -467,65 +464,15 @@ class SalesOrderService:
         for item in items:
             product = self._get_active_product(tenant_id=tenant_id, product_id=item.product_id)
             warehouse = self._get_active_warehouse(tenant_id=tenant_id, warehouse_id=item.warehouse_id)
-            stock = self.stock_repository.get_for_update(tenant_id=tenant_id, product_id=product.id, warehouse_id=warehouse.id)
-            if stock is None or stock.available_quantity < item.quantity:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Insufficient available stock for product {product.sku} in warehouse {warehouse.code}.",
-                )
-            stock_old = self._stock_snapshot(stock)
-            self.stock_repository.update(
-                stock,
-                {
-                    "reserved_quantity": stock.reserved_quantity + item.quantity,
-                    "available_quantity": stock.available_quantity - item.quantity,
-                },
+            self.inventory_engine.reserve_for_sales_order(
+                current_user=current_user,
+                product=product,
+                warehouse=warehouse,
+                quantity=item.quantity,
+                sales_order_id=sales_order_id,
+                note=note,
+                request_meta=request_meta,
             )
-            self.transaction_repository.create(
-                InventoryTransaction(
-                    tenant_id=tenant_id,
-                    product_id=product.id,
-                    warehouse_id=warehouse.id,
-                    source_warehouse_id=None,
-                    destination_warehouse_id=None,
-                    transaction_type=InventoryTransactionTypeEnum.SALES_ORDER_RESERVE,
-                    quantity=item.quantity,
-                    reference_type="sales_order",
-                    reference_id=sales_order_id,
-                    note=note,
-                    created_by=current_user.id,
-                )
-            )
-            self.audit_repository.create(
-                AuditLog(
-                    tenant_id=tenant_id,
-                    user_id=current_user.id,
-                    action="inventory.sales_order_reserve",
-                    entity_type="warehouse_stock",
-                    entity_id=stock.id,
-                    old_value_json=stock_old,
-                    new_value_json={
-                        "quantity": stock.quantity,
-                        "reserved_quantity": stock.reserved_quantity,
-                        "available_quantity": stock.available_quantity,
-                        "product_id": product.id,
-                        "warehouse_id": warehouse.id,
-                        "sales_order_id": sales_order_id,
-                    },
-                    ip_address=request_meta.get("ip_address"),
-                    user_agent=request_meta.get("user_agent"),
-                )
-            )
-            reorder_level = stock.reorder_level if stock.reorder_level is not None else product.reorder_level
-            if stock.available_quantity <= reorder_level:
-                self.notification_service.notify_low_stock(
-                    tenant_id=tenant_id,
-                    product_name=product.name,
-                    sku=product.sku,
-                    warehouse_name=warehouse.name,
-                    available_quantity=stock.available_quantity,
-                    reorder_level=reorder_level,
-                )
 
     def _release_reserved_stock(
         self,
@@ -540,54 +487,14 @@ class SalesOrderService:
         for item in items:
             product = self._get_active_product(tenant_id=tenant_id, product_id=item.product_id)
             warehouse = self._get_active_warehouse(tenant_id=tenant_id, warehouse_id=item.warehouse_id)
-            stock = self.stock_repository.get_for_update(tenant_id=tenant_id, product_id=product.id, warehouse_id=warehouse.id)
-            if stock is None or stock.reserved_quantity < item.quantity:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Reserved stock mismatch for product {product.sku} in warehouse {warehouse.code}.",
-                )
-            stock_old = self._stock_snapshot(stock)
-            self.stock_repository.update(
-                stock,
-                {
-                    "reserved_quantity": stock.reserved_quantity - item.quantity,
-                    "available_quantity": stock.available_quantity + item.quantity,
-                },
-            )
-            self.transaction_repository.create(
-                InventoryTransaction(
-                    tenant_id=tenant_id,
-                    product_id=product.id,
-                    warehouse_id=warehouse.id,
-                    source_warehouse_id=None,
-                    destination_warehouse_id=None,
-                    transaction_type=InventoryTransactionTypeEnum.SALES_ORDER_CANCEL_RELEASE,
-                    quantity=item.quantity,
-                    reference_type="sales_order",
-                    reference_id=sales_order_id,
-                    note=note,
-                    created_by=current_user.id,
-                )
-            )
-            self.audit_repository.create(
-                AuditLog(
-                    tenant_id=tenant_id,
-                    user_id=current_user.id,
-                    action="inventory.sales_order_cancel_release",
-                    entity_type="warehouse_stock",
-                    entity_id=stock.id,
-                    old_value_json=stock_old,
-                    new_value_json={
-                        "quantity": stock.quantity,
-                        "reserved_quantity": stock.reserved_quantity,
-                        "available_quantity": stock.available_quantity,
-                        "product_id": product.id,
-                        "warehouse_id": warehouse.id,
-                        "sales_order_id": sales_order_id,
-                    },
-                    ip_address=request_meta.get("ip_address"),
-                    user_agent=request_meta.get("user_agent"),
-                )
+            self.inventory_engine.release_sales_order_reservation(
+                current_user=current_user,
+                product=product,
+                warehouse=warehouse,
+                quantity=item.quantity,
+                sales_order_id=sales_order_id,
+                note=note,
+                request_meta=request_meta,
             )
 
     def _deduct_reserved_stock(
@@ -603,54 +510,14 @@ class SalesOrderService:
         for item in items:
             product = self._get_active_product(tenant_id=tenant_id, product_id=item.product_id)
             warehouse = self._get_active_warehouse(tenant_id=tenant_id, warehouse_id=item.warehouse_id)
-            stock = self.stock_repository.get_for_update(tenant_id=tenant_id, product_id=product.id, warehouse_id=warehouse.id)
-            if stock is None or stock.reserved_quantity < item.quantity or stock.quantity < item.quantity:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Reserved stock is not available for product {product.sku} in warehouse {warehouse.code}.",
-                )
-            stock_old = self._stock_snapshot(stock)
-            self.stock_repository.update(
-                stock,
-                {
-                    "quantity": stock.quantity - item.quantity,
-                    "reserved_quantity": stock.reserved_quantity - item.quantity,
-                },
-            )
-            self.transaction_repository.create(
-                InventoryTransaction(
-                    tenant_id=tenant_id,
-                    product_id=product.id,
-                    warehouse_id=warehouse.id,
-                    source_warehouse_id=None,
-                    destination_warehouse_id=None,
-                    transaction_type=InventoryTransactionTypeEnum.SALES_ORDER_DEDUCT,
-                    quantity=item.quantity,
-                    reference_type="sales_order",
-                    reference_id=sales_order_id,
-                    note=note,
-                    created_by=current_user.id,
-                )
-            )
-            self.audit_repository.create(
-                AuditLog(
-                    tenant_id=tenant_id,
-                    user_id=current_user.id,
-                    action="inventory.sales_order_deduct",
-                    entity_type="warehouse_stock",
-                    entity_id=stock.id,
-                    old_value_json=stock_old,
-                    new_value_json={
-                        "quantity": stock.quantity,
-                        "reserved_quantity": stock.reserved_quantity,
-                        "available_quantity": stock.available_quantity,
-                        "product_id": product.id,
-                        "warehouse_id": warehouse.id,
-                        "sales_order_id": sales_order_id,
-                    },
-                    ip_address=request_meta.get("ip_address"),
-                    user_agent=request_meta.get("user_agent"),
-                )
+            self.inventory_engine.deduct_for_sales_order_delivery(
+                current_user=current_user,
+                product=product,
+                warehouse=warehouse,
+                quantity=item.quantity,
+                sales_order_id=sales_order_id,
+                note=note,
+                request_meta=request_meta,
             )
 
     def _sales_order_snapshot(self, sales_order: SalesOrder, items: list[SalesOrderItem]) -> dict[str, Any]:
@@ -720,14 +587,6 @@ class SalesOrderService:
         if warehouse.status != RecordStatusEnum.ACTIVE:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Archived warehouses cannot be used in sales orders.")
         return warehouse
-
-    def _stock_snapshot(self, stock: WarehouseStock) -> dict[str, int | None]:
-        return {
-            "quantity": stock.quantity,
-            "reserved_quantity": stock.reserved_quantity,
-            "available_quantity": stock.available_quantity,
-            "reorder_level": stock.reorder_level,
-        }
 
     def _quantize(self, value: Decimal | int | float) -> Decimal:
         return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)

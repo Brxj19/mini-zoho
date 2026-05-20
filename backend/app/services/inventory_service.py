@@ -7,7 +7,6 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import resolve_tenant_scope
-from app.models.audit_log import AuditLog
 from app.models.enums import InventorySerialStatusEnum, InventoryTransactionTypeEnum, RecordStatusEnum, RoleEnum
 from app.models.inventory_batch import InventoryBatch
 from app.models.inventory_serial import InventorySerial
@@ -16,11 +15,11 @@ from app.models.product import Product
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.models.warehouse_stock import WarehouseStock
-from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.inventory_repository import InventoryTransactionRepository, WarehouseStockRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.tracked_inventory_repository import InventoryBatchRepository, InventorySerialRepository
 from app.services.governance_service import GovernanceService
+from app.services.inventory_engine import InventoryEngine
 from app.services.notification_service import NotificationService
 
 
@@ -30,11 +29,11 @@ class InventoryService:
         self.product_repository = ProductRepository(db)
         self.stock_repository = WarehouseStockRepository(db)
         self.transaction_repository = InventoryTransactionRepository(db)
-        self.audit_repository = AuditLogRepository(db)
         self.batch_repository = InventoryBatchRepository(db)
         self.serial_repository = InventorySerialRepository(db)
         self.governance_service = GovernanceService(db)
         self.notification_service = NotificationService(db)
+        self.inventory_engine = InventoryEngine(db)
 
     def generate_barcode(self, *, current_user: User) -> str:
         tenant_id = current_user.tenant_id
@@ -61,48 +60,58 @@ class InventoryService:
         product = self._get_product_for_inventory(current_user=current_user, product_id=payload.product_id)
         warehouse = self._get_warehouse_for_inventory(current_user=current_user, warehouse_id=payload.warehouse_id, tenant_id=product.tenant_id)
         self._apply_tracking_for_stock_in(product=product, warehouse=warehouse, payload=payload)
-        return self._apply_stock_change(
+        transaction = self.inventory_engine.stock_in(
             current_user=current_user,
-            product_id=product.id,
-            warehouse_id=warehouse.id,
-            quantity_delta=payload.quantity,
-            transaction_type=InventoryTransactionTypeEnum.STOCK_IN,
+            product=product,
+            warehouse=warehouse,
+            quantity=payload.quantity,
             note=payload.note,
             reference_type=payload.reference_type,
             reference_id=payload.reference_id,
             request_meta=request_meta,
         )
+        self.db.commit()
+        return transaction
 
     def stock_out(self, *, current_user: User, payload, request_meta: dict[str, str | None]) -> InventoryTransaction:
         product = self._get_product_for_inventory(current_user=current_user, product_id=payload.product_id)
         warehouse = self._get_warehouse_for_inventory(current_user=current_user, warehouse_id=payload.warehouse_id, tenant_id=product.tenant_id)
         self._apply_tracking_for_stock_out(product=product, warehouse=warehouse, payload=payload)
-        return self._apply_stock_change(
+        transaction = self.inventory_engine.stock_out(
             current_user=current_user,
-            product_id=product.id,
-            warehouse_id=warehouse.id,
-            quantity_delta=-payload.quantity,
-            transaction_type=InventoryTransactionTypeEnum.STOCK_OUT,
+            product=product,
+            warehouse=warehouse,
+            quantity=payload.quantity,
             note=payload.note,
             reference_type=payload.reference_type,
             reference_id=payload.reference_id,
             request_meta=request_meta,
         )
+        self.db.commit()
+        return transaction
 
     def adjust_stock(self, *, current_user: User, payload, request_meta: dict[str, str | None]) -> InventoryTransaction:
         if payload.quantity_delta == 0:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="quantity_delta cannot be zero.")
-        return self._apply_stock_change(
+        product = self._get_product_for_inventory(current_user=current_user, product_id=payload.product_id)
+        warehouse = self._get_warehouse_for_inventory(current_user=current_user, warehouse_id=payload.warehouse_id, tenant_id=product.tenant_id)
+        if product.serial_tracking_enabled or product.batch_tracking_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tracked inventory adjustments must use stock in or stock out so serial and batch ledgers stay consistent.",
+            )
+        transaction = self.inventory_engine.adjust(
             current_user=current_user,
-            product_id=payload.product_id,
-            warehouse_id=payload.warehouse_id,
-            quantity_delta=payload.quantity_delta,
-            transaction_type=InventoryTransactionTypeEnum.ADJUSTMENT,
+            product=product,
+            warehouse=warehouse,
+            signed_qty=payload.quantity_delta,
             note=payload.note,
             reference_type=payload.reference_type,
             reference_id=payload.reference_id,
             request_meta=request_meta,
         )
+        self.db.commit()
+        return transaction
 
     def list_transactions(
         self,
@@ -204,123 +213,6 @@ class InventoryService:
             warehouse_id=warehouse_id,
             status_filter=status_filter,
         )
-
-    def _apply_stock_change(
-        self,
-        *,
-        current_user: User,
-        product_id: int,
-        warehouse_id: int,
-        quantity_delta: int,
-        transaction_type: InventoryTransactionTypeEnum,
-        note: str | None,
-        reference_type: str | None,
-        reference_id: int | None,
-        request_meta: dict[str, str | None],
-    ) -> InventoryTransaction:
-        if transaction_type == InventoryTransactionTypeEnum.ADJUSTMENT and not note:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Adjustment reason is required.")
-
-        product = self._get_product_for_inventory(current_user=current_user, product_id=product_id)
-        warehouse = self._get_warehouse_for_inventory(current_user=current_user, warehouse_id=warehouse_id, tenant_id=product.tenant_id)
-        if transaction_type == InventoryTransactionTypeEnum.ADJUSTMENT and (product.serial_tracking_enabled or product.batch_tracking_enabled):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tracked inventory adjustments must use stock in or stock out so serial and batch ledgers stay consistent.",
-            )
-
-        stock = self.stock_repository.get_for_update(
-            tenant_id=product.tenant_id,
-            product_id=product.id,
-            warehouse_id=warehouse.id,
-        )
-        if stock is None:
-            stock = self.stock_repository.create(
-                WarehouseStock(
-                    tenant_id=product.tenant_id,
-                    product_id=product.id,
-                    warehouse_id=warehouse.id,
-                    quantity=0,
-                    reserved_quantity=0,
-                    available_quantity=0,
-                    reorder_level=product.reorder_level,
-                )
-            )
-
-        old_snapshot = {
-            "quantity": stock.quantity,
-            "reserved_quantity": stock.reserved_quantity,
-            "available_quantity": stock.available_quantity,
-        }
-        new_quantity = stock.quantity + quantity_delta
-        if new_quantity < 0:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient stock. Negative stock is not allowed.")
-        if new_quantity - stock.reserved_quantity < 0:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved stock prevents this operation.")
-
-        updates = {
-            "quantity": new_quantity,
-            "available_quantity": new_quantity - stock.reserved_quantity,
-        }
-        self.stock_repository.update(stock, updates)
-
-        transaction = self.transaction_repository.create(
-            InventoryTransaction(
-                tenant_id=product.tenant_id,
-                product_id=product.id,
-                warehouse_id=warehouse.id,
-                source_warehouse_id=None,
-                destination_warehouse_id=None,
-                transaction_type=transaction_type,
-                quantity=abs(quantity_delta),
-                reference_type=reference_type,
-                reference_id=reference_id,
-                note=note,
-                created_by=current_user.id,
-            )
-        )
-        transaction_quantity = quantity_delta if transaction_type == InventoryTransactionTypeEnum.ADJUSTMENT else abs(quantity_delta)
-        self.audit_repository.create(
-            AuditLog(
-                tenant_id=product.tenant_id,
-                user_id=current_user.id,
-                action=f"inventory.{transaction_type.value.lower()}",
-                entity_type="warehouse_stock",
-                entity_id=stock.id,
-                old_value_json=old_snapshot,
-                new_value_json={
-                    "quantity": stock.quantity,
-                    "reserved_quantity": stock.reserved_quantity,
-                    "available_quantity": stock.available_quantity,
-                    "product_id": product.id,
-                    "warehouse_id": warehouse.id,
-                },
-                ip_address=request_meta.get("ip_address"),
-                user_agent=request_meta.get("user_agent"),
-            )
-        )
-        reorder_level = stock.reorder_level if stock.reorder_level is not None else product.reorder_level
-        if quantity_delta < 0 and stock.available_quantity <= reorder_level:
-            self.notification_service.notify_low_stock(
-                tenant_id=product.tenant_id,
-                product_name=product.name,
-                sku=product.sku,
-                warehouse_name=warehouse.name,
-                available_quantity=stock.available_quantity,
-                reorder_level=reorder_level,
-            )
-        if transaction_type == InventoryTransactionTypeEnum.ADJUSTMENT and abs(quantity_delta) >= max(10, reorder_level or 0, 1):
-            self.notification_service.notify_suspicious_adjustment(
-                tenant_id=product.tenant_id,
-                product_name=product.name,
-                warehouse_name=warehouse.name,
-                quantity_delta=quantity_delta,
-                actor_name=current_user.name,
-            )
-        transaction.quantity = transaction_quantity
-        self.db.add(transaction)
-        self.db.commit()
-        return transaction
 
     def _apply_tracking_for_stock_in(self, *, product: Product, warehouse: Warehouse, payload) -> None:
         if product.serial_tracking_enabled or product.batch_tracking_enabled or product.expiry_tracking_enabled or product.warranty_tracking_enabled:

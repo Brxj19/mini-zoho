@@ -8,22 +8,20 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import resolve_tenant_scope
 from app.models.audit_log import AuditLog
-from app.models.enums import InventoryTransactionTypeEnum, PurchaseOrderStatusEnum, RecordStatusEnum, RoleEnum
-from app.models.inventory_transaction import InventoryTransaction
+from app.models.enums import PurchaseOrderStatusEnum, RecordStatusEnum, RoleEnum
 from app.models.product import Product
 from app.models.purchase_order import PurchaseOrder
 from app.models.purchase_order_item import PurchaseOrderItem
 from app.models.user import User
 from app.models.vendor import Vendor
 from app.models.warehouse import Warehouse
-from app.models.warehouse_stock import WarehouseStock
 from app.repositories.audit_log_repository import AuditLogRepository
-from app.repositories.inventory_repository import InventoryTransactionRepository, WarehouseStockRepository
 from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.purchase_order_repository import PurchaseOrderItemRepository, PurchaseOrderRepository
 from app.repositories.tenant_repository import TenantRepository
 from app.services.governance_service import GovernanceService
+from app.services.inventory_engine import InventoryEngine
 from app.services.notification_service import NotificationService
 
 
@@ -33,14 +31,13 @@ class PurchaseOrderService:
         self.purchase_order_repository = PurchaseOrderRepository(db)
         self.item_repository = PurchaseOrderItemRepository(db)
         self.product_repository = ProductRepository(db)
-        self.stock_repository = WarehouseStockRepository(db)
-        self.transaction_repository = InventoryTransactionRepository(db)
         self.audit_repository = AuditLogRepository(db)
         self.tenant_repository = TenantRepository(db)
         self.governance_service = GovernanceService(db)
         self.vendor_repository = MasterDataRepository(db, Vendor)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
         self.notification_service = NotificationService(db)
+        self.inventory_engine = InventoryEngine(db)
 
     def list_purchase_orders(
         self,
@@ -279,58 +276,17 @@ class PurchaseOrderService:
 
             product = self._get_active_product(tenant_id=purchase_order.tenant_id, product_id=item.product_id)
             warehouse = self._get_active_warehouse(tenant_id=purchase_order.tenant_id, warehouse_id=item.warehouse_id)
-            stock = self._get_or_create_stock(
-                tenant_id=purchase_order.tenant_id,
-                warehouse_id=warehouse.id,
+            self.inventory_engine.receive_purchase_order(
+                current_user=current_user,
                 product=product,
-                lock=True,
-            )
-            stock_old = self._stock_snapshot(stock)
-            self.stock_repository.update(
-                stock,
-                {
-                    "quantity": stock.quantity + quantity_to_receive,
-                    "available_quantity": stock.available_quantity + quantity_to_receive,
-                },
+                warehouse=warehouse,
+                quantity=quantity_to_receive,
+                purchase_order_id=purchase_order.id,
+                note=payload.notes or purchase_order.notes,
+                request_meta=request_meta,
             )
             item.quantity_received += quantity_to_receive
             self.db.add(item)
-
-            self.transaction_repository.create(
-                InventoryTransaction(
-                    tenant_id=purchase_order.tenant_id,
-                    product_id=product.id,
-                    warehouse_id=warehouse.id,
-                    source_warehouse_id=None,
-                    destination_warehouse_id=None,
-                    transaction_type=InventoryTransactionTypeEnum.PURCHASE_RECEIVE,
-                    quantity=quantity_to_receive,
-                    reference_type="purchase_order",
-                    reference_id=purchase_order.id,
-                    note=payload.notes or purchase_order.notes,
-                    created_by=current_user.id,
-                )
-            )
-            self.audit_repository.create(
-                AuditLog(
-                    tenant_id=purchase_order.tenant_id,
-                    user_id=current_user.id,
-                    action="inventory.purchase_receive",
-                    entity_type="warehouse_stock",
-                    entity_id=stock.id,
-                    old_value_json=stock_old,
-                    new_value_json={
-                        "quantity": stock.quantity,
-                        "reserved_quantity": stock.reserved_quantity,
-                        "available_quantity": stock.available_quantity,
-                        "product_id": product.id,
-                        "warehouse_id": warehouse.id,
-                        "purchase_order_id": purchase_order.id,
-                    },
-                    ip_address=request_meta.get("ip_address"),
-                    user_agent=request_meta.get("user_agent"),
-                )
-            )
 
         self.db.flush()
         latest_items = self.item_repository.list_by_purchase_order(purchase_order.id)
@@ -490,34 +446,6 @@ class PurchaseOrderService:
         if warehouse.status != RecordStatusEnum.ACTIVE:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Archived warehouses cannot be used in purchase orders.")
         return warehouse
-
-    def _get_or_create_stock(self, *, tenant_id: int, warehouse_id: int, product: Product, lock: bool) -> WarehouseStock:
-        stock = self.stock_repository.get_for_update(
-            tenant_id=tenant_id,
-            product_id=product.id,
-            warehouse_id=warehouse_id,
-        ) if lock else None
-        if stock is None:
-            stock = self.stock_repository.create(
-                WarehouseStock(
-                    tenant_id=tenant_id,
-                    product_id=product.id,
-                    warehouse_id=warehouse_id,
-                    quantity=0,
-                    reserved_quantity=0,
-                    available_quantity=0,
-                    reorder_level=product.reorder_level,
-                )
-            )
-        return stock
-
-    def _stock_snapshot(self, stock: WarehouseStock) -> dict[str, int | None]:
-        return {
-            "quantity": stock.quantity,
-            "reserved_quantity": stock.reserved_quantity,
-            "available_quantity": stock.available_quantity,
-            "reorder_level": stock.reorder_level,
-        }
 
     def _quantize(self, value: Decimal | int | float) -> Decimal:
         return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)

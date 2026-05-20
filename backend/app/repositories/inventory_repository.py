@@ -50,6 +50,14 @@ class WarehouseStockRepository:
         )
         return list(self.db.scalars(statement).all())
 
+    def list_by_tenant(self, *, tenant_id: int) -> list[WarehouseStock]:
+        statement = (
+            select(WarehouseStock)
+            .where(WarehouseStock.tenant_id == tenant_id)
+            .order_by(WarehouseStock.product_id.asc(), WarehouseStock.warehouse_id.asc())
+        )
+        return list(self.db.scalars(statement).all())
+
     def list_low_stock(
         self,
         *,
@@ -100,6 +108,28 @@ class InventoryTransactionRepository:
         self.db.flush()
         self.db.refresh(transaction)
         return transaction
+
+    def find_by_reference(
+        self,
+        *,
+        tenant_id: int,
+        product_id: int,
+        warehouse_id: int,
+        transaction_type: InventoryTransactionTypeEnum,
+        reference_type: str | None,
+        reference_id: int | None,
+    ) -> InventoryTransaction | None:
+        if not reference_type or reference_id is None:
+            return None
+        statement = select(InventoryTransaction).where(
+            InventoryTransaction.tenant_id == tenant_id,
+            InventoryTransaction.product_id == product_id,
+            InventoryTransaction.warehouse_id == warehouse_id,
+            InventoryTransaction.transaction_type == transaction_type,
+            InventoryTransaction.reference_type == reference_type,
+            InventoryTransaction.reference_id == reference_id,
+        )
+        return self.db.scalar(statement)
 
     def list(
         self,
@@ -158,3 +188,18 @@ class InventoryTransactionRepository:
 
     def list_by_product(self, *, page: int, page_size: int, tenant_id: int, product_id: int) -> tuple[list[InventoryTransaction], int]:
         return self.list(page=page, page_size=page_size, tenant_id=tenant_id, product_id=product_id)
+
+    def list_by_scope(
+        self,
+        *,
+        tenant_id: int,
+        product_id: int | None = None,
+        warehouse_id: int | None = None,
+    ) -> list[InventoryTransaction]:
+        statement = select(InventoryTransaction).where(InventoryTransaction.tenant_id == tenant_id)
+        if product_id is not None:
+            statement = statement.where(InventoryTransaction.product_id == product_id)
+        if warehouse_id is not None:
+            statement = statement.where(InventoryTransaction.warehouse_id == warehouse_id)
+        statement = statement.order_by(InventoryTransaction.created_at.asc(), InventoryTransaction.id.asc())
+        return list(self.db.scalars(statement).all())

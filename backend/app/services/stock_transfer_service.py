@@ -7,21 +7,19 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import resolve_tenant_scope
 from app.models.audit_log import AuditLog
-from app.models.enums import InventoryTransactionTypeEnum, RecordStatusEnum, RoleEnum, StockTransferStatusEnum
-from app.models.inventory_transaction import InventoryTransaction
+from app.models.enums import RecordStatusEnum, RoleEnum, StockTransferStatusEnum
 from app.models.product import Product
 from app.models.stock_transfer import StockTransfer
 from app.models.stock_transfer_item import StockTransferItem
 from app.models.user import User
 from app.models.warehouse import Warehouse
-from app.models.warehouse_stock import WarehouseStock
 from app.repositories.audit_log_repository import AuditLogRepository
-from app.repositories.inventory_repository import InventoryTransactionRepository, WarehouseStockRepository
 from app.repositories.master_data_repository import MasterDataRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.stock_transfer_repository import StockTransferItemRepository, StockTransferRepository
 from app.repositories.tenant_repository import TenantRepository
 from app.services.governance_service import GovernanceService
+from app.services.inventory_engine import InventoryEngine
 from app.services.notification_service import NotificationService
 
 
@@ -31,13 +29,12 @@ class StockTransferService:
         self.transfer_repository = StockTransferRepository(db)
         self.item_repository = StockTransferItemRepository(db)
         self.product_repository = ProductRepository(db)
-        self.stock_repository = WarehouseStockRepository(db)
-        self.transaction_repository = InventoryTransactionRepository(db)
         self.audit_repository = AuditLogRepository(db)
         self.tenant_repository = TenantRepository(db)
         self.governance_service = GovernanceService(db)
         self.warehouse_repository = MasterDataRepository(db, Warehouse)
         self.notification_service = NotificationService(db)
+        self.inventory_engine = InventoryEngine(db)
 
     def list_transfers(
         self,
@@ -224,108 +221,16 @@ class StockTransferService:
 
         for item in items:
             product = self._get_active_product(tenant_id=transfer.tenant_id, product_id=item.product_id)
-            source_stock = self._get_or_create_stock(
-                tenant_id=transfer.tenant_id,
-                warehouse_id=source_wh.id,
+            self.inventory_engine.transfer_stock(
+                current_user=current_user,
                 product=product,
-                lock=True,
+                source_warehouse=source_wh,
+                destination_warehouse=dest_wh,
+                quantity=item.quantity,
+                stock_transfer_id=transfer.id,
+                note=notes if notes is not None else transfer.notes,
+                request_meta=request_meta,
             )
-            if source_stock.available_quantity < item.quantity:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Insufficient available stock for product {product.sku} in the source warehouse.",
-                )
-            destination_stock = self._get_or_create_stock(
-                tenant_id=transfer.tenant_id,
-                warehouse_id=dest_wh.id,
-                product=product,
-                lock=True,
-            )
-
-            source_old = self._stock_snapshot(source_stock)
-            destination_old = self._stock_snapshot(destination_stock)
-
-            self.stock_repository.update(
-                source_stock,
-                {
-                    "quantity": source_stock.quantity - item.quantity,
-                    "available_quantity": source_stock.available_quantity - item.quantity,
-                },
-            )
-            self.stock_repository.update(
-                destination_stock,
-                {
-                    "quantity": destination_stock.quantity + item.quantity,
-                    "available_quantity": destination_stock.available_quantity + item.quantity,
-                },
-            )
-
-            self.transaction_repository.create(
-                InventoryTransaction(
-                    tenant_id=transfer.tenant_id,
-                    product_id=product.id,
-                    warehouse_id=source_wh.id,
-                    source_warehouse_id=source_wh.id,
-                    destination_warehouse_id=dest_wh.id,
-                    transaction_type=InventoryTransactionTypeEnum.TRANSFER_OUT,
-                    quantity=item.quantity,
-                    reference_type="stock_transfer",
-                    reference_id=transfer.id,
-                    note=notes if notes is not None else transfer.notes,
-                    created_by=current_user.id,
-                )
-            )
-            self.transaction_repository.create(
-                InventoryTransaction(
-                    tenant_id=transfer.tenant_id,
-                    product_id=product.id,
-                    warehouse_id=dest_wh.id,
-                    source_warehouse_id=source_wh.id,
-                    destination_warehouse_id=dest_wh.id,
-                    transaction_type=InventoryTransactionTypeEnum.TRANSFER_IN,
-                    quantity=item.quantity,
-                    reference_type="stock_transfer",
-                    reference_id=transfer.id,
-                    note=notes if notes is not None else transfer.notes,
-                    created_by=current_user.id,
-                )
-            )
-            self.audit_repository.create(
-                AuditLog(
-                    tenant_id=transfer.tenant_id,
-                    user_id=current_user.id,
-                    action="inventory.transfer_out",
-                    entity_type="warehouse_stock",
-                    entity_id=source_stock.id,
-                    old_value_json=source_old,
-                    new_value_json=self._stock_snapshot(source_stock),
-                    ip_address=request_meta.get("ip_address"),
-                    user_agent=request_meta.get("user_agent"),
-                )
-            )
-            self.audit_repository.create(
-                AuditLog(
-                    tenant_id=transfer.tenant_id,
-                    user_id=current_user.id,
-                    action="inventory.transfer_in",
-                    entity_type="warehouse_stock",
-                    entity_id=destination_stock.id,
-                    old_value_json=destination_old,
-                    new_value_json=self._stock_snapshot(destination_stock),
-                    ip_address=request_meta.get("ip_address"),
-                    user_agent=request_meta.get("user_agent"),
-                )
-            )
-            reorder_level = source_stock.reorder_level if source_stock.reorder_level is not None else product.reorder_level
-            if source_stock.available_quantity <= reorder_level:
-                self.notification_service.notify_low_stock(
-                    tenant_id=transfer.tenant_id,
-                    product_name=product.name,
-                    sku=product.sku,
-                    warehouse_name=source_wh.name,
-                    available_quantity=source_stock.available_quantity,
-                    reorder_level=reorder_level,
-                )
 
         transfer = self.transfer_repository.update(
             transfer,
@@ -373,7 +278,12 @@ class StockTransferService:
     def _validate_available_stock(self, *, tenant_id: int, warehouse_id: int, items: list[StockTransferItem]) -> None:
         for item in items:
             product = self._get_active_product(tenant_id=tenant_id, product_id=item.product_id)
-            stock = self.stock_repository.get_for_update(tenant_id=tenant_id, product_id=product.id, warehouse_id=warehouse_id)
+            stock = self.inventory_engine.get_or_create_stock(
+                tenant_id=tenant_id,
+                product_id=product.id,
+                warehouse_id=warehouse_id,
+                reorder_level=product.reorder_level,
+            )
             if stock is None or stock.available_quantity < item.quantity:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -391,30 +301,6 @@ class StockTransferService:
         if not warehouse or warehouse.tenant_id != tenant_id or warehouse.status != RecordStatusEnum.ACTIVE:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Warehouse not found for this tenant.")
         return warehouse
-
-    def _get_or_create_stock(self, *, tenant_id: int, warehouse_id: int, product: Product, lock: bool) -> WarehouseStock:
-        stock = self.stock_repository.get_for_update(tenant_id=tenant_id, product_id=product.id, warehouse_id=warehouse_id) if lock else None
-        if stock is None:
-            stock = self.stock_repository.create(
-                WarehouseStock(
-                    tenant_id=tenant_id,
-                    warehouse_id=warehouse_id,
-                    product_id=product.id,
-                    quantity=0,
-                    reserved_quantity=0,
-                    available_quantity=0,
-                    reorder_level=product.reorder_level,
-                )
-            )
-        return stock
-
-    def _stock_snapshot(self, stock: WarehouseStock) -> dict[str, int | None]:
-        return {
-            "quantity": stock.quantity,
-            "reserved_quantity": stock.reserved_quantity,
-            "available_quantity": stock.available_quantity,
-            "reorder_level": stock.reorder_level,
-        }
 
     def _transfer_snapshot(self, transfer: StockTransfer, items: list[StockTransferItem]) -> dict[str, Any]:
         return {
