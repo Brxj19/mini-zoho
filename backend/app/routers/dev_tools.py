@@ -28,7 +28,7 @@ def _assert_dev_mode() -> None:
 @router.get("/sms-outbox", response_model=SmsOutboxListResponse)
 def list_sms_outbox(
     db: DbSession,
-    _: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN)),
+    current_user=Depends(require_roles(RoleEnum.SUPER_ADMIN)),
 ) -> SmsOutboxListResponse:
     _assert_dev_mode()
     items = list(db.scalars(select(SmsOutbox).order_by(SmsOutbox.created_at.desc())).all())
@@ -41,7 +41,7 @@ def list_sms_outbox(
 @router.get("/email-outbox", response_model=EmailOutboxListResponse)
 def list_email_outbox(
     db: DbSession,
-    _: CurrentUser = Depends(require_roles(RoleEnum.SUPER_ADMIN)),
+    current_user=Depends(require_roles(RoleEnum.SUPER_ADMIN)),
 ) -> EmailOutboxListResponse:
     _assert_dev_mode()
     items = list(db.scalars(select(EmailOutbox).order_by(EmailOutbox.created_at.desc())).all())
