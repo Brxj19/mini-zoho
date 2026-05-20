@@ -442,6 +442,49 @@ function buildSummaryCards(detailKey, record, usage, stockRows, itemRows) {
   ];
 }
 
+function getDocumentConfig(detailKey, record, id) {
+  if (detailKey === "invoice" && record?.invoice_number) {
+    return {
+      endpoint: `/invoices/${id}/pdf`,
+      emailEndpoint: `/invoices/${id}/email`,
+      filename: `${record.invoice_number}.pdf`,
+      successMessage: `Invoice ${record.invoice_number} emailed successfully.`,
+      emailLabel: "Email Invoice",
+      downloadLabel: "Download PDF",
+    };
+  }
+
+  if (detailKey === "bill" && record?.bill_number) {
+    return {
+      endpoint: `/bills/${id}/pdf`,
+      emailEndpoint: `/bills/${id}/email`,
+      filename: `${record.bill_number}.pdf`,
+      successMessage: `Bill ${record.bill_number} emailed successfully.`,
+      emailLabel: "Email Bill",
+      downloadLabel: "Download PDF",
+    };
+  }
+
+  return null;
+}
+
+async function getErrorMessage(error, fallbackMessage) {
+  const response = error?.response;
+  const blob = response?.data;
+
+  if (blob instanceof Blob) {
+    try {
+      const text = await blob.text();
+      const parsed = JSON.parse(text);
+      return parsed?.detail || parsed?.error || fallbackMessage;
+    } catch {
+      return fallbackMessage;
+    }
+  }
+
+  return response?.data?.detail ?? fallbackMessage;
+}
+
 export function ResourceDetailPage({ detailKey, paramKey }) {
   const { [paramKey]: entityId } = useParams();
   const { user } = useAuth();
@@ -458,6 +501,7 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
   const [feedback, setFeedback] = useState({ success: "" });
   const [modal, setModal] = useState(null);
   const [actionState, setActionState] = useState({ submitting: false, error: "" });
+  const [documentState, setDocumentState] = useState({ downloading: false, emailing: false, error: "" });
 
   useEffect(() => {
     let active = true;
@@ -520,6 +564,7 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
   const headerTitle = getRecordHeadline(detailKey, state.record, config.title);
   const headerDescription = getRecordDescription(detailKey, state.record);
   const summaryCards = buildSummaryCards(detailKey, state.record, usage, stockRows, itemRows);
+  const documentConfig = useMemo(() => getDocumentConfig(detailKey, state.record, entityId), [detailKey, entityId, state.record]);
   const tabItems = useMemo(() => {
     const items = [{ key: "overview", label: "Overview" }];
     if (itemRows.length || showsLineItems) items.push({ key: "lines", label: "Line Items" });
@@ -565,6 +610,49 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
   function closeModal() {
     setModal(null);
     setActionState({ submitting: false, error: "" });
+  }
+
+  async function handleDownloadPdf() {
+    if (!documentConfig) return;
+    setDocumentState({ downloading: true, emailing: false, error: "" });
+
+    try {
+      const response = await api.get(documentConfig.endpoint, { responseType: "blob" });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = documentConfig.filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+      setDocumentState({ downloading: false, emailing: false, error: "" });
+      setFeedback({ success: `${documentConfig.filename} downloaded.` });
+    } catch (error) {
+      setDocumentState({
+        downloading: false,
+        emailing: false,
+        error: await getErrorMessage(error, "Unable to download the PDF right now."),
+      });
+    }
+  }
+
+  async function handleEmailDocument() {
+    if (!documentConfig) return;
+    setDocumentState({ downloading: false, emailing: true, error: "" });
+
+    try {
+      await api.post(documentConfig.emailEndpoint, { notes: state.record?.notes || null });
+      setDocumentState({ downloading: false, emailing: false, error: "" });
+      setFeedback({ success: documentConfig.successMessage });
+      setReloadKey((value) => value + 1);
+    } catch (error) {
+      setDocumentState({
+        downloading: false,
+        emailing: false,
+        error: await getErrorMessage(error, "Unable to email the document right now."),
+      });
+    }
   }
 
   async function submitRequestAction() {
@@ -626,6 +714,16 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
         backTo={config.listPath ?? "/"}
         actions={
           <>
+            {documentConfig ? (
+              <>
+                <button className="ghost-button" type="button" onClick={handleDownloadPdf} disabled={documentState.downloading || documentState.emailing}>
+                  {documentState.downloading ? "Downloading..." : documentConfig.downloadLabel}
+                </button>
+                <button className="button button-primary" type="button" onClick={handleEmailDocument} disabled={documentState.downloading || documentState.emailing}>
+                  {documentState.emailing ? "Sending..." : documentConfig.emailLabel}
+                </button>
+              </>
+            ) : null}
             {canEdit ? (
               <Link className="ghost-button" to={config.editPath(entityId)}>
                 Edit
@@ -636,6 +734,7 @@ export function ResourceDetailPage({ detailKey, paramKey }) {
       />
 
       {feedback.success ? <div className="surface-success">{feedback.success}</div> : null}
+      {documentState.error ? <div className="surface-error">{documentState.error}</div> : null}
       {state.loading ? <div className="workspace-card surface-placeholder">Loading detail…</div> : null}
       {!state.loading && state.error ? (
         <EmptyState

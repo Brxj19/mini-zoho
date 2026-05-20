@@ -236,7 +236,7 @@ def get_invoice_pdf(
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{invoice.invoice_number}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{invoice.invoice_number}.pdf"'},
     )
 
 
@@ -457,7 +457,7 @@ def get_bill_pdf(
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{bill.bill_number}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{bill.bill_number}.pdf"'},
     )
 
 
