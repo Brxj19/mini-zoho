@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models.enums import RoleEnum, UserStatusEnum
 from app.schemas.common import ORMBaseSchema, PaginationMeta
@@ -35,12 +35,17 @@ class UserResponse(ORMBaseSchema):
     id: int
     tenant_id: int | None
     name: str
-    email: EmailStr
+    email: str
     role: RoleEnum
     status: UserStatusEnum
     last_login_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.strip().lower()
 
 
 class UserDetailResponse(UserResponse):

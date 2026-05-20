@@ -57,9 +57,12 @@ PLATFORM_TENANT_NAME = "Northstar Platform Demo"
 LARGE_TENANT_NAME = "Northstar Retail India"
 SMALL_TENANT_NAME = "Clover Living Studio"
 DEFAULT_PASSWORD = "ChangeMe123!"
+CONNECTED_SEED_MARKER_EMAIL = "tenant.admin1@northstar-demo.local"
 
 
 def ensure_demo_workspace(db: Session) -> None:
+    if db.scalar(select(User.id).where(User.email == CONNECTED_SEED_MARKER_EMAIL)):
+        return
     _seed_platform_workspace(db)
     _seed_large_workspace(db)
     _seed_small_workspace(db)
