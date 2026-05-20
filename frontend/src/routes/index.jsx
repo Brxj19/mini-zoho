@@ -15,6 +15,7 @@ import { NotFoundPage } from "../pages/NotFoundPage";
 import { NotificationsPage } from "../pages/NotificationsPage";
 import { OrderFormPage } from "../pages/OrderFormPage";
 import { OnboardingPage } from "../pages/OnboardingPage";
+import { LandingPage } from "../pages/LandingPage";
 import { ProductFormPage } from "../pages/ProductFormPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
@@ -37,6 +38,10 @@ function withHandle(title, section, breadcrumb = title) {
 }
 
 export const router = createBrowserRouter([
+  {
+    path: "/landing",
+    element: <LandingPage />,
+  },
   {
     path: "/login",
     element: <LoginPage />,
