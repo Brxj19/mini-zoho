@@ -340,8 +340,8 @@ class CSVSeedImporter:
             return TableImportResult(filename=filename, table_name=model.__tablename__, row_count=0, inserted=True)
 
         with self.session_factory() as session:
-            self._validate_foreign_keys(session, model, coerced_rows)
             with session.begin():
+                self._validate_foreign_keys(session, model, coerced_rows)
                 session.execute(insert(model), coerced_rows)
 
         return TableImportResult(filename=filename, table_name=model.__tablename__, row_count=len(coerced_rows), inserted=True)
