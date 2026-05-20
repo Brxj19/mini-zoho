@@ -8,6 +8,12 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     default-libmysqlclient-dev \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    shared-mime-info \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -18,4 +24,3 @@ COPY . .
 EXPOSE 8000
 
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
-

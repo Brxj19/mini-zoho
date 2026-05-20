@@ -21,6 +21,7 @@ class User(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     role: Mapped[RoleEnum] = mapped_column(
         Enum(RoleEnum, name="user_role_enum"),
         nullable=False,
@@ -33,5 +34,7 @@ class User(TimestampMixin, Base):
         index=True,
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    phone_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     tenant = relationship("Tenant", back_populates="users")

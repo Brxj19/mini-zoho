@@ -80,6 +80,25 @@ class NotificationTypeEnum(str, Enum):
     SYSTEM = "SYSTEM"
 
 
+class OtpChannelEnum(str, Enum):
+    EMAIL = "EMAIL"
+    SMS = "SMS"
+
+
+class OtpPurposeEnum(str, Enum):
+    SIGNUP_VERIFY = "SIGNUP_VERIFY"
+    LOGIN_2FA = "LOGIN_2FA"
+    PHONE_VERIFY = "PHONE_VERIFY"
+    PASSWORD_RESET = "PASSWORD_RESET"
+
+
+class OtpChallengeStatusEnum(str, Enum):
+    PENDING = "PENDING"
+    VERIFIED = "VERIFIED"
+    EXPIRED = "EXPIRED"
+    BLOCKED = "BLOCKED"
+
+
 class PackageStatusEnum(str, Enum):
     DRAFT = "DRAFT"
     PACKED = "PACKED"

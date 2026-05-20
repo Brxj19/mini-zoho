@@ -1,21 +1,29 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, status
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, HTTPException, status
 
 from app.core.dependencies import CurrentUser, DbSession
+from app.models.enums import OtpChannelEnum, OtpPurposeEnum
 from app.schemas.auth import (
     AuthSessionResponse,
     ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
+    RequestEmailVerificationRequest,
+    RequestOtpResponse,
+    RequestPhoneVerificationRequest,
     RefreshTokenRequest,
     RegisterRequest,
     ResetPasswordPlaceholderRequest,
+    VerifyOtpRequest,
 )
 from app.schemas.tenant import TenantResponse
 from app.schemas.user import UserDetailResponse
 from app.services.auth_service import AuthService
+from app.services.otp_service import OtpService
 
 router = APIRouter()
 
@@ -80,3 +88,63 @@ def forgot_password(_: ForgotPasswordRequest) -> MessageResponse:
 @router.post("/reset-password", response_model=MessageResponse)
 def reset_password(_: ResetPasswordPlaceholderRequest) -> MessageResponse:
     return MessageResponse(detail="Password reset placeholder accepted. Token verification is not implemented in this MVP.")
+
+
+@router.post("/request-email-verification", response_model=RequestOtpResponse)
+def request_email_verification(payload: RequestEmailVerificationRequest, current_user: CurrentUser, db: DbSession) -> RequestOtpResponse:
+    challenge, _raw_code = OtpService(db).create_otp(
+        destination=current_user.email,
+        channel=OtpChannelEnum.EMAIL,
+        purpose=payload.purpose,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+    )
+    db.commit()
+    return RequestOtpResponse(
+        challenge_id=challenge.id,
+        channel=challenge.channel,
+        destination=challenge.destination,
+        detail="Verification email sent.",
+    )
+
+
+@router.post("/verify-email", response_model=MessageResponse)
+def verify_email(payload: VerifyOtpRequest, current_user: CurrentUser, db: DbSession) -> MessageResponse:
+    challenge = OtpService(db).verify_otp(challenge_id=payload.challenge_id, code=payload.code)
+    if challenge.user_id != current_user.id or challenge.channel != OtpChannelEnum.EMAIL:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Verification challenge does not belong to the current user.")
+    current_user.email_verified_at = datetime.now(UTC)
+    db.add(current_user)
+    db.commit()
+    return MessageResponse(detail="Email verified successfully.")
+
+
+@router.post("/request-phone-verification", response_model=RequestOtpResponse)
+def request_phone_verification(payload: RequestPhoneVerificationRequest, current_user: CurrentUser, db: DbSession) -> RequestOtpResponse:
+    current_user.phone = payload.phone.strip()
+    db.add(current_user)
+    challenge, _raw_code = OtpService(db).create_otp(
+        destination=current_user.phone,
+        channel=OtpChannelEnum.SMS,
+        purpose=OtpPurposeEnum.PHONE_VERIFY,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+    )
+    db.commit()
+    return RequestOtpResponse(
+        challenge_id=challenge.id,
+        channel=challenge.channel,
+        destination=challenge.destination,
+        detail="Verification SMS queued.",
+    )
+
+
+@router.post("/verify-phone", response_model=MessageResponse)
+def verify_phone(payload: VerifyOtpRequest, current_user: CurrentUser, db: DbSession) -> MessageResponse:
+    challenge = OtpService(db).verify_otp(challenge_id=payload.challenge_id, code=payload.code)
+    if challenge.user_id != current_user.id or challenge.channel != OtpChannelEnum.SMS:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Verification challenge does not belong to the current user.")
+    current_user.phone_verified_at = datetime.now(UTC)
+    db.add(current_user)
+    db.commit()
+    return MessageResponse(detail="Phone verified successfully.")

@@ -13,6 +13,7 @@ class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=255)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
+    phone: str | None = Field(default=None, max_length=32)
     role: RoleEnum = RoleEnum.VIEWER
     tenant_id: int | None = None
     status: UserStatusEnum = UserStatusEnum.ACTIVE
@@ -21,6 +22,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=255)
     email: EmailStr | None = None
+    phone: str | None = Field(default=None, max_length=32)
 
 
 class UserRoleUpdate(BaseModel):
@@ -36,9 +38,12 @@ class UserResponse(ORMBaseSchema):
     tenant_id: int | None
     name: str
     email: str
+    phone: str | None
     role: RoleEnum
     status: UserStatusEnum
     last_login_at: datetime | None
+    email_verified_at: datetime | None
+    phone_verified_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

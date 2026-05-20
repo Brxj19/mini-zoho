@@ -3,12 +3,14 @@ from app.models.brand import Brand
 from app.models.bill import Bill
 from app.models.category import Category
 from app.models.customer import Customer
+from app.models.email_outbox import EmailOutbox
 from app.models.invoice import Invoice
 from app.models.inventory_batch import InventoryBatch
 from app.models.inventory_serial import InventorySerial
 from app.models.inventory_transaction import InventoryTransaction
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
+from app.models.otp_challenge import OtpChallenge
 from app.models.package import Package
 from app.models.package_item import PackageItem
 from app.models.product import Product
@@ -28,6 +30,7 @@ from app.models.user import User
 from app.models.vendor import Vendor
 from app.models.warehouse import Warehouse
 from app.models.warehouse_stock import WarehouseStock
+from app.models.sms_outbox import SmsOutbox
 
 __all__ = [
     "Base",
@@ -39,6 +42,7 @@ __all__ = [
     "Brand",
     "Vendor",
     "Customer",
+    "EmailOutbox",
     "Package",
     "PackageItem",
     "Invoice",
@@ -59,6 +63,8 @@ __all__ = [
     "InventoryTransaction",
     "AuditLog",
     "Notification",
+    "OtpChallenge",
+    "SmsOutbox",
     "StockTransfer",
     "StockTransferItem",
     "SubscriptionPlan",

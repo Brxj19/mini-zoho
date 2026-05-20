@@ -15,6 +15,7 @@ from app.models.enums import (
     BillStatusEnum,
     InventoryTransactionTypeEnum,
     InvoiceStatusEnum,
+    NotificationTypeEnum,
     PackageStatusEnum,
     PurchaseOrderStatusEnum,
     PurchaseReceiveStatusEnum,
@@ -40,11 +41,19 @@ from app.models.user import User
 from app.models.vendor import Vendor
 from app.models.warehouse import Warehouse
 from app.models.warehouse_stock import WarehouseStock
+from app.services.audit_log_service import AuditLogService
+from app.services.email_service import EmailAttachment, EmailService
+from app.services.notification_service import NotificationService
+from app.services.pdf_service import PdfService
 
 
 class BusinessWorkflowService:
     def __init__(self, db: Session) -> None:
         self.db = db
+        self.audit_log_service = AuditLogService(db)
+        self.email_service = EmailService(db)
+        self.notification_service = NotificationService(db)
+        self.pdf_service = PdfService(db)
 
     def list_packages(
         self,
@@ -196,6 +205,53 @@ class BusinessWorkflowService:
         if notes is not None:
             invoice.notes = notes
         self.db.add(invoice)
+        self.db.commit()
+        return invoice
+
+    def render_invoice_pdf(self, *, current_user: User, invoice_id: int) -> tuple[Invoice, bytes]:
+        invoice = self.get_invoice_for_user(current_user=current_user, invoice_id=invoice_id)
+        return invoice, self.pdf_service.render_invoice_pdf(invoice)
+
+    def email_invoice(self, *, current_user: User, invoice_id: int, notes: str | None = None) -> Invoice:
+        invoice = self.get_invoice_for_user(current_user=current_user, invoice_id=invoice_id)
+        customer = self.db.get(Customer, invoice.customer_id)
+        if not customer or not customer.email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Customer email is required before this invoice can be sent.")
+
+        pdf_bytes = self.pdf_service.render_invoice_pdf(invoice)
+        self.email_service.send_template_email(
+            template_name="document_email",
+            context={
+                "title": "Your invoice is ready",
+                "intro": "We have attached your invoice for reference.",
+                "document_kind": "Invoice",
+                "document_number": invoice.invoice_number,
+                "notes": notes or invoice.notes,
+                "sender_name": current_user.name,
+            },
+            to=customer.email,
+            subject=f"Invoice {invoice.invoice_number}",
+            attachments=[EmailAttachment(filename=f"{invoice.invoice_number}.pdf", content=pdf_bytes, content_type="application/pdf")],
+            tenant_id=invoice.tenant_id,
+        )
+        if invoice.status == InvoiceStatusEnum.DRAFT:
+            invoice.status = InvoiceStatusEnum.SENT
+        if notes is not None:
+            invoice.notes = notes
+        self.db.add(invoice)
+        self.audit_log_service.log(
+            actor=current_user,
+            action="invoice.emailed",
+            entity_type="invoice",
+            entity_id=invoice.id,
+            new_value={"invoice_number": invoice.invoice_number, "recipient": customer.email},
+        )
+        self.notification_service.create_for_tenant_users(
+            tenant_id=invoice.tenant_id,
+            title="Invoice emailed",
+            message=f"Invoice {invoice.invoice_number} was emailed to {customer.email}.",
+            notification_type=NotificationTypeEnum.SYSTEM,
+        )
         self.db.commit()
         return invoice
 
@@ -541,6 +597,53 @@ class BusinessWorkflowService:
         if notes is not None:
             bill.notes = notes
         self.db.add(bill)
+        self.db.commit()
+        return bill
+
+    def render_bill_pdf(self, *, current_user: User, bill_id: int) -> tuple[Bill, bytes]:
+        bill = self.get_bill_for_user(current_user=current_user, bill_id=bill_id)
+        return bill, self.pdf_service.render_bill_pdf(bill)
+
+    def email_bill(self, *, current_user: User, bill_id: int, notes: str | None = None) -> Bill:
+        bill = self.get_bill_for_user(current_user=current_user, bill_id=bill_id)
+        vendor = self.db.get(Vendor, bill.vendor_id)
+        if not vendor or not vendor.email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vendor email is required before this bill can be sent.")
+
+        pdf_bytes = self.pdf_service.render_bill_pdf(bill)
+        self.email_service.send_template_email(
+            template_name="document_email",
+            context={
+                "title": "Your bill is ready",
+                "intro": "We have attached your bill for reference.",
+                "document_kind": "Bill",
+                "document_number": bill.bill_number,
+                "notes": notes or bill.notes,
+                "sender_name": current_user.name,
+            },
+            to=vendor.email,
+            subject=f"Bill {bill.bill_number}",
+            attachments=[EmailAttachment(filename=f"{bill.bill_number}.pdf", content=pdf_bytes, content_type="application/pdf")],
+            tenant_id=bill.tenant_id,
+        )
+        if bill.status == BillStatusEnum.DRAFT:
+            bill.status = BillStatusEnum.POSTED
+        if notes is not None:
+            bill.notes = notes
+        self.db.add(bill)
+        self.audit_log_service.log(
+            actor=current_user,
+            action="bill.emailed",
+            entity_type="bill",
+            entity_id=bill.id,
+            new_value={"bill_number": bill.bill_number, "recipient": vendor.email},
+        )
+        self.notification_service.create_for_tenant_users(
+            tenant_id=bill.tenant_id,
+            title="Bill emailed",
+            message=f"Bill {bill.bill_number} was emailed to {vendor.email}.",
+            notification_type=NotificationTypeEnum.SYSTEM,
+        )
         self.db.commit()
         return bill
 

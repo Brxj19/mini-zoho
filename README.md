@@ -63,6 +63,7 @@ docker compose up --build
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:8000`
 - API docs: `http://localhost:8000/docs`
+- Mailpit UI: `http://localhost:8025`
 
 ## Environment Variables
 
@@ -81,6 +82,16 @@ Backend values live in `backend/.env` and currently support:
 - `SUPER_ADMIN_NAME`
 - `SUPER_ADMIN_EMAIL`
 - `SUPER_ADMIN_PASSWORD`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USERNAME`
+- `SMTP_PASSWORD`
+- `SMTP_FROM_EMAIL`
+- `SMTP_FROM_NAME`
+- `EMAIL_ENABLED`
+- `SMS_PROVIDER`
+- `OTP_TTL_MINUTES`
+- `OTP_MAX_ATTEMPTS`
 
 The backend also adds request-level middleware for:
 
@@ -98,6 +109,8 @@ Frontend values live in `frontend/.env`:
 - `POST /api/auth/register` creates a tenant and the first `TENANT_ADMIN`
 - `POST /api/auth/login` issues JWT access and refresh tokens
 - `GET /api/auth/me` returns the current authenticated user
+- `POST /api/auth/request-email-verification` and `POST /api/auth/verify-email` support optional email verification
+- `POST /api/auth/request-phone-verification` and `POST /api/auth/verify-phone` support optional phone verification
 - Roles included in Milestone 2:
   - `SUPER_ADMIN`
   - `TENANT_ADMIN`
@@ -107,6 +120,14 @@ Frontend values live in `frontend/.env`:
   - `VIEWER`
 
 The backend enforces tenant isolation by resolving tenant access from the authenticated user rather than trusting tenant IDs from the frontend.
+
+## Communication and Documents
+
+- Development email is routed to Mailpit instead of a real provider.
+- Development SMS is written to the local SMS outbox and exposed through `GET /api/dev/sms-outbox` for super admins.
+- Invoice and bill PDFs are available through dedicated document endpoints and can be emailed as PDF attachments.
+
+See [docs/COMMUNICATION_AND_DOCUMENT_SERVICES.md](docs/COMMUNICATION_AND_DOCUMENT_SERVICES.md) for details.
 
 ## Master Data APIs
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from datetime import date
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi.responses import StreamingResponse
 
 from app.core.dependencies import CurrentUser, DbSession, get_pagination_params, require_roles
 from app.models.enums import BillStatusEnum, InvoiceStatusEnum, PackageStatusEnum, RoleEnum, SalesReturnStatusEnum
@@ -224,6 +226,30 @@ def send_invoice(
     return InvoiceResponse.model_validate(BusinessWorkflowService(db).transition_invoice(current_user=current_user, invoice_id=invoice_id, next_status=InvoiceStatusEnum.SENT, notes=payload.notes))
 
 
+@router.get("/invoices/{invoice_id}/pdf")
+def get_invoice_pdf(
+    invoice_id: int,
+    db: DbSession,
+    current_user: CurrentUser,
+):
+    invoice, pdf_bytes = BusinessWorkflowService(db).render_invoice_pdf(current_user=current_user, invoice_id=invoice_id)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{invoice.invoice_number}.pdf"'},
+    )
+
+
+@router.post("/invoices/{invoice_id}/email", response_model=InvoiceResponse)
+def email_invoice(
+    invoice_id: int,
+    payload: WorkflowActionPayload,
+    db: DbSession,
+    current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN, RoleEnum.SALES_STAFF)),
+) -> InvoiceResponse:
+    return InvoiceResponse.model_validate(BusinessWorkflowService(db).email_invoice(current_user=current_user, invoice_id=invoice_id, notes=payload.notes))
+
+
 @router.post("/invoices/{invoice_id}/pay", response_model=InvoiceResponse)
 def pay_invoice(
     invoice_id: int,
@@ -419,6 +445,30 @@ def post_bill(
     current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN, RoleEnum.PURCHASE_STAFF)),
 ) -> BillResponse:
     return BillResponse.model_validate(BusinessWorkflowService(db).transition_bill(current_user=current_user, bill_id=bill_id, next_status=BillStatusEnum.POSTED, notes=payload.notes))
+
+
+@router.get("/bills/{bill_id}/pdf")
+def get_bill_pdf(
+    bill_id: int,
+    db: DbSession,
+    current_user: CurrentUser,
+):
+    bill, pdf_bytes = BusinessWorkflowService(db).render_bill_pdf(current_user=current_user, bill_id=bill_id)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{bill.bill_number}.pdf"'},
+    )
+
+
+@router.post("/bills/{bill_id}/email", response_model=BillResponse)
+def email_bill(
+    bill_id: int,
+    payload: WorkflowActionPayload,
+    db: DbSession,
+    current_user: User = Depends(require_roles(RoleEnum.SUPER_ADMIN, RoleEnum.TENANT_ADMIN, RoleEnum.PURCHASE_STAFF)),
+) -> BillResponse:
+    return BillResponse.model_validate(BusinessWorkflowService(db).email_bill(current_user=current_user, bill_id=bill_id, notes=payload.notes))
 
 
 @router.post("/bills/{bill_id}/pay", response_model=BillResponse)

@@ -8,6 +8,7 @@ from app.routers.brands import router as brands_router
 from app.routers.categories import router as categories_router
 from app.routers.customers import router as customers_router
 from app.routers.dashboards import router as dashboards_router
+from app.routers.dev_tools import router as dev_tools_router
 from app.routers.health import router as health_router
 from app.routers.inventory import router as inventory_router
 from app.routers.notifications import router as notifications_router
@@ -41,6 +42,7 @@ api_router.include_router(stock_transfers_router, prefix="/inventory", tags=["st
 api_router.include_router(business_workflows_router, tags=["business-workflows"])
 api_router.include_router(subscription_plans_router, prefix="/subscription-plans", tags=["subscription-plans"])
 api_router.include_router(health_router, prefix="/health", tags=["health"])
+api_router.include_router(dev_tools_router, prefix="/dev", tags=["dev-tools"])
 api_router.include_router(tenants_router, prefix="/tenants", tags=["tenants"])
 api_router.include_router(users_router, prefix="/users", tags=["users"])
 api_router.include_router(warehouses_router, prefix="/warehouses", tags=["warehouses"])

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.models.enums import OtpChannelEnum, OtpPurposeEnum
+
 from app.schemas.tenant import TenantResponse
 from app.schemas.user import UserDetailResponse
 
@@ -58,4 +60,29 @@ class AuthSessionResponse(BaseModel):
 
 
 class MessageResponse(BaseModel):
+    detail: str
+
+
+class OtpChallengeResponse(BaseModel):
+    challenge_id: int
+    detail: str
+
+
+class VerifyOtpRequest(BaseModel):
+    challenge_id: int
+    code: str = Field(min_length=4, max_length=10)
+
+
+class RequestPhoneVerificationRequest(BaseModel):
+    phone: str = Field(min_length=6, max_length=32)
+
+
+class RequestEmailVerificationRequest(BaseModel):
+    purpose: OtpPurposeEnum = OtpPurposeEnum.SIGNUP_VERIFY
+
+
+class RequestOtpResponse(BaseModel):
+    challenge_id: int
+    channel: OtpChannelEnum
+    destination: str
     detail: str

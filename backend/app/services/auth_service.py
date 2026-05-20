@@ -52,6 +52,7 @@ class AuthService:
             name=payload.name,
             email=payload.email,
             password_hash=hash_password(payload.password),
+            phone=payload.phone,
             role=RoleEnum.TENANT_ADMIN,
             status=UserStatusEnum.ACTIVE,
         )

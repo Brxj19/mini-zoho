@@ -18,6 +18,14 @@ services:
       timeout: 5s
       retries: 10
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: northstar_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   backend:
     build:
       context: ./backend
@@ -37,9 +45,21 @@ services:
       SUPER_ADMIN_NAME: ${SUPER_ADMIN_NAME:-Platform Super Admin}
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-superadmin@example.com}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-ChangeMe123!}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-no-reply@northstar.local}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Northstar Inventory}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+      SMS_PROVIDER: ${SMS_PROVIDER:-local_outbox}
+      OTP_TTL_MINUTES: ${OTP_TTL_MINUTES:-10}
+      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
     depends_on:
       mysql:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     ports:
       - "8000:8000"
 

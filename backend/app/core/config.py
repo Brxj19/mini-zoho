@@ -26,6 +26,19 @@ class Settings(BaseSettings):
     super_admin_email: str = Field(default="superadmin@example.com", alias="SUPER_ADMIN_EMAIL")
     super_admin_password: str = Field(default="ChangeMe123!", alias="SUPER_ADMIN_PASSWORD")
     super_admin_name: str = Field(default="Platform Super Admin", alias="SUPER_ADMIN_NAME")
+    smtp_host: str = Field(default="mailpit", alias="SMTP_HOST")
+    smtp_port: int = Field(default=1025, alias="SMTP_PORT")
+    smtp_username: str = Field(default="", alias="SMTP_USERNAME")
+    smtp_password: str = Field(default="", alias="SMTP_PASSWORD")
+    smtp_from_email: str = Field(default="no-reply@northstar.local", alias="SMTP_FROM_EMAIL")
+    smtp_from_name: str = Field(default="Northstar Inventory", alias="SMTP_FROM_NAME")
+    email_enabled: bool = Field(default=True, alias="EMAIL_ENABLED")
+    sms_provider: str = Field(default="local_outbox", alias="SMS_PROVIDER")
+    twilio_account_sid: str = Field(default="", alias="TWILIO_ACCOUNT_SID")
+    twilio_auth_token: str = Field(default="", alias="TWILIO_AUTH_TOKEN")
+    twilio_from_phone: str = Field(default="", alias="TWILIO_FROM_PHONE")
+    otp_ttl_minutes: int = Field(default=10, alias="OTP_TTL_MINUTES")
+    otp_max_attempts: int = Field(default=5, alias="OTP_MAX_ATTEMPTS")
 
     model_config = SettingsConfigDict(
         env_file=".env",

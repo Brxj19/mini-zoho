@@ -1,0 +1,11 @@
+{{ title }}
+
+{{ intro }}
+
+Attached is your {{ document_kind|lower }} {{ document_number }}.
+{% if notes %}
+Notes: {{ notes }}
+{% endif %}
+
+Thank you,
+{{ sender_name }}

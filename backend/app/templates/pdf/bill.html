@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      @page { size: A4; margin: 22mm 16mm; }
+      body { font-family: Arial, sans-serif; color: #1f2937; font-size: 12px; }
+      .header { margin-bottom: 24px; }
+      .brand { font-size: 22px; font-weight: bold; }
+      .muted { color: #6b7280; }
+      .grid { display: table; width: 100%; table-layout: fixed; margin-bottom: 20px; }
+      .cell { display: table-cell; vertical-align: top; width: 50%; }
+      table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+      th, td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+      th { font-size: 11px; text-transform: uppercase; color: #6b7280; }
+      .totals { width: 280px; margin-left: auto; margin-top: 18px; }
+      .totals td { border: none; padding: 6px 0; }
+      .total-row td { font-weight: bold; font-size: 15px; padding-top: 10px; border-top: 1px solid #d1d5db; }
+      .footer { margin-top: 28px; font-size: 11px; color: #6b7280; }
+      .logo-box { width: 64px; height: 64px; border: 1px dashed #cbd5e1; border-radius: 12px; display: inline-block; text-align: center; line-height: 64px; margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo-box">Logo</div>
+      <div class="brand">{{ tenant.company_name }}</div>
+      <div class="muted">{{ tenant.contact_email }}{% if tenant.phone %} | {{ tenant.phone }}{% endif %}</div>
+      <div class="muted">{{ tenant.address or "Organization address" }}</div>
+    </div>
+
+    <div class="grid">
+      <div class="cell">
+        <strong>Pay To</strong><br>
+        {{ vendor.name }}<br>
+        {{ vendor.email or "" }}<br>
+        {{ vendor.phone or "" }}<br>
+        {{ vendor.address or "" }}
+      </div>
+      <div class="cell">
+        <strong>Bill</strong><br>
+        Number: {{ bill.bill_number }}<br>
+        Date: {{ bill.bill_date }}<br>
+        Due: {{ bill.due_date or "-" }}<br>
+        Purchase Order: {{ purchase_order.po_number if purchase_order else "-" }}
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Warehouse</th>
+          <th>Qty</th>
+          <th>Rate</th>
+          <th>Tax</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product_name }}</td>
+          <td>{{ item.warehouse_name }}</td>
+          <td>{{ item.quantity_ordered }}</td>
+          <td>{{ item.unit_price }}</td>
+          <td>{{ item.tax_rate }}%</td>
+          <td>{{ item.total_price }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr><td>Subtotal</td><td style="text-align:right;">{{ bill.subtotal }}</td></tr>
+      <tr><td>Tax</td><td style="text-align:right;">{{ bill.tax_amount }}</td></tr>
+      <tr class="total-row"><td>Total</td><td style="text-align:right;">{{ bill.total_amount }}</td></tr>
+    </table>
+
+    {% if bill.notes %}
+    <div class="footer">
+      <strong>Notes</strong><br>
+      {{ bill.notes }}
+    </div>
+    {% endif %}
+  </body>
+</html>
