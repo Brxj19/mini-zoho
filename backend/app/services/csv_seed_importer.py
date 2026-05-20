@@ -95,6 +95,10 @@ class TableImportResult:
     inserted: bool
 
 
+class SeedValidationError(ValueError):
+    """Raised when the connected seed archive is internally inconsistent."""
+
+
 def parse_bool(value: str | None) -> bool | None:
     if value is None or value == "":
         return None
@@ -160,6 +164,7 @@ class CSVSeedImporter:
             self._load_manifest()
             self._load_import_order()
             self._validate_archive_files()
+            self._validate_archive_data()
 
             if self.truncate_existing and not self.dry_run:
                 self._truncate_existing_rows()
@@ -230,6 +235,43 @@ class CSVSeedImporter:
         data = self.zip_file.read(filename).decode("utf-8-sig")
         reader = csv.DictReader(io.StringIO(data))
         return list(reader)
+
+    def _validate_archive_data(self) -> None:
+        validation_errors: list[str] = []
+
+        for filename in self.import_order:
+            model = CSV_MODEL_MAP[filename]
+            rows = self._iter_csv_rows(filename)
+            rows = self._filter_rows_for_tenant(filename, rows)
+
+            for column in model.__table__.columns:
+                if not getattr(column, "unique", False):
+                    continue
+
+                grouped: dict[str, list[dict[str, str]]] = {}
+                for row in rows:
+                    raw_value = row.get(column.name)
+                    if raw_value in (None, ""):
+                        continue
+                    grouped.setdefault(raw_value, []).append(row)
+
+                for value, duplicates in grouped.items():
+                    if len(duplicates) < 2:
+                        continue
+                    duplicate_ids = ", ".join(item.get("id", "?") for item in duplicates[:10])
+                    validation_errors.append(
+                        f"{filename}: duplicate unique value for {column.name}={value!r} on row id(s): {duplicate_ids}"
+                    )
+
+        if validation_errors:
+            preview = "\n".join(f"- {message}" for message in validation_errors[:25])
+            if len(validation_errors) > 25:
+                preview += f"\n- ... and {len(validation_errors) - 25} more"
+            raise SeedValidationError(
+                "Connected seed archive failed preflight validation:\n"
+                f"{preview}\n"
+                "Fix the duplicate values in the CSV archive and rerun the importer."
+            )
 
     def _filter_rows_for_tenant(self, filename: str, rows: list[dict[str, str]]) -> list[dict[str, str]]:
         if self.tenant_id is None:
